@@ -156,6 +156,19 @@
   </div>
 </div>
 
+<!-- WORK DETAIL MODAL -->
+<div class="modal-overlay" id="workDetailModal">
+  <div class="modal-box" style="max-width:700px;max-height:85vh;overflow-y:auto">
+    <div class="modal-header">
+      <div class="modal-title" id="workDetailTitle" style="color:#e94560"><i class="fas fa-tasks"></i> Work Details</div>
+      <button class="modal-close" onclick="document.getElementById('workDetailModal').classList.remove('active')">&times;</button>
+    </div>
+    <div id="workDetailContent" style="margin-top:16px">
+      <div style="text-align:center;color:var(--gray);padding:20px"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+    </div>
+  </div>
+</div>
+
 <!-- LOGOUT MODAL -->
 <div class="modal-overlay" id="logoutModal">
   <div class="modal-box" style="max-width:380px;text-align:center">
@@ -293,17 +306,61 @@ async function loadMyWork() {
       getDocs(query(collection(db, 'requests'), where('approvedBy','==',currentUser.uid), where('type','==','resumeDownload'))),
       getDocs(query(collection(db, 'requests'), where('approvedBy','==',currentUser.uid), where('type','==','membership')))
     ]);
+    myWorkData = {
+      jobs: jobsApproved.docs.map(d => ({id:d.id,...d.data()})),
+      contacts: contactApproved.docs.map(d => ({id:d.id,...d.data()})),
+      resumes: resumeApproved.docs.map(d => ({id:d.id,...d.data()})),
+      memberships: membershipApproved.docs.map(d => ({id:d.id,...d.data()}))
+    };
     document.getElementById('myWorkStats').innerHTML = `
-      ${sc('fa-briefcase','Jobs Approved',jobsApproved.size)}
-      ${sc('fa-phone','Contacts Approved',contactApproved.size)}
-      ${sc('fa-file-download','Resumes Approved',resumeApproved.size)}
-      ${sc('fa-crown','Memberships Approved',membershipApproved.size)}`;
+      ${sc('fa-briefcase','Jobs Approved',jobsApproved.size,'jobs')}
+      ${sc('fa-phone','Contacts Approved',contactApproved.size,'contacts')}
+      ${sc('fa-file-download','Resumes Approved',resumeApproved.size,'resumes')}
+      ${sc('fa-crown','Memberships Approved',membershipApproved.size,'memberships')}`;
   } catch(e) {}
 }
 
-function sc(icon, label, val) {
-  return `<div class="stat-card"><div class="stat-icon"><i class="fas ${icon}" style="-webkit-text-fill-color:#e94560;color:#e94560"></i></div><div class="stat-label">${label}</div><div class="stat-value" style="color:#e94560">${val}</div></div>`;
+let myWorkData = {};
+
+function sc(icon, label, val, key) {
+  return `<div class="stat-card" style="cursor:pointer" onclick="showWorkDetail('${key}')"><div class="stat-icon"><i class="fas ${icon}" style="-webkit-text-fill-color:#e94560;color:#e94560"></i></div><div class="stat-label">${label}</div><div class="stat-value" style="color:#e94560">${val}</div><div style="font-size:11px;color:#a78bfa;margin-top:4px">Click for details →</div></div>`;
 }
+
+window.showWorkDetail = function(key) {
+  const titles = { jobs:'Jobs Approved', contacts:'Contacts Approved', resumes:'Resumes Approved', memberships:'Memberships Approved' };
+  document.getElementById('workDetailTitle').innerHTML = `<i class="fas fa-tasks" style="-webkit-text-fill-color:#e94560"></i> ${titles[key]||key}`;
+  const data = myWorkData[key] || [];
+  let html = '';
+  if (!data.length) {
+    html = '<div style="text-align:center;color:var(--gray);padding:30px">No records yet.</div>';
+  } else if (key === 'jobs') {
+    html = `<div class="table-wrapper" style="margin:0"><table>
+      <thead><tr><th>Position</th><th>Company</th><th>Location</th><th>Date</th><th>Status</th></tr></thead>
+      <tbody>${data.map(j => `<tr>
+        <td>${j.position||j.title||'N/A'}</td><td>${j.companyName||'N/A'}</td><td>${j.location||''}, ${j.state||''}</td>
+        <td>${j.approvedAt?.toDate?.()?.toLocaleDateString()||j.createdAt?.toDate?.()?.toLocaleDateString()||'N/A'}</td>
+        <td><span class="badge badge-${j.status==='live'?'live':'pending'}">${j.status}</span></td>
+      </tr>`).join('')}</tbody></table></div>`;
+  } else if (key === 'memberships') {
+    html = `<div class="table-wrapper" style="margin:0"><table>
+      <thead><tr><th>User</th><th>Email</th><th>Amount</th><th>UTR</th><th>Date</th></tr></thead>
+      <tbody>${data.map(r => `<tr>
+        <td>${r.userName||'N/A'}</td><td>${r.requesterEmail||'N/A'}</td>
+        <td>₹${r.amount||499}</td><td style="font-size:11px;color:#a78bfa">${r.utr||'N/A'}</td>
+        <td>${r.approvedAt?.toDate?.()?.toLocaleDateString()||r.createdAt?.toDate?.()?.toLocaleDateString()||'N/A'}</td>
+      </tr>`).join('')}</tbody></table></div>`;
+  } else {
+    html = `<div class="table-wrapper" style="margin:0"><table>
+      <thead><tr><th>Requester</th><th>Candidate / Job</th><th>Date</th><th>Status</th></tr></thead>
+      <tbody>${data.map(r => `<tr>
+        <td>${r.requesterEmail||'N/A'}</td><td>${r.candidateName||r.jobTitle||'N/A'}</td>
+        <td>${r.approvedAt?.toDate?.()?.toLocaleDateString()||r.createdAt?.toDate?.()?.toLocaleDateString()||'N/A'}</td>
+        <td><span class="badge badge-approved">${r.status}</span></td>
+      </tr>`).join('')}</tbody></table></div>`;
+  }
+  document.getElementById('workDetailContent').innerHTML = html;
+  document.getElementById('workDetailModal').classList.add('active');
+};
 
 async function loadRequests(type, bodyId) {
   try {
@@ -433,20 +490,37 @@ window.deleteJob = async function(id) {
 onAuthStateChanged(auth, async (user) => {
   if (!user) { window.location.href = 'index.html'; return; }
   currentUser = user;
-  const snap = await getDoc(doc(db, 'users', user.uid));
-  if (!snap.exists()) { window.location.href = 'index.html'; return; }
-  adminData = snap.data();
-  if (adminData.role !== 'Admin') { window.location.href = 'index.html'; return; }
-  document.getElementById('adminNameEl').textContent = user.displayName || user.email;
-  document.getElementById('loader').style.display = 'none';
-  // Check MPIN
-  const mpinSnap = await getDoc(doc(db, 'mpins', user.uid));
-  if (!mpinSnap.exists() || !mpinSnap.data().mpin) {
-    document.getElementById('mpinScreen').style.display = 'none';
-    document.getElementById('mainDashboard').style.display = 'block';
-    setupAuthority(); loadDashboard();
-  } else {
+  try {
+    const snap = await getDoc(doc(db, 'users', user.uid));
+    if (!snap.exists()) { window.location.href = 'index.html'; return; }
+    adminData = snap.data();
+    if (adminData.role !== 'Admin') { window.location.href = 'index.html'; return; }
+    document.getElementById('adminNameEl').textContent = user.displayName || user.email;
+    document.getElementById('loader').style.display = 'none';
+    // Check MPIN
+    let mpinSet = false;
+    try {
+      const mpinSnap = await getDoc(doc(db, 'mpins', user.uid));
+      mpinSet = mpinSnap.exists() && !!mpinSnap.data().mpin;
+    } catch(e) { mpinSet = false; }
+    if (!mpinSet) {
+      // MPIN not set by owner – block access with alert
+      document.getElementById('mpinScreen').style.display = 'block';
+      const alertEl = document.getElementById('mpinAlert');
+      alertEl.textContent = '⚠️ Your MPIN has not been set yet. Please contact the Owner/Management to set your access MPIN.';
+      alertEl.className = 'alert alert-danger show';
+      document.getElementById('mpinSubmitBtn').disabled = true;
+      document.getElementById('mpinSubmitBtn').style.opacity = '0.5';
+      document.querySelectorAll('.mpin-input').forEach(i => i.disabled = true);
+    } else {
+      document.getElementById('mpinScreen').style.display = 'block';
+    }
+  } catch(e) {
+    document.getElementById('loader').style.display = 'none';
     document.getElementById('mpinScreen').style.display = 'block';
+    const alertEl = document.getElementById('mpinAlert');
+    alertEl.textContent = '⚠️ Connection error. Please try again.';
+    alertEl.className = 'alert alert-danger show';
   }
 });
 

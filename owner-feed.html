@@ -189,8 +189,8 @@
         <div class="section-title"><i class="fas fa-crown"></i> Membership Requests</div>
         <div class="table-wrapper">
           <table>
-            <thead><tr><th>User</th><th>Email</th><th>Requested On</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead>
-            <tbody id="membershipReqsBody"><tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
+            <thead><tr><th>User</th><th>Email</th><th>Requested On</th><th>Amount</th><th>UTR / TxnID</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="membershipReqsBody"><tr><td colspan="7" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -253,6 +253,30 @@
       </div>
 
     </div>
+  </div>
+</div>
+
+<!-- REVENUE DETAIL MODAL -->
+<div class="modal-overlay" id="revenueDetailModal">
+  <div class="modal-box" style="max-width:750px;max-height:85vh;overflow-y:auto">
+    <div class="modal-header">
+      <div class="modal-title" id="revenueDetailTitle"><i class="fas fa-chart-bar"></i> Details</div>
+      <button class="modal-close" onclick="closeModal('revenueDetailModal')">&times;</button>
+    </div>
+    <div id="revenueDetailContent" style="margin-top:16px">
+      <div style="text-align:center;color:var(--gray);padding:30px"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+    </div>
+  </div>
+</div>
+
+<!-- CANDIDATE DETAIL MODAL -->
+<div class="modal-overlay" id="candidateDetailModal">
+  <div class="modal-box" style="max-width:600px">
+    <div class="modal-header">
+      <div class="modal-title"><i class="fas fa-user-graduate"></i> Candidate Details</div>
+      <button class="modal-close" onclick="closeModal('candidateDetailModal')">&times;</button>
+    </div>
+    <div id="candidateDetailContent" style="margin-top:16px"></div>
   </div>
 </div>
 
@@ -490,20 +514,23 @@ async function loadRevenue() {
 
     const totalRevenue = primeUsers * 499;
 
+    // Store raw data for detail modals
+    revenueRawData = { users, apps, jobs, reqs };
+
     document.getElementById('revenueStats').innerHTML = `
-      ${statCard('fa-users','Total Users', totalUsers,'All registered users')}
-      ${statCard('fa-user','Normal Users', normalUsers,'Free tier users')}
-      ${statCard('fa-crown','Prime Members', primeUsers,'Active memberships')}
-      ${statCard('fa-user-shield','Admins', admins,'System admins')}
-      ${statCard('fa-rupee-sign','Total Revenue', '₹'+totalRevenue.toLocaleString(),'From memberships')}
-      ${statCard('fa-paper-plane','Total Applications', totalApps,'Job applications')}
-      ${statCard('fa-briefcase','Live Jobs', liveJobs,'Active job posts')}
+      ${statCard('fa-users','Total Users', totalUsers,'All registered users','totalUsers')}
+      ${statCard('fa-user','Normal Users', normalUsers,'Free tier users','normalUsers')}
+      ${statCard('fa-crown','Prime Members', primeUsers,'Active memberships','primeUsers')}
+      ${statCard('fa-user-shield','Admins', admins,'System admins','admins')}
+      ${statCard('fa-rupee-sign','Total Revenue', '₹'+totalRevenue.toLocaleString(),'From memberships','revenue')}
+      ${statCard('fa-paper-plane','Total Applications', totalApps,'Job applications','totalApps')}
+      ${statCard('fa-briefcase','Live Jobs', liveJobs,'Active job posts','liveJobs')}
       ${statCard('fa-building','Job Posters', totalPosters,'Unique employers')}
-      ${statCard('fa-check-circle','Hired Candidates', hiredCount,'Successfully placed')}
-      ${statCard('fa-clock','Pending Candidates', pendingCount,'Awaiting review')}
-      ${statCard('fa-link','Connect Approved', approvedConnect,'Employer connections')}
-      ${statCard('fa-file-download','Resume Approved', approvedResume,'Resume downloads')}
-      ${statCard('fa-phone','Contact Approved', approvedContact,'Contact reveals')}`;
+      ${statCard('fa-check-circle','Hired Candidates', hiredCount,'Successfully placed','hiredCount')}
+      ${statCard('fa-clock','Pending Candidates', pendingCount,'Awaiting review','pendingCount')}
+      ${statCard('fa-link','Connect Approved', approvedConnect,'Employer connections','approvedConnect')}
+      ${statCard('fa-file-download','Resume Approved', approvedResume,'Resume downloads','approvedResume')}
+      ${statCard('fa-phone','Contact Approved', approvedContact,'Contact reveals','approvedContact')}`;
 
     // Average stats
     const days = 30;
@@ -520,9 +547,86 @@ async function loadRevenue() {
   }
 }
 
-function statCard(icon, label, value, sub) {
-  return `<div class="stat-card"><div class="stat-icon"><i class="fas ${icon}"></i></div><div class="stat-label">${label}</div><div class="stat-value">${value}</div><div class="stat-sub">${sub}</div></div>`;
+function statCard(icon, label, value, sub, key) {
+  const clickable = key ? `style="cursor:pointer" onclick="showRevenueDetail('${key}')"` : '';
+  const hint = key ? `<div style="font-size:11px;color:var(--gold-dark);margin-top:2px">Click for details →</div>` : '';
+  return `<div class="stat-card" ${clickable}><div class="stat-icon"><i class="fas ${icon}"></i></div><div class="stat-label">${label}</div><div class="stat-value">${value}</div><div class="stat-sub">${sub}</div>${hint}</div>`;
 }
+
+let revenueRawData = {};
+
+window.showRevenueDetail = async function(key) {
+  document.getElementById('revenueDetailModal').classList.add('active');
+  document.getElementById('revenueDetailContent').innerHTML = '<div style="text-align:center;color:var(--gray);padding:30px"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+  const titles = {
+    totalUsers:'All Registered Users', normalUsers:'Normal (Free) Users', primeUsers:'Prime Members',
+    admins:'Admins', revenue:'Revenue Breakdown', totalApps:'All Applications',
+    liveJobs:'Live Job Posts', hiredCount:'Hired Candidates', pendingCount:'Pending Candidates',
+    approvedConnect:'Approved Employer Connections', approvedResume:'Approved Resume Downloads', approvedContact:'Approved Contacts'
+  };
+  document.getElementById('revenueDetailTitle').innerHTML = `<i class="fas fa-chart-bar"></i> ${titles[key]||key}`;
+  const d = revenueRawData;
+  let html = '';
+  if (key === 'totalUsers' || key === 'normalUsers' || key === 'primeUsers' || key === 'admins') {
+    let list = d.users||[];
+    if (key === 'normalUsers') list = list.filter(u => u.role === 'User');
+    if (key === 'primeUsers') list = list.filter(u => u.role === 'Prime');
+    if (key === 'admins') list = list.filter(u => u.role === 'Admin');
+    html = `<div class="table-wrapper" style="margin:0"><table>
+      <thead><tr><th>Name</th><th>Email</th><th>Role / Tag</th><th>Joined</th><th>Membership#</th></tr></thead>
+      <tbody>${list.map(u=>`<tr>
+        <td>${u.displayName||'N/A'}</td><td>${u.email}</td>
+        <td><span class="badge badge-${u.role==='Prime'?'approved':u.role==='Admin'?'rejected':'pending'}">${u.tag||u.role}</span></td>
+        <td>${u.createdAt?.toDate?.()?.toLocaleDateString()||'N/A'}</td>
+        <td>${u.membershipCount||0}x</td>
+      </tr>`).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--gray)">No records</td></tr>'}</tbody></table></div>`;
+  } else if (key === 'revenue') {
+    const prime = (d.users||[]).filter(u => u.role === 'Prime');
+    html = `<div style="margin-bottom:16px"><div style="font-size:20px;font-weight:800;color:var(--gold)">Total Revenue: ₹${(prime.length*499).toLocaleString()}</div><div style="font-size:13px;color:var(--gray)">${prime.length} Prime memberships × ₹499</div></div>
+      <div class="table-wrapper" style="margin:0"><table>
+        <thead><tr><th>Member Name</th><th>Email</th><th>Tag</th><th>Membership Count</th><th>Expiry</th></tr></thead>
+        <tbody>${prime.map(u=>`<tr>
+          <td>${u.displayName||'N/A'}</td><td>${u.email}</td>
+          <td><span class="badge badge-approved">${u.tag||'Prime'}</span></td>
+          <td>${u.membershipCount||1}x</td>
+          <td>${u.membershipExpiryAt?.toDate?.()?.toLocaleDateString()||'N/A'}</td>
+        </tr>`).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--gray)">No Prime members yet</td></tr>'}</tbody></table></div>`;
+  } else if (key === 'totalApps' || key === 'hiredCount' || key === 'pendingCount') {
+    let list = d.apps||[];
+    if (key === 'hiredCount') list = list.filter(a => a.status === 'Hired');
+    if (key === 'pendingCount') list = list.filter(a => a.status === 'Pending');
+    html = `<div class="table-wrapper" style="margin:0"><table>
+      <thead><tr><th>Candidate</th><th>Email</th><th>Job</th><th>Applied</th><th>Status</th></tr></thead>
+      <tbody>${list.map(a=>`<tr>
+        <td>${a.userName||'N/A'}</td><td>${a.userEmail}</td>
+        <td>${a.jobTitle||'N/A'}</td>
+        <td>${a.appliedAt?.toDate?.()?.toLocaleDateString()||'N/A'}</td>
+        <td><span class="badge badge-${a.status==='Hired'?'hired':a.status==='Rejected'?'rejected':'pending'}">${a.status}</span></td>
+      </tr>`).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--gray)">No records</td></tr>'}</tbody></table></div>`;
+  } else if (key === 'liveJobs') {
+    const list = (d.jobs||[]).filter(j=>j.status==='live');
+    html = `<div class="table-wrapper" style="margin:0"><table>
+      <thead><tr><th>Position</th><th>Company</th><th>Location</th><th>Salary</th><th>Vacancy</th></tr></thead>
+      <tbody>${list.map(j=>`<tr>
+        <td>${j.position||j.title||'N/A'}</td><td>${j.companyName||'N/A'}</td>
+        <td>${j.location||''}, ${j.state||''}</td>
+        <td>${j.salaryText||j.salary||'N/A'}</td><td>${j.vacancy||'N/A'}</td>
+      </tr>`).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--gray)">No live jobs</td></tr>'}</tbody></table></div>`;
+  } else if (key === 'approvedConnect' || key === 'approvedResume' || key === 'approvedContact') {
+    const typeMap = {approvedConnect:'employerConnect',approvedResume:'resumeDownload',approvedContact:'contact'};
+    const list = (d.reqs||[]).filter(r => r.type===typeMap[key] && r.status==='approved');
+    html = `<div class="table-wrapper" style="margin:0"><table>
+      <thead><tr><th>Requester</th><th>Target</th><th>Approved On</th></tr></thead>
+      <tbody>${list.map(r=>`<tr>
+        <td>${r.requesterEmail||'N/A'}</td>
+        <td>${r.candidateName||r.jobTitle||'N/A'}</td>
+        <td>${r.approvedAt?.toDate?.()?.toLocaleDateString()||'N/A'}</td>
+      </tr>`).join('')||'<tr><td colspan="3" style="text-align:center;color:var(--gray)">No records</td></tr>'}</tbody></table></div>`;
+  } else {
+    html = '<div style="text-align:center;color:var(--gray);padding:30px">No detailed data available.</div>';
+  }
+  document.getElementById('revenueDetailContent').innerHTML = html;
+};
 
 // USERS
 async function loadUsers() {
@@ -746,19 +850,22 @@ async function loadCandidates() {
     const snap = await getDocs(collection(db, 'applications'));
     const tbody = document.getElementById('candidatesBody');
     if (snap.empty) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--gray);padding:20px">No candidates yet</td></tr>'; return; }
-    tbody.innerHTML = snap.docs.map(d => {
-      const a = d.data();
+    const candidatesRaw = snap.docs.map(d => ({id:d.id,...d.data()}));
+    tbody.innerHTML = candidatesRaw.map(a => {
       return `<tr>
-        <td>${a.userName}</td><td>${a.userEmail}</td><td>${a.phone}</td>
-        <td>${a.jobTitle||'N/A'}</td><td>${a.experience}</td><td>${a.noticePeriod}</td>
+        <td style="cursor:pointer;color:var(--gold)" onclick="viewCandidateDetail('${a.id}')">${a.userName}</td>
+        <td>${a.userEmail}</td><td>${a.phone}</td>
+        <td>${a.jobTitle||'N/A'}</td><td>${a.experience||'N/A'}</td><td>${a.noticePeriod||'N/A'}</td>
         <td><span class="badge badge-${a.status==='Hired'?'hired':a.status==='Rejected'?'rejected':'pending'}">${a.status}</span></td>
-        <td>
-          <button class="btn btn-sm btn-success" onclick="updateCandidateStatus('${d.id}','Hired')">Hire</button>
-          <button class="btn btn-sm btn-danger" onclick="updateCandidateStatus('${d.id}','Rejected')">Reject</button>
-          ${a.cvUrl?`<a href="${a.cvUrl}" target="_blank" class="btn btn-sm btn-info"><i class="fas fa-file"></i></a>`:''}
+        <td style="white-space:nowrap">
+          <button class="btn btn-sm btn-info" onclick="viewCandidateDetail('${a.id}')"><i class="fas fa-eye"></i> Details</button>
+          <button class="btn btn-sm btn-success" onclick="updateCandidateStatus('${a.id}','Hired')">Hire</button>
+          <button class="btn btn-sm btn-danger" onclick="updateCandidateStatus('${a.id}','Rejected')">Reject</button>
+          ${a.cvUrl?`<a href="${a.cvUrl}" download target="_blank" class="btn btn-sm" style="background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff"><i class="fas fa-download"></i> Resume</a>`:'<span style="font-size:11px;color:var(--gray)">No CV</span>'}
         </td>
       </tr>`;
     }).join('');
+    window._candidatesRaw = candidatesRaw;
   } catch(e) {}
 }
 
@@ -766,6 +873,41 @@ window.updateCandidateStatus = async function(id, status) {
   await updateDoc(doc(db, 'applications', id), { status, updatedAt: serverTimestamp(), hiredBy: currentUser.uid });
   showToast(`Candidate status updated to ${status}`);
   loadCandidates();
+};
+
+window.viewCandidateDetail = function(id) {
+  const a = (window._candidatesRaw||[]).find(c => c.id === id);
+  if (!a) return;
+  document.getElementById('candidateDetailContent').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px;margin-bottom:20px">
+      <div><span style="color:var(--gray)">Name:</span> <strong>${a.userName||'N/A'}</strong></div>
+      <div><span style="color:var(--gray)">Email:</span> ${a.userEmail||'N/A'}</div>
+      <div><span style="color:var(--gray)">Phone:</span> ${a.phone||'N/A'}</div>
+      <div><span style="color:var(--gray)">Job Applied:</span> ${a.jobTitle||'N/A'}</div>
+      <div><span style="color:var(--gray)">Experience:</span> ${a.experience||'N/A'}</div>
+      <div><span style="color:var(--gray)">Work Status:</span> ${a.workStatus||'N/A'}</div>
+      <div><span style="color:var(--gray)">Organisation:</span> ${a.organisation||'N/A'}</div>
+      <div><span style="color:var(--gray)">Current CTC:</span> ${a.currentCTC||'N/A'}</div>
+      <div><span style="color:var(--gray)">Expected CTC:</span> ${a.expectedCTC||'N/A'}</div>
+      <div><span style="color:var(--gray)">Notice Period:</span> ${a.noticePeriod||'N/A'}</div>
+      <div><span style="color:var(--gray)">Address:</span> ${a.address1||''}${a.address2?' / '+a.address2:''}</div>
+      <div><span style="color:var(--gray)">Pincode:</span> ${a.pincode||'N/A'}</div>
+      <div><span style="color:var(--gray)">Applied On:</span> ${a.appliedAt?.toDate?.()?.toLocaleDateString()||'N/A'}</div>
+      <div><span style="color:var(--gray)">Status:</span> <span class="badge badge-${a.status==='Hired'?'hired':a.status==='Rejected'?'rejected':'pending'}">${a.status}</span></div>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:16px">
+      ${a.cvUrl ? `
+        <a href="${a.cvUrl}" download target="_blank" class="btn" style="background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff">
+          <i class="fas fa-download"></i> Download Resume / CV
+        </a>
+        <a href="${a.cvUrl}" target="_blank" class="btn btn-outline"><i class="fas fa-eye"></i> View CV</a>
+      ` : '<div style="color:var(--gray);font-size:13px"><i class="fas fa-file-times"></i> No CV uploaded by candidate</div>'}
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
+      <button class="btn btn-sm btn-success" onclick="updateCandidateStatus('${a.id}','Hired');closeModal('candidateDetailModal')"><i class="fas fa-check"></i> Mark Hired</button>
+      <button class="btn btn-sm btn-danger" onclick="updateCandidateStatus('${a.id}','Rejected');closeModal('candidateDetailModal')"><i class="fas fa-times"></i> Reject</button>
+    </div>`;
+  document.getElementById('candidateDetailModal').classList.add('active');
 };
 
 // GENERIC REQUESTS
@@ -808,13 +950,14 @@ async function loadMembershipReqs() {
   try {
     const snap = await getDocs(query(collection(db, 'requests'), where('type','==','membership')));
     const tbody = document.getElementById('membershipReqsBody');
-    if (snap.empty) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">No membership requests</td></tr>'; return; }
+    if (snap.empty) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--gray);padding:20px">No membership requests</td></tr>'; return; }
     tbody.innerHTML = snap.docs.map(d => {
       const r = d.data();
       return `<tr>
         <td>${r.userName||'N/A'}</td><td>${r.requesterEmail}</td>
         <td>${r.createdAt?.toDate?.()?.toLocaleDateString()||'N/A'}</td>
         <td>₹${r.amount||499}</td>
+        <td style="font-size:11px;color:#a78bfa;font-weight:600">${r.utr||'—'}</td>
         <td><span class="badge badge-${r.status==='approved'?'approved':r.status==='rejected'?'rejected':'pending'}">${r.status}</span></td>
         <td>
           ${r.status==='pending'?`
