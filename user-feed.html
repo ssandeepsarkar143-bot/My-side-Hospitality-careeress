@@ -57,10 +57,16 @@
     </div>
     <div id="findActivity" style="display:none">
       <div class="locked-section">
-        <table style="width:100%;font-size:13px">
+        <div style="font-size:13px;font-weight:700;color:var(--gold);margin-bottom:8px"><i class="fas fa-paper-plane"></i> My Job Applications</div>
+        <table style="width:100%;font-size:13px;margin-bottom:16px">
           <thead><tr><th>Job Title</th><th>Applied On</th><th>Status</th><th>Employer Contact</th></tr></thead>
           <tbody id="myApplicationsTbody"><tr><td colspan="4" style="text-align:center;color:var(--gray);padding:20px">No applications yet</td></tr></tbody>
         </table>
+        <!-- Membership History -->
+        <div style="font-size:13px;font-weight:700;color:var(--gold);margin-bottom:8px;margin-top:16px;border-top:1px solid rgba(255,255,255,0.08);padding-top:12px"><i class="fas fa-crown"></i> Membership Purchase History</div>
+        <div id="membershipHistoryEl" style="font-size:13px;color:rgba(255,255,255,0.7)">
+          <div style="color:var(--gray);padding:12px 0">Loading...</div>
+        </div>
         <!-- Employer Request - LOCKED for User -->
         <div style="margin-top:16px">
           <button class="btn btn-outline btn-sm" style="filter:blur(2px);cursor:not-allowed" onclick="redirectMembership()">
@@ -225,9 +231,10 @@
       </div>
       <div class="form-group">
         <label>Upload CV * (JPG, DOC, DOCX, PDF, PNG)</label>
-        <input type="file" id="applyCv" class="form-control" accept=".jpg,.jpeg,.png,.doc,.docx,.pdf" required/>
+        <input type="file" id="applyCv" class="form-control" accept=".jpg,.jpeg,.png,.doc,.docx,.pdf" required onchange="handleCvSelect(this)"/>
+        <div id="cvUploadStatus" style="margin-top:6px;font-size:12px;display:none"></div>
       </div>
-      <button type="submit" class="btn btn-primary w-full"><i class="fas fa-paper-plane"></i> Submit Application</button>
+      <button type="submit" id="applySubmitBtn" class="btn btn-primary w-full"><i class="fas fa-paper-plane"></i> Submit Application</button>
     </form>
   </div>
 </div>
@@ -269,6 +276,8 @@ const storage = getStorage(app);
 let currentUser = null, allJobs = [], filteredJobs = [], currentPage = 1;
 const JOBS_PER_PAGE = 10;
 let selectedJobId = null;
+let uploadedCvUrl = null;
+let cvUploading = false;
 
 // PREDEFINED JOBS
 const predefinedJobs = [
@@ -415,13 +424,47 @@ window.goPage = function(p) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
+window.handleCvSelect = async function(input) {
+  const file = input.files[0];
+  if (!file || !currentUser) return;
+  const statusEl = document.getElementById('cvUploadStatus');
+  const submitBtn = document.getElementById('applySubmitBtn');
+  statusEl.style.display = 'block';
+  statusEl.innerHTML = '<i class="fas fa-spinner fa-spin" style="color:#f59e0b"></i> <span style="color:#f59e0b">Uploading CV... please wait</span>';
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading CV...';
+  cvUploading = true;
+  uploadedCvUrl = null;
+  try {
+    const cvRef = ref(storage, `cvs/${currentUser.uid}/${Date.now()}_${file.name}`);
+    const snap = await uploadBytes(cvRef, file);
+    uploadedCvUrl = await getDownloadURL(snap.ref);
+    statusEl.innerHTML = '<i class="fas fa-check-circle" style="color:#22c55e"></i> <span style="color:#22c55e">CV uploaded successfully! Ready to submit.</span>';
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Application';
+    cvUploading = false;
+  } catch(e) {
+    statusEl.innerHTML = '<i class="fas fa-exclamation-circle" style="color:#ef4444"></i> <span style="color:#ef4444">Upload failed. Please try again.</span>';
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Application';
+    cvUploading = false;
+    uploadedCvUrl = null;
+  }
+};
+
 window.openApply = function(jobId, jobTitle) {
   selectedJobId = jobId;
+  uploadedCvUrl = null;
+  cvUploading = false;
   document.getElementById('applyJobTitle').textContent = 'Applying for: ' + jobTitle;
   if (currentUser) {
     document.getElementById('applyEmail').value = currentUser.email || '';
     document.getElementById('applyName').value = currentUser.displayName || '';
   }
+  const statusEl = document.getElementById('cvUploadStatus');
+  if (statusEl) statusEl.style.display = 'none';
+  const btn = document.getElementById('applySubmitBtn');
+  if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Application'; }
   document.getElementById('applyModal').classList.add('active');
 };
 
@@ -442,16 +485,12 @@ document.getElementById('applyForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const cvFile = document.getElementById('applyCv').files[0];
   if (!cvFile) { showApplyAlert('Please upload your CV.'); return; }
-  const btn = e.target.querySelector('button[type="submit"]');
+  if (cvUploading) { showApplyAlert('CV is still uploading. Please wait...'); return; }
+  if (!uploadedCvUrl) { showApplyAlert('Please wait for CV upload to complete before submitting.'); return; }
+  const btn = document.getElementById('applySubmitBtn');
   btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
   btn.disabled = true;
   try {
-    let cvUrl = '';
-    if (cvFile) {
-      const cvRef = ref(storage, `cvs/${currentUser.uid}/${Date.now()}_${cvFile.name}`);
-      const snap = await uploadBytes(cvRef, cvFile);
-      cvUrl = await getDownloadURL(snap.ref);
-    }
     const job = allJobs.find(j => j.id === selectedJobId);
     await addDoc(collection(db, 'applications'), {
       userId: currentUser.uid,
@@ -468,7 +507,7 @@ document.getElementById('applyForm').addEventListener('submit', async (e) => {
       currentCTC: document.getElementById('applyCTC').value,
       expectedCTC: document.getElementById('applyExpCTC').value,
       noticePeriod: document.getElementById('applyNotice').value,
-      cvUrl,
+      cvUrl: uploadedCvUrl,
       jobId: selectedJobId,
       jobTitle: job ? job.title : '',
       status: 'Pending',
@@ -476,12 +515,13 @@ document.getElementById('applyForm').addEventListener('submit', async (e) => {
     });
     closeApply();
     showToast('Application submitted successfully!');
+    uploadedCvUrl = null;
     loadMyApplications();
   } catch(err) {
     showApplyAlert('Submission failed. Please try again. ' + err.message);
+    btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Application';
+    btn.disabled = false;
   }
-  btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Application';
-  btn.disabled = false;
 });
 
 function showApplyAlert(msg) {
@@ -507,6 +547,36 @@ async function loadMyApplications() {
       </tr>`;
     }).join('');
   } catch(e) {}
+}
+
+async function loadMembershipHistory() {
+  if (!currentUser) return;
+  const el = document.getElementById('membershipHistoryEl');
+  if (!el) return;
+  try {
+    const q = query(collection(db, 'requests'), where('requesterId','==',currentUser.uid), where('type','==','membership'));
+    const snap = await getDocs(q);
+    if (snap.empty) {
+      el.innerHTML = '<div style="color:var(--gray);padding:8px 0">No membership purchases yet. <a href="membership.html" style="color:var(--gold)">Upgrade to Prime →</a></div>';
+      return;
+    }
+    el.innerHTML = `<table style="width:100%;font-size:12px">
+      <thead><tr><th>#</th><th>Date</th><th>Amount</th><th>UTR</th><th>Status</th><th>Tag</th></tr></thead>
+      <tbody>${snap.docs.map((d,i) => {
+        const r = d.data();
+        const tag = i === 0 ? 'Prime' : `Prime${i+1}`;
+        return `<tr>
+          <td>${i+1}</td>
+          <td>${r.createdAt?.toDate?.()?.toLocaleDateString()||'N/A'}</td>
+          <td>₹${r.amount||499}</td>
+          <td style="color:#a78bfa;font-size:11px">${r.utr||'N/A'}</td>
+          <td><span class="badge badge-${r.status==='approved'?'approved':r.status==='rejected'?'rejected':'pending'}">${r.status}</span></td>
+          <td><span class="badge badge-approved">${tag}</span></td>
+        </tr>`;
+      }).join('')}</tbody></table>`;
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--gray);padding:8px 0">Could not load history.</div>';
+  }
 }
 
 async function loadMyPosts() {
@@ -564,6 +634,7 @@ onAuthStateChanged(auth, async (user) => {
   loadJobs();
   loadMyApplications();
   loadMyPosts();
+  loadMembershipHistory();
 });
 
 document.querySelectorAll('.modal-overlay').forEach(el => {

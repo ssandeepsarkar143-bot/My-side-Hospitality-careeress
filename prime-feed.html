@@ -208,9 +208,10 @@ body { background: linear-gradient(135deg, #0d0d2b, #1a1a4e); }
       </div>
       <div class="form-group">
         <label>Upload CV * (JPG, DOC, PDF, PNG)</label>
-        <input type="file" id="pApplyCv" class="form-control" accept=".jpg,.jpeg,.png,.doc,.docx,.pdf" required/>
+        <input type="file" id="pApplyCv" class="form-control" accept=".jpg,.jpeg,.png,.doc,.docx,.pdf" required onchange="handlePrimeCvSelect(this)"/>
+        <div id="pCvUploadStatus" style="margin-top:6px;font-size:12px;display:none"></div>
       </div>
-      <button type="submit" class="btn w-full" style="background:linear-gradient(135deg,#a78bfa,#6c63ff);color:#fff"><i class="fas fa-paper-plane"></i> Submit Application</button>
+      <button type="submit" id="primeApplySubmitBtn" class="btn w-full" style="background:linear-gradient(135deg,#a78bfa,#6c63ff);color:#fff"><i class="fas fa-paper-plane"></i> Submit Application</button>
     </form>
   </div>
 </div>
@@ -263,6 +264,8 @@ const storage = getStorage(app);
 let currentUser = null, userData = null, allJobs = [], filteredJobs = [], currentPage = 1;
 const JOBS_PER_PAGE = 10;
 let selectedJobId = null;
+let primeUploadedCvUrl = null;
+let primeCvUploading = false;
 
 const predefinedJobs = [
   { id:'j1', title:'F&B Service Associate', department:'fnb', location:'Mumbai', state:'Maharashtra', salary:12000, vacancy:4, experience:'0–1 Years', description:'Responsible for food and beverage service in restaurant.' },
@@ -397,13 +400,44 @@ window.pGoPage = function(p) {
   renderPrimeJobs();
 };
 
+window.handlePrimeCvSelect = async function(input) {
+  const file = input.files[0];
+  if (!file || !currentUser) return;
+  const statusEl = document.getElementById('pCvUploadStatus');
+  const submitBtn = document.getElementById('primeApplySubmitBtn');
+  statusEl.style.display = 'block';
+  statusEl.innerHTML = '<i class="fas fa-spinner fa-spin" style="color:#f59e0b"></i> <span style="color:#f59e0b">Uploading CV... please wait</span>';
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading CV...';
+  primeCvUploading = true; primeUploadedCvUrl = null;
+  try {
+    const cvRef = ref(storage, `cvs/${currentUser.uid}/${Date.now()}_${file.name}`);
+    const snap = await uploadBytes(cvRef, file);
+    primeUploadedCvUrl = await getDownloadURL(snap.ref);
+    statusEl.innerHTML = '<i class="fas fa-check-circle" style="color:#22c55e"></i> <span style="color:#22c55e">CV uploaded! Ready to submit.</span>';
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Application';
+    primeCvUploading = false;
+  } catch(e) {
+    statusEl.innerHTML = '<i class="fas fa-exclamation-circle" style="color:#ef4444"></i> <span style="color:#ef4444">Upload failed. Please try again.</span>';
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Application';
+    primeCvUploading = false; primeUploadedCvUrl = null;
+  }
+};
+
 window.openPrimeApply = function(jobId, jobTitle) {
   selectedJobId = jobId;
+  primeUploadedCvUrl = null; primeCvUploading = false;
   document.getElementById('primeApplyJobTitle').textContent = 'Applying for: ' + jobTitle;
   if (currentUser) {
     document.getElementById('pApplyEmail').value = currentUser.email || '';
     document.getElementById('pApplyName').value = userData?.displayName || currentUser.displayName || '';
   }
+  const statusEl = document.getElementById('pCvUploadStatus');
+  if (statusEl) statusEl.style.display = 'none';
+  const btn = document.getElementById('primeApplySubmitBtn');
+  if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Application'; }
   document.getElementById('primeApplyModal').classList.add('active');
 };
 
@@ -422,12 +456,11 @@ document.getElementById('primeApplyForm').addEventListener('submit', async (e) =
   e.preventDefault();
   const cvFile = document.getElementById('pApplyCv').files[0];
   if (!cvFile) { showPrimeApplyAlert('Please upload your CV.'); return; }
-  const btn = e.target.querySelector('[type="submit"]');
+  if (primeCvUploading) { showPrimeApplyAlert('CV is still uploading. Please wait...'); return; }
+  if (!primeUploadedCvUrl) { showPrimeApplyAlert('Please wait for CV upload to complete.'); return; }
+  const btn = document.getElementById('primeApplySubmitBtn');
   btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...'; btn.disabled = true;
   try {
-    const cvRef = ref(storage, `cvs/${currentUser.uid}/${Date.now()}_${cvFile.name}`);
-    const snap = await uploadBytes(cvRef, cvFile);
-    const cvUrl = await getDownloadURL(snap.ref);
     const job = allJobs.find(j => j.id === selectedJobId);
     await addDoc(collection(db, 'applications'), {
       userId: currentUser.uid, userEmail: currentUser.email, userRole: 'Prime',
@@ -437,13 +470,16 @@ document.getElementById('primeApplyForm').addEventListener('submit', async (e) =
       experience: document.getElementById('pApplyExp').value, workStatus: document.getElementById('pApplyWorkStatus').value,
       organisation: document.getElementById('pApplyOrg').value, currentCTC: document.getElementById('pApplyCTC').value,
       expectedCTC: document.getElementById('pApplyExpCTC').value, noticePeriod: document.getElementById('pApplyNotice').value,
-      cvUrl, jobId: selectedJobId, jobTitle: job ? job.title : '', status: 'Pending', appliedAt: serverTimestamp()
+      cvUrl: primeUploadedCvUrl, jobId: selectedJobId, jobTitle: job ? job.title : '', status: 'Pending', appliedAt: serverTimestamp()
     });
     closePrimeApply();
     showToast('Application submitted successfully!');
+    primeUploadedCvUrl = null;
     loadPrimeApplications();
-  } catch(err) { showPrimeApplyAlert('Submission failed: ' + err.message); }
-  btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Application'; btn.disabled = false;
+  } catch(err) {
+    showPrimeApplyAlert('Submission failed: ' + err.message);
+    btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Application'; btn.disabled = false;
+  }
 });
 
 function showPrimeApplyAlert(msg) {
