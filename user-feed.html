@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Dashboard – Hospitality Careers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<link rel="stylesheet" href="css/styles.css"/>
+<style>
+.hire-hero-bg { background-image: url('https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=1600&q=80'); }
+.find-hero-bg { background-image: url('https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=1600&q=80'); }
+</style>
+</head>
+<body>
+<div id="loader"><div class="loader-ring"></div><div class="loader-text">Loading...</div></div>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="navbar-brand">
+    <img src="jogo.png" class="navbar-logo" onerror="this.style.display='none'" alt="Logo"/>
+    <div class="navbar-title">Hospitality Careers</div>
+  </div>
+  <div class="navbar-right">
+    <span class="user-tag tag-user" id="userTagEl">User</span>
+    <span class="tag-user-name" id="userNameEl"></span>
+    <button class="btn btn-sm btn-danger" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+  </div>
+</nav>
+
+<!-- MODE SLIDER -->
+<div style="padding:24px 24px 0">
+  <div class="mode-slider">
+    <button class="mode-btn active" id="findJobBtn" onclick="switchMode('find')"><i class="fas fa-search"></i> Find Job</button>
+    <button class="mode-btn" id="hireStaffBtn" onclick="switchMode('hire')"><i class="fas fa-users"></i> Hire Staff</button>
+  </div>
+</div>
+
+<!-- FIND JOB MODE -->
+<div id="findJobMode" style="padding:0 24px 32px">
+  <!-- Hero -->
+  <div class="feed-hero">
+    <div class="hero-slide active find-hero-bg" style="background-size:cover;background-position:center;position:absolute;inset:0;border-radius:20px"></div>
+    <div class="hero-overlay" style="border-radius:20px"></div>
+    <div class="feed-hero-content">
+      <div class="feed-hero-title">Find Your Dream Job</div>
+      <div class="feed-hero-sub">Explore top hospitality opportunities across India</div>
+    </div>
+  </div>
+
+  <!-- My Activity -->
+  <div class="card mb-16">
+    <div class="card-title" style="cursor:pointer" onclick="toggleActivity('findActivity')">
+      <i class="fas fa-chart-line"></i> My Activity
+      <i class="fas fa-chevron-down" id="findActivityArrow" style="margin-left:auto;font-size:12px;color:var(--gray)"></i>
+    </div>
+    <div id="findActivity" style="display:none">
+      <div class="locked-section">
+        <table style="width:100%;font-size:13px">
+          <thead><tr><th>Job Title</th><th>Applied On</th><th>Status</th><th>Employer Contact</th></tr></thead>
+          <tbody id="myApplicationsTbody"><tr><td colspan="4" style="text-align:center;color:var(--gray);padding:20px">No applications yet</td></tr></tbody>
+        </table>
+        <!-- Employer Request - LOCKED for User -->
+        <div style="margin-top:16px">
+          <button class="btn btn-outline btn-sm" style="filter:blur(2px);cursor:not-allowed" onclick="redirectMembership()">
+            <i class="fas fa-lock"></i> Connect Employer – Upgrade to Prime
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Job Search & Filter -->
+  <div class="filter-section">
+    <div style="font-size:14px;font-weight:700;color:var(--gold);margin-bottom:16px"><i class="fas fa-filter"></i> Search & Filter Jobs</div>
+    <div class="filter-grid">
+      <div class="form-group">
+        <label>Department</label>
+        <select id="filterDept" class="form-control" onchange="updatePositions()">
+          <option value="">All Departments</option>
+          <option value="fnb">F&B Service</option>
+          <option value="kitchen">Kitchen / Culinary</option>
+          <option value="housekeeping">Housekeeping</option>
+          <option value="frontoffice">Front Office</option>
+          <option value="security">Security</option>
+          <option value="spa">Spa & Wellness</option>
+          <option value="sales">Sales & Marketing</option>
+          <option value="hr">Human Resources</option>
+          <option value="accounts">Accounts & Finance</option>
+          <option value="engineering">Engineering & Maintenance</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Position</label>
+        <select id="filterPosition" class="form-control">
+          <option value="">All Positions</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>State</label>
+        <select id="filterState" class="form-control">
+          <option value="">All States</option>
+          <option>Andhra Pradesh</option><option>Assam</option><option>Bihar</option><option>Delhi</option>
+          <option>Goa</option><option>Gujarat</option><option>Haryana</option><option>Himachal Pradesh</option>
+          <option>Jharkhand</option><option>Karnataka</option><option>Kerala</option><option>Madhya Pradesh</option>
+          <option>Maharashtra</option><option>Odisha</option><option>Punjab</option><option>Rajasthan</option>
+          <option>Tamil Nadu</option><option>Telangana</option><option>Uttar Pradesh</option><option>Uttarakhand</option>
+          <option>West Bengal</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>City</label>
+        <input type="text" id="filterCity" class="form-control" placeholder="Enter city name"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Salary Range (₹ per month): <span id="salaryDisplay">₹0 – ₹50,000+</span></label>
+      <input type="range" id="salaryMin" min="0" max="50000" step="1000" value="0" oninput="updateSalary()"/>
+      <input type="range" id="salaryMax" min="0" max="50000" step="1000" value="50000" oninput="updateSalary()"/>
+    </div>
+    <button class="btn btn-primary" onclick="filterJobs()"><i class="fas fa-search"></i> Search Jobs</button>
+    <button class="btn btn-outline btn-sm" style="margin-left:8px" onclick="resetFilters()">Reset</button>
+  </div>
+
+  <!-- Job List -->
+  <div class="jobs-grid" id="jobsGrid"></div>
+  <div class="pagination" id="pagination"></div>
+</div>
+
+<!-- HIRE STAFF MODE -->
+<div id="hireStaffMode" style="display:none;padding:0 24px 32px">
+  <!-- Hero -->
+  <div class="feed-hero">
+    <div class="hero-slide active hire-hero-bg" style="background-size:cover;background-position:center;position:absolute;inset:0;border-radius:20px"></div>
+    <div class="hero-overlay" style="border-radius:20px"></div>
+    <div class="feed-hero-content">
+      <div class="feed-hero-title">Hire Top Talent</div>
+      <div class="feed-hero-sub">Find the best hospitality professionals for your property</div>
+    </div>
+  </div>
+
+  <!-- My Activity (Hire) -->
+  <div class="card mb-16">
+    <div class="card-title" style="cursor:pointer" onclick="toggleActivity('hireActivity')">
+      <i class="fas fa-briefcase"></i> My Job Posts
+      <i class="fas fa-chevron-down" id="hireActivityArrow" style="margin-left:auto;font-size:12px;color:var(--gray)"></i>
+    </div>
+    <div id="hireActivity" style="display:none">
+      <table style="width:100%;font-size:13px">
+        <thead><tr><th>Job Title</th><th>Posted On</th><th>Status</th></tr></thead>
+        <tbody id="myPostsTbody"><tr><td colspan="3" style="text-align:center;color:var(--gray);padding:20px">No job posts yet</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <a href="job-post-from.html" class="btn btn-primary mb-16"><i class="fas fa-plus-circle"></i> Post a Job</a>
+
+  <!-- Candidate List - LOCKED -->
+  <div style="font-size:14px;font-weight:700;color:var(--gold);margin-bottom:12px"><i class="fas fa-users"></i> Candidate List</div>
+  <div class="locked-section" style="min-height:200px">
+    <div style="opacity:0.3;pointer-events:none">
+      <table style="width:100%;font-size:13px"><thead><tr><th>Name</th><th>Position</th><th>Experience</th><th>Contact</th><th>Resume</th></tr></thead>
+      <tbody><tr><td>Sample Candidate</td><td>F&B Captain</td><td>3 yrs</td><td>••••••••</td><td>••••••</td></tr></tbody></table>
+    </div>
+    <div class="locked-overlay" onclick="redirectMembership()">
+      <i class="fas fa-crown"></i>
+      <p>Upgrade to Prime Membership to access the full Candidate List</p>
+      <span>Upgrade Now – ₹499/month</span>
+    </div>
+  </div>
+</div>
+
+<!-- APPLY JOB MODAL -->
+<div class="modal-overlay" id="applyModal">
+  <div class="modal-box wide">
+    <div class="modal-header">
+      <div class="modal-title"><i class="fas fa-paper-plane"></i> Apply for Job</div>
+      <button class="modal-close" onclick="closeApply()">&times;</button>
+    </div>
+    <div id="applyJobTitle" style="font-size:15px;font-weight:700;color:var(--gold-light);margin-bottom:16px"></div>
+    <div id="applyAlert" class="alert"></div>
+    <form id="applyForm">
+      <div class="form-row">
+        <div class="form-group"><label>Full Name *</label><input type="text" id="applyName" class="form-control" required/></div>
+        <div class="form-group"><label>Phone Number *</label><input type="tel" id="applyPhone" class="form-control" required/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Email ID *</label><input type="email" id="applyEmail" class="form-control" required/></div>
+        <div class="form-group"><label>Pincode *</label><input type="text" id="applyPincode" class="form-control" required/></div>
+      </div>
+      <div class="form-group"><label>Address Line 1 *</label><input type="text" id="applyAddr1" class="form-control" required/></div>
+      <div class="form-group"><label>Address Line 2 (Optional)</label><input type="text" id="applyAddr2" class="form-control"/></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Total Experience *</label>
+          <select id="applyExp" class="form-control" required>
+            <option value="">Select</option>
+            <option>0–1 Years</option><option>1–5 Years</option><option>5+ Years</option><option>10+ Years</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Work Status *</label>
+          <select id="applyWorkStatus" class="form-control" required onchange="toggleOrgField()">
+            <option value="">Select</option>
+            <option value="working">Currently Working</option>
+            <option value="not_working">Not Working</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group" id="orgFieldWrapper">
+        <label id="orgLabel">Organisation Name *</label>
+        <input type="text" id="applyOrg" class="form-control"/>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Current CTC *</label><input type="text" id="applyCTC" class="form-control" placeholder="e.g. ₹15,000" required/></div>
+        <div class="form-group"><label>Expected CTC *</label><input type="text" id="applyExpCTC" class="form-control" placeholder="e.g. ₹20,000" required/></div>
+      </div>
+      <div class="form-group">
+        <label>Notice Period *</label>
+        <select id="applyNotice" class="form-control" required>
+          <option value="">Select</option>
+          <option>Immediately Joining</option><option>15 Day's</option><option>More than 30 Day's</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Upload CV * (JPG, DOC, DOCX, PDF, PNG)</label>
+        <input type="file" id="applyCv" class="form-control" accept=".jpg,.jpeg,.png,.doc,.docx,.pdf" required/>
+      </div>
+      <button type="submit" class="btn btn-primary w-full"><i class="fas fa-paper-plane"></i> Submit Application</button>
+    </form>
+  </div>
+</div>
+
+<!-- LOGOUT CONFIRM MODAL -->
+<div class="modal-overlay" id="logoutModal">
+  <div class="modal-box" style="max-width:380px;text-align:center">
+    <div style="font-size:48px;margin-bottom:12px">👋</div>
+    <div class="modal-title" style="justify-content:center;margin-bottom:8px">Are you sure?</div>
+    <p style="font-size:13px;color:var(--gray);margin-bottom:24px">You will be logged out of Hospitality Careers.</p>
+    <div style="display:flex;gap:12px;justify-content:center">
+      <button class="btn btn-danger" id="confirmLogout"><i class="fas fa-sign-out-alt"></i> Yes, Logout</button>
+      <button class="btn btn-outline" onclick="document.getElementById('logoutModal').classList.remove('active')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><i class="fas fa-check-circle" id="toastIcon"></i><span id="toastMsg"></span></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, doc, getDoc, collection, getDocs, addDoc, query, where, orderBy, serverTimestamp, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCuAuc9qhA7D_-Lqt-69pbG81KTIiDFVpg",
+  authDomain: "hospitality-careers-e662f.firebaseapp.com",
+  projectId: "hospitality-careers-e662f",
+  storageBucket: "hospitality-careers-e662f.firebasestorage.app",
+  messagingSenderId: "45029895717",
+  appId: "1:45029895717:web:f54f86f608b98751cad9cc"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+let currentUser = null, allJobs = [], filteredJobs = [], currentPage = 1;
+const JOBS_PER_PAGE = 10;
+let selectedJobId = null;
+
+// PREDEFINED JOBS
+const predefinedJobs = [
+  { id:'j1', title:'F&B Service Associate', department:'fnb', location:'Mumbai', state:'Maharashtra', salary:12000, vacancy:4, experience:'0–1 Years', description:'Responsible for food and beverage service in restaurant.', accommodation:'Yes', status:'live' },
+  { id:'j2', title:'Senior Waiter', department:'fnb', location:'Punjab', state:'Punjab', salary:14000, vacancy:2, experience:'1–5 Years', description:'Experienced waiter for fine dining.', accommodation:'No', status:'live' },
+  { id:'j3', title:'F&B Trainee', department:'fnb', location:'Delhi', state:'Delhi', salary:16000, vacancy:1, experience:'0–1 Years', description:'Training position for F&B freshers.', accommodation:'Yes', status:'live' },
+  { id:'j4', title:'F&B Captain', department:'fnb', location:'Ahmedabad', state:'Gujarat', salary:18000, vacancy:2, experience:'1–5 Years', description:'Lead the service team in restaurant.', accommodation:'No', status:'live' },
+  { id:'j5', title:'Senior Captain', department:'fnb', location:'Kolkata', state:'West Bengal', salary:22000, vacancy:1, experience:'5+ Years', description:'Senior leadership in F&B operations.', accommodation:'Yes', status:'live' },
+  { id:'j6', title:'F&B Supervisor', department:'fnb', location:'Mumbai', state:'Maharashtra', salary:25000, vacancy:3, experience:'5+ Years', description:'Oversee daily F&B operations.', accommodation:'No', status:'live' },
+  { id:'j7', title:'Kitchen Helper', department:'kitchen', location:'Rajkot', state:'Gujarat', salary:11000, vacancy:4, experience:'0–1 Years', description:'Assist kitchen team in food preparation.', accommodation:'Yes', status:'live' },
+  { id:'j8', title:'Housekeeping GSA / Room Attendant', department:'housekeeping', location:'Bangalore', state:'Karnataka', salary:13000, vacancy:4, experience:'0–1 Years', description:'Maintain cleanliness of guest rooms.', accommodation:'No', status:'live' },
+  { id:'j9', title:'Front Office Associate', department:'frontoffice', location:'Rishikesh', state:'Uttarakhand', salary:14000, vacancy:2, experience:'1–5 Years', description:'Handle guest check-in and check-out.', accommodation:'Yes', status:'live' },
+  { id:'j10', title:'Chef de Partie', department:'kitchen', location:'Ahmedabad', state:'Gujarat', salary:13000, vacancy:4, experience:'1–5 Years', description:'Section chef responsible for specific kitchen area.', accommodation:'No', status:'live' },
+];
+
+window.switchMode = function(mode) {
+  document.getElementById('findJobMode').style.display = mode === 'find' ? 'block' : 'none';
+  document.getElementById('hireStaffMode').style.display = mode === 'hire' ? 'block' : 'none';
+  document.getElementById('findJobBtn').classList.toggle('active', mode === 'find');
+  document.getElementById('hireStaffBtn').classList.toggle('active', mode === 'hire');
+};
+
+window.toggleActivity = function(id) {
+  const el = document.getElementById(id);
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+};
+
+window.redirectMembership = function() { window.location.href = 'membership.html'; };
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  t.className = `toast show ${type}`;
+  setTimeout(() => t.classList.remove('show'), 4000);
+}
+
+const positionsByDept = {
+  fnb: ['Trainee','Steward','Waiter','Senior Waiter','Captain','Senior Captain','Supervisor','Assistant Manager','Manager'],
+  kitchen: ['Kitchen Helper','Commis Chef','Chef de Partie','Sous Chef','Head Chef','Executive Chef'],
+  housekeeping: ['Room Attendant','GSA','Housekeeping Supervisor','Executive Housekeeper'],
+  frontoffice: ['Front Desk Associate','Guest Relations','Night Auditor','Duty Manager','Front Office Manager'],
+  security: ['Security Guard','Security Supervisor','Security Manager'],
+  spa: ['Therapist','Spa Receptionist','Spa Manager'],
+  sales: ['Sales Executive','Sales Manager','Revenue Manager'],
+  hr: ['HR Executive','HR Manager','Talent Acquisition'],
+  accounts: ['Accounts Executive','Accounts Manager','Finance Controller'],
+  engineering: ['Technician','Maintenance Supervisor','Chief Engineer']
+};
+
+window.updatePositions = function() {
+  const dept = document.getElementById('filterDept').value;
+  const sel = document.getElementById('filterPosition');
+  sel.innerHTML = '<option value="">All Positions</option>';
+  if (dept && positionsByDept[dept]) {
+    positionsByDept[dept].forEach(p => sel.innerHTML += `<option>${p}</option>`);
+  }
+};
+
+window.updateSalary = function() {
+  const min = parseInt(document.getElementById('salaryMin').value);
+  const max = parseInt(document.getElementById('salaryMax').value);
+  document.getElementById('salaryDisplay').textContent = `₹${min.toLocaleString()} – ₹${Math.max(min,max).toLocaleString()}${max>=50000?'+':''}`;
+};
+
+window.filterJobs = function() {
+  const dept = document.getElementById('filterDept').value;
+  const pos = document.getElementById('filterPosition').value.toLowerCase();
+  const state = document.getElementById('filterState').value;
+  const city = document.getElementById('filterCity').value.toLowerCase();
+  const min = parseInt(document.getElementById('salaryMin').value);
+  const max = parseInt(document.getElementById('salaryMax').value);
+  filteredJobs = allJobs.filter(j => {
+    if (dept && j.department !== dept) return false;
+    if (pos && !j.title.toLowerCase().includes(pos)) return false;
+    if (state && j.state !== state) return false;
+    if (city && !j.location.toLowerCase().includes(city)) return false;
+    if (j.salary < min || j.salary > Math.max(min,max)) return false;
+    return true;
+  });
+  currentPage = 1;
+  renderJobs();
+};
+
+window.resetFilters = function() {
+  document.getElementById('filterDept').value = '';
+  document.getElementById('filterPosition').innerHTML = '<option value="">All Positions</option>';
+  document.getElementById('filterState').value = '';
+  document.getElementById('filterCity').value = '';
+  document.getElementById('salaryMin').value = 0;
+  document.getElementById('salaryMax').value = 50000;
+  updateSalary();
+  filteredJobs = [...allJobs];
+  currentPage = 1;
+  renderJobs();
+};
+
+function renderJobs() {
+  const grid = document.getElementById('jobsGrid');
+  const start = (currentPage - 1) * JOBS_PER_PAGE;
+  const paginated = filteredJobs.slice(start, start + JOBS_PER_PAGE);
+  if (paginated.length === 0) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--gray)"><i class="fas fa-search" style="font-size:32px;margin-bottom:12px;display:block;color:var(--gold-dark)"></i>No jobs found matching your criteria</div>';
+  } else {
+    grid.innerHTML = paginated.map(j => `
+      <div class="job-card">
+        <div class="job-title">${j.title}</div>
+        <div class="job-meta">
+          <span class="job-tag"><i class="fas fa-map-marker-alt"></i> ${j.location}</span>
+          <span class="job-tag"><i class="fas fa-rupee-sign"></i> ${(j.salary/1000).toFixed(0)}k/month</span>
+          <span class="job-tag"><i class="fas fa-users"></i> ${j.vacancy} Vacancy</span>
+          <span class="job-tag"><i class="fas fa-building"></i> ${j.department}</span>
+        </div>
+        ${j.description ? `<div style="font-size:12px;color:var(--gray);margin-bottom:12px">${j.description.substring(0,80)}...</div>` : ''}
+        <div class="job-footer">
+          <span class="badge badge-live">Live</span>
+          <button class="btn btn-primary btn-sm" onclick="openApply('${j.id}','${j.title}')"><i class="fas fa-paper-plane"></i> Apply</button>
+        </div>
+      </div>`).join('');
+  }
+  renderPagination();
+}
+
+function renderPagination() {
+  const total = Math.ceil(filteredJobs.length / JOBS_PER_PAGE);
+  const pag = document.getElementById('pagination');
+  if (total <= 1) { pag.innerHTML = ''; return; }
+  let html = `
+    <button class="page-btn" onclick="goPage(1)" ${currentPage===1?'disabled':''} title="First">«</button>
+    <button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''} title="Previous">‹</button>`;
+  for (let i = Math.max(1,currentPage-2); i <= Math.min(total,currentPage+2); i++) {
+    html += `<button class="page-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
+  }
+  html += `
+    <button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===total?'disabled':''} title="Next">›</button>
+    <button class="page-btn" onclick="goPage(${total})" ${currentPage===total?'disabled':''} title="Last">»</button>`;
+  pag.innerHTML = html;
+}
+
+window.goPage = function(p) {
+  const total = Math.ceil(filteredJobs.length / JOBS_PER_PAGE);
+  if (p < 1 || p > total) return;
+  currentPage = p;
+  renderJobs();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+window.openApply = function(jobId, jobTitle) {
+  selectedJobId = jobId;
+  document.getElementById('applyJobTitle').textContent = 'Applying for: ' + jobTitle;
+  if (currentUser) {
+    document.getElementById('applyEmail').value = currentUser.email || '';
+    document.getElementById('applyName').value = currentUser.displayName || '';
+  }
+  document.getElementById('applyModal').classList.add('active');
+};
+
+window.closeApply = function() {
+  document.getElementById('applyModal').classList.remove('active');
+  document.getElementById('applyForm').reset();
+  selectedJobId = null;
+};
+
+window.toggleOrgField = function() {
+  const status = document.getElementById('applyWorkStatus').value;
+  const label = document.getElementById('orgLabel');
+  if (status === 'working') { label.textContent = 'Organisation Name *'; }
+  else if (status === 'not_working') { label.textContent = 'Previous Organisation Name *'; }
+};
+
+document.getElementById('applyForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const cvFile = document.getElementById('applyCv').files[0];
+  if (!cvFile) { showApplyAlert('Please upload your CV.'); return; }
+  const btn = e.target.querySelector('button[type="submit"]');
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+  btn.disabled = true;
+  try {
+    let cvUrl = '';
+    if (cvFile) {
+      const cvRef = ref(storage, `cvs/${currentUser.uid}/${Date.now()}_${cvFile.name}`);
+      const snap = await uploadBytes(cvRef, cvFile);
+      cvUrl = await getDownloadURL(snap.ref);
+    }
+    const job = allJobs.find(j => j.id === selectedJobId);
+    await addDoc(collection(db, 'applications'), {
+      userId: currentUser.uid,
+      userEmail: currentUser.email,
+      userName: document.getElementById('applyName').value,
+      phone: document.getElementById('applyPhone').value,
+      email: document.getElementById('applyEmail').value,
+      address1: document.getElementById('applyAddr1').value,
+      address2: document.getElementById('applyAddr2').value,
+      pincode: document.getElementById('applyPincode').value,
+      experience: document.getElementById('applyExp').value,
+      workStatus: document.getElementById('applyWorkStatus').value,
+      organisation: document.getElementById('applyOrg').value,
+      currentCTC: document.getElementById('applyCTC').value,
+      expectedCTC: document.getElementById('applyExpCTC').value,
+      noticePeriod: document.getElementById('applyNotice').value,
+      cvUrl,
+      jobId: selectedJobId,
+      jobTitle: job ? job.title : '',
+      status: 'Pending',
+      appliedAt: serverTimestamp()
+    });
+    closeApply();
+    showToast('Application submitted successfully!');
+    loadMyApplications();
+  } catch(err) {
+    showApplyAlert('Submission failed. Please try again. ' + err.message);
+  }
+  btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Application';
+  btn.disabled = false;
+});
+
+function showApplyAlert(msg) {
+  const el = document.getElementById('applyAlert');
+  el.textContent = msg;
+  el.className = 'alert alert-danger show';
+}
+
+async function loadMyApplications() {
+  if (!currentUser) return;
+  try {
+    const q = query(collection(db, 'applications'), where('userId','==',currentUser.uid));
+    const snap = await getDocs(q);
+    const tbody = document.getElementById('myApplicationsTbody');
+    if (snap.empty) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--gray);padding:20px">No applications yet</td></tr>'; return; }
+    tbody.innerHTML = snap.docs.map(d => {
+      const data = d.data();
+      return `<tr>
+        <td>${data.jobTitle || 'N/A'}</td>
+        <td>${data.appliedAt?.toDate?.()?.toLocaleDateString() || 'N/A'}</td>
+        <td><span class="badge badge-${data.status==='Hired'?'hired':data.status==='Rejected'?'rejected':'pending'}">${data.status}</span></td>
+        <td><span style="filter:blur(3px);color:var(--gray);font-size:11px">Upgrade to Prime</span></td>
+      </tr>`;
+    }).join('');
+  } catch(e) {}
+}
+
+async function loadMyPosts() {
+  if (!currentUser) return;
+  try {
+    const q = query(collection(db, 'jobPosts'), where('userId','==',currentUser.uid));
+    const snap = await getDocs(q);
+    const tbody = document.getElementById('myPostsTbody');
+    if (snap.empty) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--gray);padding:20px">No job posts yet</td></tr>'; return; }
+    tbody.innerHTML = snap.docs.map(d => {
+      const data = d.data();
+      return `<tr>
+        <td>${data.jobTitle || data.position}</td>
+        <td>${data.createdAt?.toDate?.()?.toLocaleDateString() || 'N/A'}</td>
+        <td><span class="badge badge-${data.status==='live'?'live':data.status==='approved'?'approved':'pending'}">${data.status || 'Pending'}</span></td>
+      </tr>`;
+    }).join('');
+  } catch(e) {}
+}
+
+async function loadJobs() {
+  allJobs = [...predefinedJobs];
+  try {
+    const snap = await getDocs(query(collection(db, 'jobPosts'), where('status','==','live')));
+    snap.docs.forEach(d => { allJobs.push({ id: d.id, ...d.data() }); });
+  } catch(e) {}
+  filteredJobs = [...allJobs];
+  renderJobs();
+}
+
+// Logout
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  document.getElementById('logoutModal').classList.add('active');
+});
+document.getElementById('confirmLogout').addEventListener('click', async () => {
+  await signOut(auth);
+  window.location.href = 'index.html';
+});
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) { window.location.href = 'index.html'; return; }
+  currentUser = user;
+  document.getElementById('userNameEl').textContent = user.displayName || user.email;
+  const snap = await getDoc(doc(db, 'users', user.uid));
+  if (snap.exists()) {
+    const data = snap.data();
+    const role = data.role;
+    if (role === 'Owner') { window.location.href = 'owner-feed.html'; return; }
+    if (role === 'Admin') { window.location.href = 'admin-feed.html'; return; }
+    if (role === 'Prime') { window.location.href = 'prime-feed.html'; return; }
+    const tagEl = document.getElementById('userTagEl');
+    tagEl.textContent = data.tag || 'User';
+  }
+  setTimeout(() => { document.getElementById('loader').style.display = 'none'; }, 600);
+  loadJobs();
+  loadMyApplications();
+  loadMyPosts();
+});
+
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', (e) => { if(e.target === el) el.classList.remove('active'); });
+});
+window.updateSalary();
+</script>
+</body>
+</html>

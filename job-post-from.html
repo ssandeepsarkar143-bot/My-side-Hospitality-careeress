@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Post a Job – Hospitality Careers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<link rel="stylesheet" href="css/styles.css"/>
+</head>
+<body>
+<div id="loader"><div class="loader-ring"></div><div class="loader-text">Loading...</div></div>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="navbar-brand">
+    <img src="jogo.png" class="navbar-logo" onerror="this.style.display='none'" alt="Logo"/>
+    <div class="navbar-title">Post a Job</div>
+  </div>
+  <div class="navbar-right">
+    <button class="btn btn-sm btn-outline" onclick="history.back()"><i class="fas fa-arrow-left"></i> Back</button>
+  </div>
+</nav>
+
+<!-- BG -->
+<div class="hero-bg" style="z-index:0">
+  <div class="hero-slide active" style="background-image:url('https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1600&q=80');background-size:cover;background-position:center"></div>
+  <div class="hero-overlay"></div>
+</div>
+
+<div class="form-page" style="position:relative;z-index:1;padding-top:24px">
+  <div class="form-container">
+    <div style="text-align:center;margin-bottom:32px">
+      <div style="font-size:24px;font-weight:800;background:linear-gradient(to right,var(--gold),var(--gold-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent">
+        <i class="fas fa-briefcase" style="-webkit-text-fill-color:var(--gold)"></i> Post a Job Vacancy
+      </div>
+      <div style="font-size:13px;color:var(--gray);margin-top:4px">Fill in the details to post your hospitality job</div>
+    </div>
+
+    <div id="formAlert" class="alert"></div>
+
+    <form id="jobPostForm">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Company / Hotel Name *</label>
+          <input type="text" id="companyName" class="form-control" placeholder="e.g. The Taj Hotels" required/>
+        </div>
+        <div class="form-group">
+          <label>Contact Person Name *</label>
+          <input type="text" id="contactPerson" class="form-control" placeholder="HR / Manager name" required/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Phone Number *</label>
+          <input type="tel" id="jpPhone" class="form-control" placeholder="+91 XXXXXXXXXX" required/>
+        </div>
+        <div class="form-group">
+          <label>Email Address *</label>
+          <input type="email" id="jpEmail" class="form-control" placeholder="hr@company.com" required/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Job Position / Title *</label>
+          <input type="text" id="jpPosition" class="form-control" placeholder="e.g. F&B Captain" required/>
+        </div>
+        <div class="form-group">
+          <label>Department *</label>
+          <select id="jpDepartment" class="form-control" required>
+            <option value="">-- Select Department --</option>
+            <option value="fnb">F&B Service</option>
+            <option value="kitchen">Kitchen / Culinary</option>
+            <option value="housekeeping">Housekeeping</option>
+            <option value="frontoffice">Front Office</option>
+            <option value="security">Security</option>
+            <option value="spa">Spa & Wellness</option>
+            <option value="sales">Sales & Marketing</option>
+            <option value="hr">Human Resources</option>
+            <option value="accounts">Accounts & Finance</option>
+            <option value="engineering">Engineering & Maintenance</option>
+            <option value="banquet">Banquet & Events</option>
+            <option value="recreation">Recreation & Sports</option>
+            <option value="concierge">Concierge & Bell</option>
+            <option value="laundry">Laundry & Linen</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Job Location – State *</label>
+          <select id="jpState" class="form-control" required>
+            <option value="">-- Select State --</option>
+            <option>Andhra Pradesh</option><option>Arunachal Pradesh</option><option>Assam</option>
+            <option>Bihar</option><option>Chhattisgarh</option><option>Delhi</option><option>Goa</option>
+            <option>Gujarat</option><option>Haryana</option><option>Himachal Pradesh</option>
+            <option>Jharkhand</option><option>Karnataka</option><option>Kerala</option>
+            <option>Madhya Pradesh</option><option>Maharashtra</option><option>Manipur</option>
+            <option>Meghalaya</option><option>Mizoram</option><option>Nagaland</option>
+            <option>Odisha</option><option>Punjab</option><option>Rajasthan</option>
+            <option>Sikkim</option><option>Tamil Nadu</option><option>Telangana</option>
+            <option>Tripura</option><option>Uttar Pradesh</option><option>Uttarakhand</option>
+            <option>West Bengal</option><option>Jammu & Kashmir</option><option>Ladakh</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>City *</label>
+          <input type="text" id="jpCity" class="form-control" placeholder="e.g. Mumbai" required/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Salary Range *</label>
+          <input type="text" id="jpSalary" class="form-control" placeholder="e.g. ₹15,000 – ₹20,000" required/>
+        </div>
+        <div class="form-group">
+          <label>Experience Required *</label>
+          <select id="jpExperience" class="form-control" required>
+            <option value="">-- Select --</option>
+            <option value="fresher">Fresher</option>
+            <option value="1-2">1–2 Years</option>
+            <option value="3-5">3–5 Years</option>
+            <option value="5+">5+ Years</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Number of Vacancies *</label>
+          <input type="number" id="jpVacancy" class="form-control" placeholder="e.g. 3" min="1" required/>
+        </div>
+        <div class="form-group">
+          <label>Joining Date</label>
+          <input type="date" id="jpJoiningDate" class="form-control"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Accommodation / Food Provided *</label>
+        <div style="display:flex;gap:20px;margin-top:8px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;color:rgba(255,255,255,0.8)">
+            <input type="radio" name="accommodation" value="yes" style="accent-color:var(--gold)"/> Yes
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;color:rgba(255,255,255,0.8)">
+            <input type="radio" name="accommodation" value="no" style="accent-color:var(--gold)"/> No
+          </label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Job Description (Optional)</label>
+        <textarea id="jpDescription" class="form-control" rows="4" placeholder="Describe the role, responsibilities, requirements..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Upload Company Logo (Optional)</label>
+        <input type="file" id="jpLogo" class="form-control" accept="image/*"/>
+      </div>
+
+      <button type="submit" class="btn btn-primary w-full btn-lg mt-16" id="submitJobBtn">
+        <i class="fas fa-paper-plane"></i> Submit Job Post
+      </button>
+    </form>
+
+    <div id="successMsg" style="display:none;text-align:center;padding:32px">
+      <div style="font-size:52px;margin-bottom:16px">✅</div>
+      <div style="font-size:20px;font-weight:700;color:var(--gold);margin-bottom:8px">Job Post Submitted!</div>
+      <div style="font-size:14px;color:rgba(255,255,255,0.7);max-width:400px;margin:0 auto">
+        Thank you. Our team will review your job post and publish it shortly.
+      </div>
+      <button class="btn btn-outline mt-24" onclick="history.back()"><i class="fas fa-arrow-left"></i> Go Back</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><i class="fas fa-check-circle"></i><span id="toastMsg"></span></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, doc, getDoc, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCuAuc9qhA7D_-Lqt-69pbG81KTIiDFVpg",
+  authDomain: "hospitality-careers-e662f.firebaseapp.com",
+  projectId: "hospitality-careers-e662f",
+  storageBucket: "hospitality-careers-e662f.firebasestorage.app",
+  messagingSenderId: "45029895717",
+  appId: "1:45029895717:web:f54f86f608b98751cad9cc"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+let currentUser = null, userRole = 'User', referrer = document.referrer;
+
+function showAlert(msg, type='danger') {
+  const el = document.getElementById('formAlert');
+  el.textContent = msg; el.className = `alert alert-${type} show`;
+  setTimeout(() => el.classList.remove('show'), 5000);
+}
+
+document.getElementById('jobPostForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const accommodation = document.querySelector('input[name="accommodation"]:checked');
+  if (!accommodation) { showAlert('Please select accommodation status.'); return; }
+  const btn = document.getElementById('submitJobBtn');
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...'; btn.disabled = true;
+
+  try {
+    let logoUrl = '';
+    const logoFile = document.getElementById('jpLogo').files[0];
+    if (logoFile) {
+      const logoRef = ref(storage, `logos/${currentUser?.uid || 'guest'}/${Date.now()}_${logoFile.name}`);
+      const snap = await uploadBytes(logoRef, logoFile);
+      logoUrl = await getDownloadURL(snap.ref);
+    }
+
+    const salaryText = document.getElementById('jpSalary').value;
+    const salaryNum = parseInt(salaryText.replace(/[^0-9]/g, '')) || 0;
+
+    const isPrivileged = ['Owner','Admin','Prime'].includes(userRole);
+    const postStatus = isPrivileged ? 'live' : 'pending';
+
+    const postData = {
+      companyName: document.getElementById('companyName').value,
+      contactPerson: document.getElementById('contactPerson').value,
+      phone: document.getElementById('jpPhone').value,
+      email: document.getElementById('jpEmail').value,
+      position: document.getElementById('jpPosition').value,
+      department: document.getElementById('jpDepartment').value,
+      state: document.getElementById('jpState').value,
+      location: document.getElementById('jpCity').value,
+      salaryText, salary: salaryNum,
+      experience: document.getElementById('jpExperience').value,
+      vacancy: parseInt(document.getElementById('jpVacancy').value),
+      joiningDate: document.getElementById('jpJoiningDate').value,
+      accommodation: accommodation.value,
+      description: document.getElementById('jpDescription').value,
+      logoUrl, status: postStatus,
+      userId: currentUser?.uid || '',
+      userEmail: currentUser?.email || '',
+      userRole,
+      createdAt: serverTimestamp(),
+      applicantCount: 0,
+      title: document.getElementById('jpPosition').value
+    };
+
+    await addDoc(collection(db, 'jobPosts'), postData);
+    document.getElementById('jobPostForm').style.display = 'none';
+    document.getElementById('successMsg').style.display = 'block';
+    setTimeout(() => { history.back(); }, 4000);
+  } catch(err) {
+    showAlert('Failed to submit job post: ' + err.message);
+    btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Job Post';
+    btn.disabled = false;
+  }
+});
+
+onAuthStateChanged(auth, async (user) => {
+  document.getElementById('loader').style.display = 'none';
+  if (!user) return;
+  currentUser = user;
+  const snap = await getDoc(doc(db, 'users', user.uid));
+  if (snap.exists()) {
+    userRole = snap.data().role || 'User';
+    // Pre-fill user data
+    const data = snap.data();
+    if (data.displayName) document.getElementById('contactPerson').value = data.displayName;
+    if (data.phone) document.getElementById('jpPhone').value = data.phone;
+    if (data.email || user.email) document.getElementById('jpEmail').value = data.email || user.email;
+    if (data.organisation) document.getElementById('companyName').value = data.organisation;
+  }
+});
+</script>
+</body>
+</html>

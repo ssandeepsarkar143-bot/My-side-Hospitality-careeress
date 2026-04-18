@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Admin Dashboard – Hospitality Careers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<link rel="stylesheet" href="css/styles.css"/>
+</head>
+<body>
+<div id="loader"><div class="loader-ring"></div><div class="loader-text">Admin Portal</div></div>
+
+<!-- MPIN SCREEN -->
+<div id="mpinScreen" style="display:none">
+  <div class="hero-bg"><div class="hero-slide active" style="background-image:url('https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=1600&q=80');background-size:cover;background-position:center"></div><div class="hero-overlay"></div></div>
+  <div class="mpin-container" style="position:relative;z-index:2">
+    <div class="mpin-box">
+      <div style="font-size:40px;margin-bottom:12px">🛡️</div>
+      <div class="site-title">Admin Access</div>
+      <div class="site-subtitle">Enter your 4-digit MPIN to continue</div>
+      <div id="mpinAlert" class="alert"></div>
+      <div class="mpin-inputs">
+        <input class="mpin-input" maxlength="1" type="password" inputmode="numeric"/>
+        <input class="mpin-input" maxlength="1" type="password" inputmode="numeric"/>
+        <input class="mpin-input" maxlength="1" type="password" inputmode="numeric"/>
+        <input class="mpin-input" maxlength="1" type="password" inputmode="numeric"/>
+      </div>
+      <button class="btn btn-primary w-full" id="mpinSubmitBtn"><i class="fas fa-unlock-alt"></i> Unlock Dashboard</button>
+      <div style="font-size:11px;color:var(--gray);text-align:center;margin-top:16px">MPIN set by your system Owner</div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN DASHBOARD -->
+<div id="mainDashboard" style="display:none">
+  <nav class="navbar" style="background:rgba(180,30,30,0.15);border-bottom:1px solid rgba(233,69,96,0.3)">
+    <div class="navbar-brand">
+      <img src="jogo.png" class="navbar-logo" onerror="this.style.display='none'" alt="Logo"/>
+      <div class="navbar-title">Hospitality Careers</div>
+    </div>
+    <div class="navbar-right">
+      <span class="user-tag tag-admin">Admin</span>
+      <span class="tag-user-name" id="adminNameEl"></span>
+      <button class="btn btn-sm btn-danger" onclick="document.getElementById('logoutModal').classList.add('active')"><i class="fas fa-sign-out-alt"></i> Logout</button>
+    </div>
+  </nav>
+
+  <div class="dashboard-layout">
+    <div class="sidebar" style="border-right-color:rgba(233,69,96,0.15)">
+      <div class="sidebar-section">Dashboard</div>
+      <div class="sidebar-item active" id="nav_dashboard" onclick="showSection('dashboard')"><i class="fas fa-tachometer-alt"></i> My Dashboard</div>
+      <div class="sidebar-item" id="nav_myWork" onclick="showSection('myWork')"><i class="fas fa-tasks"></i> My Work Details</div>
+      <div class="sidebar-section" id="nav_userControl_wrap" style="display:none">User Management</div>
+      <div class="sidebar-item hidden" id="nav_userControl" onclick="showSection('userControl')"><i class="fas fa-users"></i> User Control</div>
+      <div class="sidebar-section" id="auth_sections_header" style="display:none">Requests</div>
+      <div class="sidebar-item hidden" id="nav_connectReqs" onclick="showSection('connectReqs')"><i class="fas fa-link"></i> Connect Employer</div>
+      <div class="sidebar-item hidden" id="nav_contactReqs" onclick="showSection('contactReqs')"><i class="fas fa-phone"></i> Contact Requests</div>
+      <div class="sidebar-item hidden" id="nav_resumeReqs" onclick="showSection('resumeReqs')"><i class="fas fa-file-download"></i> Resume Requests</div>
+      <div class="sidebar-item hidden" id="nav_membershipReqs" onclick="showSection('membershipReqs')"><i class="fas fa-crown"></i> Membership</div>
+      <div class="sidebar-item hidden" id="nav_jobRequests" onclick="showSection('jobRequests')"><i class="fas fa-inbox"></i> Job Post Requests</div>
+      <div class="sidebar-item hidden" id="nav_jobList" onclick="showSection('jobList')"><i class="fas fa-list"></i> Manage Jobs</div>
+      <div class="sidebar-section">Job</div>
+      <div class="sidebar-item" onclick="window.open('job-post-from.html','_self')"><i class="fas fa-plus-circle"></i> Add Job (Live)</div>
+    </div>
+
+    <div class="dashboard-content">
+      <!-- ADMIN MAIN DASHBOARD -->
+      <div id="sec-dashboard" class="page-section active">
+        <div class="section-title" style="color:#e94560"><i class="fas fa-tachometer-alt" style="-webkit-text-fill-color:#e94560"></i> Admin Dashboard</div>
+        <div id="adminDashContent">
+          <div id="adminUserControl" class="hidden">
+            <div class="card-title" style="color:#e94560;font-size:16px;margin-bottom:16px"><i class="fas fa-users"></i> User Control</div>
+            <div class="table-wrapper">
+              <table>
+                <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th><th>Membership</th></tr></thead>
+                <tbody id="adminUsersBody"><tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MY WORK -->
+      <div id="sec-myWork" class="page-section">
+        <div class="section-title" style="color:#e94560"><i class="fas fa-tasks" style="-webkit-text-fill-color:#e94560"></i> My Work Details</div>
+        <div class="stats-grid" id="myWorkStats"></div>
+      </div>
+
+      <!-- USER CONTROL -->
+      <div id="sec-userControl" class="page-section">
+        <div class="section-title" style="color:#e94560"><i class="fas fa-users" style="-webkit-text-fill-color:#e94560"></i> User Control</div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th><th>Membership</th></tr></thead>
+            <tbody id="adminUsersBody2"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- CONNECT EMPLOYER -->
+      <div id="sec-connectReqs" class="page-section">
+        <div class="section-title" style="color:#e94560"><i class="fas fa-link" style="-webkit-text-fill-color:#e94560"></i> Connect Employer Requests</div>
+        <div class="table-wrapper">
+          <table><thead><tr><th>Requester</th><th>Job Title</th><th>Date</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="admin_connectReqsBody"></tbody></table>
+        </div>
+      </div>
+
+      <!-- CONTACT REQUESTS -->
+      <div id="sec-contactReqs" class="page-section">
+        <div class="section-title" style="color:#e94560"><i class="fas fa-phone" style="-webkit-text-fill-color:#e94560"></i> Contact Requests</div>
+        <div class="table-wrapper">
+          <table><thead><tr><th>Requester</th><th>Candidate</th><th>Date</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="admin_contactReqsBody"></tbody></table>
+        </div>
+      </div>
+
+      <!-- RESUME REQUESTS -->
+      <div id="sec-resumeReqs" class="page-section">
+        <div class="section-title" style="color:#e94560"><i class="fas fa-file-download" style="-webkit-text-fill-color:#e94560"></i> Resume Download Requests</div>
+        <div class="table-wrapper">
+          <table><thead><tr><th>Requester</th><th>Candidate</th><th>Date</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="admin_resumeReqsBody"></tbody></table>
+        </div>
+      </div>
+
+      <!-- MEMBERSHIP -->
+      <div id="sec-membershipReqs" class="page-section">
+        <div class="section-title" style="color:#e94560"><i class="fas fa-crown" style="-webkit-text-fill-color:#e94560"></i> Membership Requests</div>
+        <div class="table-wrapper">
+          <table><thead><tr><th>User</th><th>Email</th><th>Date</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="admin_membershipReqsBody"></tbody></table>
+        </div>
+      </div>
+
+      <!-- JOB POST REQUESTS -->
+      <div id="sec-jobRequests" class="page-section">
+        <div class="section-title" style="color:#e94560"><i class="fas fa-inbox" style="-webkit-text-fill-color:#e94560"></i> Job Post Requests</div>
+        <div class="table-wrapper">
+          <table><thead><tr><th>Position</th><th>Company</th><th>Location</th><th>Date</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="admin_jobReqsBody"></tbody></table>
+        </div>
+      </div>
+
+      <!-- JOB LIST -->
+      <div id="sec-jobList" class="page-section">
+        <div class="section-title" style="color:#e94560"><i class="fas fa-list" style="-webkit-text-fill-color:#e94560"></i> Manage Job List</div>
+        <div class="table-wrapper">
+          <table><thead><tr><th>Position</th><th>Company</th><th>Location</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="admin_jobListBody"></tbody></table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LOGOUT MODAL -->
+<div class="modal-overlay" id="logoutModal">
+  <div class="modal-box" style="max-width:380px;text-align:center">
+    <div style="font-size:48px;margin-bottom:12px">👋</div>
+    <div class="modal-title" style="justify-content:center;margin-bottom:8px">Are you sure?</div>
+    <p style="font-size:13px;color:var(--gray);margin-bottom:24px">You will be logged out of Admin Dashboard.</p>
+    <div style="display:flex;gap:12px;justify-content:center">
+      <button class="btn btn-danger" id="confirmLogout"><i class="fas fa-sign-out-alt"></i> Yes, Logout</button>
+      <button class="btn btn-outline" onclick="document.getElementById('logoutModal').classList.remove('active')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><i class="fas fa-check-circle"></i><span id="toastMsg"></span></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, doc, getDoc, getDocs, collection, query, where, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCuAuc9qhA7D_-Lqt-69pbG81KTIiDFVpg",
+  authDomain: "hospitality-careers-e662f.firebaseapp.com",
+  projectId: "hospitality-careers-e662f",
+  storageBucket: "hospitality-careers-e662f.firebasestorage.app",
+  messagingSenderId: "45029895717",
+  appId: "1:45029895717:web:f54f86f608b98751cad9cc"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+let currentUser = null, adminData = null;
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  t.className = `toast show ${type}`;
+  setTimeout(() => t.classList.remove('show'), 4000);
+}
+
+document.getElementById('confirmLogout').addEventListener('click', async () => {
+  await signOut(auth);
+  window.location.href = 'index.html';
+});
+
+// MPIN INPUTS
+const mpinInputs = document.querySelectorAll('.mpin-input');
+mpinInputs.forEach((input, i) => {
+  input.addEventListener('input', () => { if (input.value && i < 3) mpinInputs[i+1].focus(); });
+  input.addEventListener('keydown', (e) => { if (e.key === 'Backspace' && !input.value && i > 0) mpinInputs[i-1].focus(); });
+});
+
+document.getElementById('mpinSubmitBtn').addEventListener('click', async () => {
+  const mpin = Array.from(mpinInputs).map(i => i.value).join('');
+  if (mpin.length !== 4 || !/^\d{4}$/.test(mpin)) {
+    showMpinAlert('Please enter a valid 4-digit MPIN.'); return;
+  }
+  const snap = await getDoc(doc(db, 'mpins', currentUser.uid));
+  if (snap.exists() && snap.data().mpin === mpin) {
+    unlockDashboard();
+  } else {
+    showMpinAlert('Incorrect MPIN. Contact your Owner to reset.');
+    mpinInputs.forEach(i => { i.value = ''; }); mpinInputs[0].focus();
+  }
+});
+
+function showMpinAlert(msg) {
+  const el = document.getElementById('mpinAlert');
+  el.textContent = msg; el.className = 'alert alert-danger show';
+}
+
+function unlockDashboard() {
+  document.getElementById('mpinScreen').style.display = 'none';
+  document.getElementById('mainDashboard').style.display = 'block';
+  setupAuthority();
+  loadDashboard();
+}
+
+function setupAuthority() {
+  const auth_perms = adminData?.authorities || {};
+  if (auth_perms.dashboard) {
+    document.getElementById('nav_userControl').classList.remove('hidden');
+    document.getElementById('nav_userControl_wrap').style.display = 'block';
+    document.getElementById('adminUserControl').classList.remove('hidden');
+    loadAdminUsers();
+  }
+  if (auth_perms.connectEmployer) { document.getElementById('nav_connectReqs').classList.remove('hidden'); document.getElementById('auth_sections_header').style.display='block'; }
+  if (auth_perms.contact) { document.getElementById('nav_contactReqs').classList.remove('hidden'); document.getElementById('auth_sections_header').style.display='block'; }
+  if (auth_perms.resumeDownload) { document.getElementById('nav_resumeReqs').classList.remove('hidden'); document.getElementById('auth_sections_header').style.display='block'; }
+  if (auth_perms.membership) { document.getElementById('nav_membershipReqs').classList.remove('hidden'); document.getElementById('auth_sections_header').style.display='block'; }
+  if (auth_perms.jobPost) { document.getElementById('nav_jobRequests').classList.remove('hidden'); }
+  if (auth_perms.jobList) { document.getElementById('nav_jobList').classList.remove('hidden'); }
+}
+
+window.showSection = function(name) {
+  document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+  document.getElementById('sec-'+name).classList.add('active');
+  switch(name) {
+    case 'myWork': loadMyWork(); break;
+    case 'userControl': loadAdminUsers(); break;
+    case 'connectReqs': loadRequests('employerConnect','admin_connectReqsBody'); break;
+    case 'contactReqs': loadRequests('contact','admin_contactReqsBody'); break;
+    case 'resumeReqs': loadRequests('resumeDownload','admin_resumeReqsBody'); break;
+    case 'membershipReqs': loadMembershipReqs(); break;
+    case 'jobRequests': loadJobRequests(); break;
+    case 'jobList': loadJobList(); break;
+  }
+};
+
+async function loadDashboard() {
+  if (adminData?.authorities?.dashboard) loadAdminUsers();
+}
+
+async function loadAdminUsers() {
+  try {
+    const snap = await getDocs(collection(db, 'users'));
+    const users = snap.docs.map(d => d.data());
+    const html = users.map(u => `<tr>
+      <td>${u.displayName||'N/A'}</td><td>${u.email}</td>
+      <td><span class="badge badge-pending">${u.role}</span></td>
+      <td>${u.createdAt?.toDate?.()?.toLocaleDateString()||'N/A'}</td>
+      <td>${u.membershipCount||0}x</td>
+    </tr>`).join('');
+    if (document.getElementById('adminUsersBody')) document.getElementById('adminUsersBody').innerHTML = html || '<tr><td colspan="5" style="text-align:center;color:var(--gray)">No users</td></tr>';
+    if (document.getElementById('adminUsersBody2')) document.getElementById('adminUsersBody2').innerHTML = html || '<tr><td colspan="5" style="text-align:center;color:var(--gray)">No users</td></tr>';
+  } catch(e) {}
+}
+
+async function loadMyWork() {
+  try {
+    const [jobsApproved, contactApproved, resumeApproved, membershipApproved] = await Promise.all([
+      getDocs(query(collection(db, 'jobPosts'), where('approvedBy','==',currentUser.uid))),
+      getDocs(query(collection(db, 'requests'), where('approvedBy','==',currentUser.uid), where('type','==','contact'))),
+      getDocs(query(collection(db, 'requests'), where('approvedBy','==',currentUser.uid), where('type','==','resumeDownload'))),
+      getDocs(query(collection(db, 'requests'), where('approvedBy','==',currentUser.uid), where('type','==','membership')))
+    ]);
+    document.getElementById('myWorkStats').innerHTML = `
+      ${sc('fa-briefcase','Jobs Approved',jobsApproved.size)}
+      ${sc('fa-phone','Contacts Approved',contactApproved.size)}
+      ${sc('fa-file-download','Resumes Approved',resumeApproved.size)}
+      ${sc('fa-crown','Memberships Approved',membershipApproved.size)}`;
+  } catch(e) {}
+}
+
+function sc(icon, label, val) {
+  return `<div class="stat-card"><div class="stat-icon"><i class="fas ${icon}" style="-webkit-text-fill-color:#e94560;color:#e94560"></i></div><div class="stat-label">${label}</div><div class="stat-value" style="color:#e94560">${val}</div></div>`;
+}
+
+async function loadRequests(type, bodyId) {
+  try {
+    const snap = await getDocs(query(collection(db, 'requests'), where('type','==',type)));
+    const tbody = document.getElementById(bodyId);
+    if (snap.empty) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">No requests</td></tr>'; return; }
+    tbody.innerHTML = snap.docs.map(d => {
+      const r = d.data();
+      return `<tr>
+        <td>${r.requesterEmail}</td>
+        <td>${r.candidateName||r.jobTitle||'N/A'}</td>
+        <td>${r.createdAt?.toDate?.()?.toLocaleDateString()||'N/A'}</td>
+        <td><span class="badge badge-${r.status==='approved'?'approved':r.status==='rejected'?'rejected':'pending'}">${r.status}</span></td>
+        <td>
+          ${r.status==='pending'?`
+            <button class="btn btn-sm btn-success" onclick="approveRequest('${d.id}','${type}','${bodyId}')">Approve</button>
+            <button class="btn btn-sm btn-danger" onclick="rejectRequest('${d.id}','${type}','${bodyId}')">Reject</button>
+          `:'Done'}
+        </td>
+      </tr>`;
+    }).join('');
+  } catch(e) {}
+}
+
+window.approveRequest = async function(id, type, bodyId) {
+  await updateDoc(doc(db, 'requests', id), { status: 'approved', approvedBy: currentUser.uid, approvedAt: serverTimestamp() });
+  showToast('Request approved!');
+  loadRequests(type, bodyId);
+};
+
+window.rejectRequest = async function(id, type, bodyId) {
+  await updateDoc(doc(db, 'requests', id), { status: 'rejected', approvedBy: currentUser.uid });
+  showToast('Request rejected.', 'error');
+  loadRequests(type, bodyId);
+};
+
+async function loadMembershipReqs() {
+  try {
+    const snap = await getDocs(query(collection(db, 'requests'), where('type','==','membership')));
+    const tbody = document.getElementById('admin_membershipReqsBody');
+    if (snap.empty) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">No requests</td></tr>'; return; }
+    tbody.innerHTML = snap.docs.map(d => {
+      const r = d.data();
+      return `<tr>
+        <td>${r.userName||'N/A'}</td><td>${r.requesterEmail}</td>
+        <td>${r.createdAt?.toDate?.()?.toLocaleDateString()||'N/A'}</td>
+        <td>₹${r.amount||499}</td>
+        <td><span class="badge badge-${r.status==='approved'?'approved':r.status==='rejected'?'rejected':'pending'}">${r.status}</span></td>
+        <td>
+          ${r.status==='pending'?`
+            <button class="btn btn-sm btn-success" onclick="approveMembership('${d.id}','${r.requesterId}')">Approve</button>
+            <button class="btn btn-sm btn-danger" onclick="rejectRequest('${d.id}','membership','admin_membershipReqsBody')">Reject</button>
+          `:'Done'}
+        </td>
+      </tr>`;
+    }).join('');
+  } catch(e) {}
+}
+
+window.approveMembership = async function(reqId, userId) {
+  const expiry = new Date(); expiry.setDate(expiry.getDate() + 30);
+  const userSnap = await getDoc(doc(db, 'users', userId));
+  const count = (userSnap.data()?.membershipCount || 0) + 1;
+  await Promise.all([
+    updateDoc(doc(db, 'requests', reqId), { status: 'approved', approvedBy: currentUser.uid, approvedAt: serverTimestamp() }),
+    updateDoc(doc(db, 'users', userId), {
+      role: 'Prime', tag: `Prime${count>1?count:''}`,
+      membershipCount: count, membershipPurchasedAt: serverTimestamp(), membershipExpiryAt: expiry
+    })
+  ]);
+  showToast('Membership approved! User upgraded to Prime.');
+  loadMembershipReqs();
+};
+
+async function loadJobRequests() {
+  try {
+    const snap = await getDocs(query(collection(db, 'jobPosts'), where('status','==','pending')));
+    const tbody = document.getElementById('admin_jobReqsBody');
+    if (snap.empty) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">No pending posts</td></tr>'; return; }
+    tbody.innerHTML = snap.docs.map(d => {
+      const j = d.data();
+      return `<tr>
+        <td>${j.position}</td><td>${j.companyName}</td><td>${j.location}, ${j.state}</td>
+        <td>${j.createdAt?.toDate?.()?.toLocaleDateString()||'N/A'}</td>
+        <td><span class="badge badge-pending">Pending</span></td>
+        <td>
+          <button class="btn btn-sm btn-success" onclick="approveJob('${d.id}')">Approve</button>
+          <button class="btn btn-sm btn-danger" onclick="rejectJob('${d.id}')">Reject</button>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch(e) {}
+}
+
+window.approveJob = async function(id) {
+  await updateDoc(doc(db, 'jobPosts', id), { status: 'live', approvedBy: currentUser.uid, approvedAt: serverTimestamp() });
+  showToast('Job approved!'); loadJobRequests();
+};
+window.rejectJob = async function(id) {
+  await updateDoc(doc(db, 'jobPosts', id), { status: 'rejected' });
+  showToast('Job rejected.','error'); loadJobRequests();
+};
+
+async function loadJobList() {
+  try {
+    const snap = await getDocs(collection(db, 'jobPosts'));
+    const tbody = document.getElementById('admin_jobListBody');
+    if (snap.empty) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">No jobs</td></tr>'; return; }
+    tbody.innerHTML = snap.docs.map(d => {
+      const j = d.data();
+      return `<tr>
+        <td>${j.position||j.title}</td><td>${j.companyName||'N/A'}</td><td>${j.location}, ${j.state}</td>
+        <td><span class="badge badge-${j.status==='live'?'live':'pending'}">${j.status}</span></td>
+        <td><button class="btn btn-sm btn-danger" onclick="deleteJob('${d.id}')"><i class="fas fa-trash"></i></button></td>
+      </tr>`;
+    }).join('');
+  } catch(e) {}
+}
+
+window.deleteJob = async function(id) {
+  if (!confirm('Delete this job?')) return;
+  await deleteDoc(doc(db, 'jobPosts', id));
+  showToast('Job deleted.');
+  loadJobList();
+};
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) { window.location.href = 'index.html'; return; }
+  currentUser = user;
+  const snap = await getDoc(doc(db, 'users', user.uid));
+  if (!snap.exists()) { window.location.href = 'index.html'; return; }
+  adminData = snap.data();
+  if (adminData.role !== 'Admin') { window.location.href = 'index.html'; return; }
+  document.getElementById('adminNameEl').textContent = user.displayName || user.email;
+  document.getElementById('loader').style.display = 'none';
+  // Check MPIN
+  const mpinSnap = await getDoc(doc(db, 'mpins', user.uid));
+  if (!mpinSnap.exists() || !mpinSnap.data().mpin) {
+    document.getElementById('mpinScreen').style.display = 'none';
+    document.getElementById('mainDashboard').style.display = 'block';
+    setupAuthority(); loadDashboard();
+  } else {
+    document.getElementById('mpinScreen').style.display = 'block';
+  }
+});
+
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', (e) => { if(e.target === el) el.classList.remove('active'); });
+});
+</script>
+</body>
+</html>

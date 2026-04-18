@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Hospitality Careers – Login</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<link rel="stylesheet" href="css/styles.css"/>
+<style>
+.login-container { position: relative; z-index: 2; }
+</style>
+</head>
+<body>
+
+<!-- BG SLIDESHOW -->
+<div class="hero-bg" id="heroBg">
+  <div class="hero-slide active" style="background-image:url('https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=1600&q=80')"></div>
+  <div class="hero-slide" style="background-image:url('https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1600&q=80')"></div>
+  <div class="hero-slide" style="background-image:url('https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?w=1600&q=80')"></div>
+  <div class="hero-slide" style="background-image:url('https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=1600&q=80')"></div>
+  <div class="hero-slide" style="background-image:url('https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=1600&q=80')"></div>
+  <div class="hero-overlay"></div>
+</div>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="loader-ring"></div>
+  <div class="loader-text">Hospitality Careers</div>
+</div>
+
+<!-- LOGIN BOX -->
+<div class="login-container">
+  <div class="login-box">
+    <div class="logo-wrapper">
+      <img src="jogo.png" class="logo-img" id="logoImg" onerror="this.style.display='none';document.getElementById('logoPh').style.display='flex'" alt="Logo"/>
+      <div class="logo-placeholder" id="logoPh" style="display:none">HC</div>
+    </div>
+    <div class="site-title">Hospitality Careers</div>
+    <div class="site-subtitle">Your Gateway to Hospitality Jobs</div>
+
+    <div id="alertBox" class="alert"></div>
+
+    <form id="loginForm">
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" id="loginEmail" class="form-control" placeholder="Enter your email" required/>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="loginPassword" class="form-control" placeholder="Enter your password" required/>
+      </div>
+      <div class="forgot-link">
+        <a id="forgotBtn">Forgot Password?</a>
+      </div>
+      <button type="submit" class="btn btn-primary mt-16" id="loginBtn">
+        <i class="fas fa-sign-in-alt"></i> Login
+      </button>
+    </form>
+
+    <div class="divider">or</div>
+
+    <button class="btn btn-google" id="googleLoginBtn">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" alt="G"/> Continue with Google
+    </button>
+
+    <div class="create-account">
+      Don't have an account? <span class="text-link" id="openSignup">Create an Account</span>
+    </div>
+  </div>
+</div>
+
+<!-- ====== SIGNUP MODAL ====== -->
+<div class="modal-overlay" id="signupModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title"><i class="fas fa-user-plus"></i> Create Account</div>
+      <button class="modal-close" id="closeSignup">&times;</button>
+    </div>
+    <div id="signupAlert" class="alert"></div>
+    <div id="signupOptions">
+      <button class="btn btn-primary mb-16 w-full" id="signupEmailBtn">
+        <i class="fas fa-envelope"></i> Sign Up with Email & Password
+      </button>
+      <button class="btn btn-google w-full" id="signupGoogleBtn">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" alt="G"/> Sign Up with Google
+      </button>
+    </div>
+    <!-- Email Signup Form -->
+    <form id="emailSignupForm" style="display:none">
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="signupName" class="form-control" placeholder="Your full name" required/>
+      </div>
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" id="signupEmail" class="form-control" placeholder="Enter email" required/>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="signupPass" class="form-control" placeholder="Create password (min 6 chars)" required/>
+      </div>
+      <button type="submit" class="btn btn-primary w-full" id="signupSubmitBtn">
+        <i class="fas fa-check"></i> Sign Up
+      </button>
+      <div class="mt-16 text-center">
+        <span class="text-link" id="backToOptions"><i class="fas fa-arrow-left"></i> Back</span>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ====== FORGOT PASSWORD MODAL ====== -->
+<div class="modal-overlay" id="forgotModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title"><i class="fas fa-key"></i> Reset Password</div>
+      <button class="modal-close" id="closeForgot">&times;</button>
+    </div>
+    <div id="forgotAlert" class="alert"></div>
+    <p style="font-size:13px;color:var(--gray);margin-bottom:16px;">Enter your email address and we'll send you a password reset link.</p>
+    <div class="form-group">
+      <label>Email Address</label>
+      <input type="email" id="resetEmail" class="form-control" placeholder="Enter your email"/>
+    </div>
+    <button class="btn btn-primary w-full" id="sendResetBtn">
+      <i class="fas fa-paper-plane"></i> Send Reset Email
+    </button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <i class="fas fa-check-circle success" id="toastIcon"></i>
+  <span id="toastMsg"></span>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, sendPasswordResetEmail, updateProfile, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCuAuc9qhA7D_-Lqt-69pbG81KTIiDFVpg",
+  authDomain: "hospitality-careers-e662f.firebaseapp.com",
+  projectId: "hospitality-careers-e662f",
+  storageBucket: "hospitality-careers-e662f.firebasestorage.app",
+  messagingSenderId: "45029895717",
+  appId: "1:45029895717:web:f54f86f608b98751cad9cc"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const googleProvider = new GoogleAuthProvider();
+
+const OWNER_EMAIL = "ssandeepsarkar143@gmail.com";
+
+// HERO SLIDESHOW
+const slides = document.querySelectorAll('.hero-slide');
+let slideIdx = 0;
+setInterval(() => {
+  slides[slideIdx].classList.remove('active');
+  slideIdx = (slideIdx + 1) % slides.length;
+  slides[slideIdx].classList.add('active');
+}, 5000);
+
+// AUTH STATE - hide loader when auth resolves
+onAuthStateChanged(auth, async (user) => {
+  document.getElementById('loader').style.display = 'none';
+  if (user) {
+    await redirectUser(user);
+  }
+});
+
+async function redirectUser(user) {
+  const email = user.email?.toLowerCase();
+  if (email === OWNER_EMAIL) {
+    window.location.href = 'owner-feed.html';
+    return;
+  }
+  const snap = await getDoc(doc(db, 'users', user.uid));
+  if (!snap.exists()) {
+    await createUserRecord(user, 'User');
+    window.location.href = 'profile.html';
+    return;
+  }
+  const data = snap.data();
+  const role = data.role;
+  if (role === 'Admin') { window.location.href = 'admin-feed.html'; return; }
+  if (role === 'Prime') { window.location.href = 'prime-feed.html'; return; }
+  window.location.href = 'user-feed.html';
+}
+
+async function createUserRecord(user, role) {
+  await setDoc(doc(db, 'users', user.uid), {
+    uid: user.uid,
+    email: user.email,
+    displayName: user.displayName || '',
+    role: role,
+    tag: role,
+    createdAt: serverTimestamp(),
+    profileComplete: false,
+    membershipCount: 0,
+    activities: []
+  }, { merge: true });
+}
+
+// Toast
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  const icon = document.getElementById('toastIcon');
+  document.getElementById('toastMsg').textContent = msg;
+  t.className = `toast show ${type}`;
+  icon.className = `fas ${type==='success'?'fa-check-circle success':'fa-exclamation-circle error'}`;
+  setTimeout(() => t.classList.remove('show'), 4000);
+}
+
+function showAlert(id, msg, type='danger') {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = `alert alert-${type} show`;
+  setTimeout(() => el.classList.remove('show'), 5000);
+}
+
+// LOGIN FORM
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPassword').value;
+  const btn = document.getElementById('loginBtn');
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
+  btn.disabled = true;
+  try {
+    const cred = await signInWithEmailAndPassword(auth, email, pass);
+    await redirectUser(cred.user);
+  } catch(err) {
+    let msg = 'Login failed. Check your credentials.';
+    if (err.code === 'auth/user-not-found') msg = 'No account found with this email.';
+    if (err.code === 'auth/wrong-password') msg = 'Incorrect password.';
+    if (err.code === 'auth/invalid-email') msg = 'Invalid email format.';
+    if (err.code === 'auth/invalid-credential') msg = 'Invalid email or password.';
+    showAlert('alertBox', msg);
+    btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
+    btn.disabled = false;
+  }
+});
+
+// GOOGLE LOGIN
+document.getElementById('googleLoginBtn').addEventListener('click', async () => {
+  try {
+    const cred = await signInWithPopup(auth, googleProvider);
+    const snap = await getDoc(doc(db, 'users', cred.user.uid));
+    if (!snap.exists()) await createUserRecord(cred.user, 'User');
+    await redirectUser(cred.user);
+  } catch(err) {
+    showAlert('alertBox', 'Google login failed. Please try again.');
+  }
+});
+
+// FORGOT PASSWORD
+document.getElementById('forgotBtn').addEventListener('click', () => {
+  document.getElementById('forgotModal').classList.add('active');
+});
+document.getElementById('closeForgot').addEventListener('click', () => {
+  document.getElementById('forgotModal').classList.remove('active');
+});
+document.getElementById('sendResetBtn').addEventListener('click', async () => {
+  const email = document.getElementById('resetEmail').value.trim();
+  if (!email) { showAlert('forgotAlert','Please enter your email.'); return; }
+  try {
+    await sendPasswordResetEmail(auth, email);
+    showAlert('forgotAlert','Password reset email sent! Check your inbox.','success');
+    document.getElementById('forgotModal').classList.remove('active');
+    showToast('Reset email sent to ' + email);
+  } catch(err) {
+    showAlert('forgotAlert','Failed to send reset email. Check the email address.');
+  }
+});
+
+// SIGNUP MODAL
+document.getElementById('openSignup').addEventListener('click', () => {
+  document.getElementById('signupModal').classList.add('active');
+  document.getElementById('signupOptions').style.display = 'block';
+  document.getElementById('emailSignupForm').style.display = 'none';
+});
+document.getElementById('closeSignup').addEventListener('click', () => {
+  document.getElementById('signupModal').classList.remove('active');
+});
+
+// SHOW EMAIL SIGNUP FORM
+document.getElementById('signupEmailBtn').addEventListener('click', () => {
+  document.getElementById('signupOptions').style.display = 'none';
+  document.getElementById('emailSignupForm').style.display = 'block';
+});
+document.getElementById('backToOptions').addEventListener('click', () => {
+  document.getElementById('signupOptions').style.display = 'block';
+  document.getElementById('emailSignupForm').style.display = 'none';
+});
+
+// EMAIL SIGNUP
+document.getElementById('emailSignupForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const name = document.getElementById('signupName').value.trim();
+  const email = document.getElementById('signupEmail').value.trim();
+  const pass = document.getElementById('signupPass').value;
+  const btn = document.getElementById('signupSubmitBtn');
+  if (!name) { showAlert('signupAlert','Please enter your name.'); return; }
+  if (pass.length < 6) { showAlert('signupAlert','Password must be at least 6 characters.'); return; }
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+  btn.disabled = true;
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    await updateProfile(cred.user, { displayName: name });
+    await createUserRecord(cred.user, 'User');
+    document.getElementById('signupModal').classList.remove('active');
+    showAlert('alertBox','Signup successful! Your account has been created. Please login with your email and password.','success');
+    await auth.signOut();
+    document.getElementById('emailSignupForm').reset();
+  } catch(err) {
+    let msg = 'Signup failed.';
+    if (err.code === 'auth/email-already-in-use') msg = 'This email is already registered.';
+    if (err.code === 'auth/invalid-email') msg = 'Invalid email format.';
+    if (err.code === 'auth/weak-password') msg = 'Password is too weak.';
+    showAlert('signupAlert', msg);
+  }
+  btn.innerHTML = '<i class="fas fa-check"></i> Sign Up';
+  btn.disabled = false;
+});
+
+// GOOGLE SIGNUP
+document.getElementById('signupGoogleBtn').addEventListener('click', async () => {
+  try {
+    const cred = await signInWithPopup(auth, googleProvider);
+    const snap = await getDoc(doc(db, 'users', cred.user.uid));
+    if (!snap.exists()) await createUserRecord(cred.user, 'User');
+    document.getElementById('signupModal').classList.remove('active');
+    await redirectUser(cred.user);
+  } catch(err) {
+    showAlert('signupAlert','Google signup failed.');
+  }
+});
+
+// Close modals on overlay click
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', (e) => { if(e.target === el) el.classList.remove('active'); });
+});
+</script>
+</body>
+</html>

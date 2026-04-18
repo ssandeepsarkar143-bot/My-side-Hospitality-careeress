@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Owner Dashboard – Hospitality Careers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<link rel="stylesheet" href="css/styles.css"/>
+</head>
+<body>
+<div id="loader"><div class="loader-ring"></div><div class="loader-text">Owner Portal</div></div>
+
+<!-- MPIN SCREEN -->
+<div id="mpinScreen" style="display:none">
+  <div class="hero-bg"><div class="hero-slide active" style="background-image:url('https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=1600&q=80');background-size:cover;background-position:center"></div><div class="hero-overlay"></div></div>
+  <div class="mpin-container" style="position:relative;z-index:2">
+    <div class="mpin-box">
+      <div style="font-size:40px;margin-bottom:12px">🔐</div>
+      <div class="site-title">Owner Access</div>
+      <div id="mpinSubtext" class="site-subtitle">Enter your 4-digit MPIN to continue</div>
+      <div id="mpinAlert" class="alert"></div>
+      <div class="mpin-inputs" id="mpinInputs">
+        <input class="mpin-input" maxlength="1" type="password" inputmode="numeric" pattern="[0-9]"/>
+        <input class="mpin-input" maxlength="1" type="password" inputmode="numeric" pattern="[0-9]"/>
+        <input class="mpin-input" maxlength="1" type="password" inputmode="numeric" pattern="[0-9]"/>
+        <input class="mpin-input" maxlength="1" type="password" inputmode="numeric" pattern="[0-9]"/>
+      </div>
+      <button class="btn btn-primary w-full" id="mpinSubmitBtn">
+        <i class="fas fa-unlock-alt"></i> <span id="mpinBtnText">Unlock</span>
+      </button>
+      <div id="mpinHint" style="font-size:11px;color:var(--gray);margin-top:16px;text-align:center"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN DASHBOARD -->
+<div id="mainDashboard" style="display:none">
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <img src="jogo.png" class="navbar-logo" onerror="this.style.display='none'" alt="Logo"/>
+      <div class="navbar-title">Hospitality Careers</div>
+    </div>
+    <div class="navbar-right">
+      <span class="user-tag tag-owner">Owner</span>
+      <span class="tag-user-name" id="ownerName"></span>
+      <button class="btn btn-sm btn-danger" onclick="showLogout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+    </div>
+  </nav>
+
+  <div class="dashboard-layout">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-search">
+        <input type="text" id="userSearch" placeholder="🔍 Search users..." oninput="searchUsers(this.value)"/>
+      </div>
+      <div class="sidebar-section">Main</div>
+      <div class="sidebar-item active" onclick="showSection('revenue')"><i class="fas fa-chart-bar"></i> Revenue Dashboard</div>
+      <div class="sidebar-section">User Management</div>
+      <div class="sidebar-item" onclick="showSection('users')"><i class="fas fa-users"></i> User Control</div>
+      <div class="sidebar-item" onclick="showSection('adminWorking')"><i class="fas fa-user-shield"></i> Admin Working</div>
+      <div class="sidebar-section">Job Management</div>
+      <div class="sidebar-item" onclick="showSection('jobRequests')"><i class="fas fa-inbox"></i> Job Post Requests</div>
+      <div class="sidebar-item" onclick="showSection('joblist')"><i class="fas fa-list"></i> Manage Job List</div>
+      <div class="sidebar-item" onclick="window.open('job-post-from.html','_self')"><i class="fas fa-plus-circle"></i> Add Job (Live)</div>
+      <div class="sidebar-section">Candidate</div>
+      <div class="sidebar-item" onclick="showSection('candidates')"><i class="fas fa-user-graduate"></i> Candidate List</div>
+      <div class="sidebar-section">Requests</div>
+      <div class="sidebar-item" onclick="showSection('connectReqs')"><i class="fas fa-link"></i> Connect Employer</div>
+      <div class="sidebar-item" onclick="showSection('contactReqs')"><i class="fas fa-phone"></i> Contact Requests</div>
+      <div class="sidebar-item" onclick="showSection('resumeReqs')"><i class="fas fa-file-download"></i> Resume Requests</div>
+      <div class="sidebar-item" onclick="showSection('membershipReqs')"><i class="fas fa-crown"></i> Membership Requests</div>
+      <div class="sidebar-section">Finance</div>
+      <div class="sidebar-item" onclick="showSection('discounts')"><i class="fas fa-tag"></i> Discounts & Offers</div>
+      <div class="sidebar-section">Settings</div>
+      <div class="sidebar-item" onclick="showSection('manageMpin')"><i class="fas fa-key"></i> Manage MPINs</div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="dashboard-content">
+
+      <!-- REVENUE DASHBOARD -->
+      <div id="sec-revenue" class="page-section active">
+        <div class="section-title"><i class="fas fa-chart-bar"></i> Revenue Dashboard</div>
+        <div class="stats-grid" id="revenueStats"></div>
+        <div class="stats-grid" id="avgStats"></div>
+        <div class="chart-container">
+          <div class="card-title"><i class="fas fa-chart-line"></i> Membership Sales Over Time</div>
+          <canvas id="revenueChart" style="width:100%;height:200px"></canvas>
+          <div id="revenueChartFallback" style="text-align:center;color:var(--gray);padding:40px">Loading chart data...</div>
+        </div>
+      </div>
+
+      <!-- USER CONTROL -->
+      <div id="sec-users" class="page-section">
+        <div class="section-title"><i class="fas fa-users"></i> User Control</div>
+        <div style="margin-bottom:16px">
+          <input type="text" id="userTableSearch" class="form-control" placeholder="Search by name or email..." oninput="filterUserTable(this.value)" style="max-width:400px"/>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th><th>Membership</th><th>Actions</th></tr></thead>
+            <tbody id="usersTableBody"><tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ADMIN WORKING -->
+      <div id="sec-adminWorking" class="page-section">
+        <div class="section-title"><i class="fas fa-user-shield"></i> Admin Working Dashboard</div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Admin Name</th><th>Jobs Approved</th><th>Contacts Approved</th><th>Resumes Approved</th><th>Membership Approved</th><th>Candidates Hired</th></tr></thead>
+            <tbody id="adminWorkingBody"><tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- JOB POST REQUESTS -->
+      <div id="sec-jobRequests" class="page-section">
+        <div class="section-title"><i class="fas fa-inbox"></i> Job Post Requests</div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Position</th><th>Company</th><th>Location</th><th>Salary</th><th>Posted By</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="jobReqsBody"><tr><td colspan="8" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- JOB LIST -->
+      <div id="sec-joblist" class="page-section">
+        <div class="section-title"><i class="fas fa-list"></i> Manage Job List</div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Position</th><th>Company</th><th>Location</th><th>Salary</th><th>Vacancies</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="jobListBody"><tr><td colspan="7" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- CANDIDATE LIST -->
+      <div id="sec-candidates" class="page-section">
+        <div class="section-title"><i class="fas fa-user-graduate"></i> Candidate List</div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Job Applied</th><th>Experience</th><th>Notice Period</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="candidatesBody"><tr><td colspan="8" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- CONNECT EMPLOYER REQUESTS -->
+      <div id="sec-connectReqs" class="page-section">
+        <div class="section-title"><i class="fas fa-link"></i> Connect Employer Requests</div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Requester</th><th>Job Title</th><th>Requested On</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="connectReqsBody"><tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- CONTACT REQUESTS -->
+      <div id="sec-contactReqs" class="page-section">
+        <div class="section-title"><i class="fas fa-phone"></i> Contact Requests</div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Requester</th><th>Candidate</th><th>Date</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="contactReqsBody"><tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- RESUME REQUESTS -->
+      <div id="sec-resumeReqs" class="page-section">
+        <div class="section-title"><i class="fas fa-file-download"></i> Resume Download Requests</div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Requester</th><th>Candidate</th><th>Date</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="resumeReqsBody"><tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- MEMBERSHIP REQUESTS -->
+      <div id="sec-membershipReqs" class="page-section">
+        <div class="section-title"><i class="fas fa-crown"></i> Membership Requests</div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>User</th><th>Email</th><th>Requested On</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="membershipReqsBody"><tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- DISCOUNTS & OFFERS -->
+      <div id="sec-discounts" class="page-section">
+        <div class="section-title"><i class="fas fa-tag"></i> Discounts, Offers & Upgrade</div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title"><i class="fas fa-percent"></i> Add Discount / Offer</div>
+            <div class="form-group"><label>Discount Type</label>
+              <select id="discountType" class="form-control" onchange="toggleDiscountFields()">
+                <option value="percent">Percentage Discount</option>
+                <option value="amount">Flat Amount Discount</option>
+              </select>
+            </div>
+            <div class="form-group" id="percentField"><label>Discount Percentage (%)</label><input type="number" id="discountPercent" class="form-control" placeholder="e.g. 20"/></div>
+            <div class="form-group" id="amountField" style="display:none"><label>Discount Amount (₹)</label><input type="number" id="discountAmount" class="form-control" placeholder="e.g. 100"/></div>
+            <div class="form-group"><label>Extra Validity Days (Offer)</label><input type="number" id="extraDays" class="form-control" placeholder="e.g. 7"/></div>
+            <div class="form-group"><label>Apply to Specific User (Optional – leave blank for all)</label><input type="text" id="discountUserId" class="form-control" placeholder="User ID or email"/></div>
+            <button class="btn btn-success" onclick="addDiscount()"><i class="fas fa-plus"></i> Apply Offer</button>
+          </div>
+          <div class="card">
+            <div class="card-title"><i class="fas fa-arrow-up"></i> Upgrade Membership Price</div>
+            <div class="form-group"><label>New Price (₹)</label><input type="number" id="upgradePrice" class="form-control" placeholder="e.g. 599"/></div>
+            <div class="form-group"><label>Apply to Specific User (Optional)</label><input type="text" id="upgradeUserId" class="form-control" placeholder="User ID or email"/></div>
+            <button class="btn btn-warning" onclick="upgradePrice()" style="background:linear-gradient(135deg,#ffc107,#e0a800);color:#000"><i class="fas fa-arrow-up"></i> Update Price</button>
+          </div>
+        </div>
+        <div class="card mt-16">
+          <div class="card-title"><i class="fas fa-list"></i> Active Offers</div>
+          <div class="table-wrapper" style="margin:0">
+            <table><thead><tr><th>Type</th><th>Value</th><th>Extra Days</th><th>Target</th><th>Action</th></tr></thead>
+            <tbody id="offersTableBody"><tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">No active offers</td></tr></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- MANAGE MPINS -->
+      <div id="sec-manageMpin" class="page-section">
+        <div class="section-title"><i class="fas fa-key"></i> Manage MPINs</div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title"><i class="fas fa-user-shield"></i> Your (Owner) MPIN</div>
+            <div class="form-group"><label>New MPIN (4 digits)</label><input type="password" id="ownerMpinNew" class="form-control" maxlength="4" inputmode="numeric" placeholder="Enter new 4-digit MPIN"/></div>
+            <div class="form-group"><label>Confirm MPIN</label><input type="password" id="ownerMpinConfirm" class="form-control" maxlength="4" inputmode="numeric" placeholder="Confirm MPIN"/></div>
+            <button class="btn btn-primary" onclick="changeOwnerMpin()"><i class="fas fa-save"></i> Save MPIN</button>
+            <div id="ownerMpinMsg" class="alert mt-8"></div>
+          </div>
+          <div class="card">
+            <div class="card-title"><i class="fas fa-users-cog"></i> Set Admin MPIN</div>
+            <div class="form-group"><label>Select Admin</label>
+              <select id="adminMpinSelect" class="form-control"><option value="">Loading admins...</option></select>
+            </div>
+            <div class="form-group"><label>New MPIN (4 digits)</label><input type="password" id="adminMpinNew" class="form-control" maxlength="4" inputmode="numeric" placeholder="Enter 4-digit MPIN"/></div>
+            <button class="btn btn-primary" onclick="setAdminMpin()"><i class="fas fa-save"></i> Set Admin MPIN</button>
+            <div id="adminMpinMsg" class="alert mt-8"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- USER DETAILS MODAL -->
+<div class="modal-overlay" id="userDetailsModal">
+  <div class="modal-box wide" style="max-width:700px">
+    <div class="modal-header">
+      <div class="modal-title"><i class="fas fa-user"></i> User Details</div>
+      <button class="modal-close" onclick="closeModal('userDetailsModal')">&times;</button>
+    </div>
+    <div id="userDetailsContent"></div>
+  </div>
+</div>
+
+<!-- PROMOTE ADMIN MODAL -->
+<div class="modal-overlay" id="promoteModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title"><i class="fas fa-user-shield"></i> Promote to Admin</div>
+      <button class="modal-close" onclick="closeModal('promoteModal')">&times;</button>
+    </div>
+    <div id="promoteUserName" style="font-size:14px;color:var(--gold-light);margin-bottom:16px;font-weight:600"></div>
+    <div class="authority-grid" id="authorityGrid">
+      <label class="authority-item"><input type="checkbox" id="auth_dashboard" checked/><div class="authority-label"><strong>Small User Control Dashboard</strong>View basic user information</div></label>
+      <label class="authority-item"><input type="checkbox" id="auth_connectEmployer"/><div class="authority-label"><strong>Approve Connect Employer Requests</strong>Can approve/reject employer connections</div></label>
+      <label class="authority-item"><input type="checkbox" id="auth_resumeDownload"/><div class="authority-label"><strong>Approve Resume Download Requests</strong>Can approve resume access</div></label>
+      <label class="authority-item"><input type="checkbox" id="auth_contact"/><div class="authority-label"><strong>Approve Contact Requests</strong>Can approve candidate contact visibility</div></label>
+      <label class="authority-item"><input type="checkbox" id="auth_membership"/><div class="authority-label"><strong>Approve Membership Requests</strong>Can approve membership upgrades</div></label>
+      <label class="authority-item"><input type="checkbox" id="auth_jobPost"/><div class="authority-label"><strong>Approve Job Post Requests</strong>Can publish pending job posts</div></label>
+      <label class="authority-item"><input type="checkbox" id="auth_jobList"/><div class="authority-label"><strong>Manage Job List</strong>Can edit and delete job listings</div></label>
+    </div>
+    <button class="btn btn-success w-full mt-16" onclick="confirmPromote()"><i class="fas fa-check"></i> Promote to Admin</button>
+  </div>
+</div>
+
+<!-- EDIT JOB MODAL -->
+<div class="modal-overlay" id="editJobModal">
+  <div class="modal-box wide">
+    <div class="modal-header">
+      <div class="modal-title"><i class="fas fa-edit"></i> Edit Job</div>
+      <button class="modal-close" onclick="closeModal('editJobModal')">&times;</button>
+    </div>
+    <div id="editJobContent"></div>
+  </div>
+</div>
+
+<!-- LOGOUT MODAL -->
+<div class="modal-overlay" id="logoutModal">
+  <div class="modal-box" style="max-width:380px;text-align:center">
+    <div style="font-size:48px;margin-bottom:12px">👋</div>
+    <div class="modal-title" style="justify-content:center;margin-bottom:8px">Are you sure?</div>
+    <p style="font-size:13px;color:var(--gray);margin-bottom:24px">You will be logged out of Owner Dashboard.</p>
+    <div style="display:flex;gap:12px;justify-content:center">
+      <button class="btn btn-danger" id="confirmLogout"><i class="fas fa-sign-out-alt"></i> Yes, Logout</button>
+      <button class="btn btn-outline" onclick="closeModal('logoutModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><i class="fas fa-check-circle" id="toastIcon"></i><span id="toastMsg"></span></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, doc, getDoc, getDocs, collection, query, where, updateDoc, deleteDoc, addDoc, serverTimestamp, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCuAuc9qhA7D_-Lqt-69pbG81KTIiDFVpg",
+  authDomain: "hospitality-careers-e662f.firebaseapp.com",
+  projectId: "hospitality-careers-e662f",
+  storageBucket: "hospitality-careers-e662f.firebasestorage.app",
+  messagingSenderId: "45029895717",
+  appId: "1:45029895717:web:f54f86f608b98751cad9cc"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const OWNER_EMAIL = 'ssandeepsarkar143@gmail.com';
+const MPIN_DOC = 'owner';
+let currentUser = null;
+let allUsers = [], promoteUserId = null;
+let isMpinSet = false;
+
+// Toast
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  t.className = `toast show ${type}`;
+  setTimeout(() => t.classList.remove('show'), 4000);
+}
+
+window.closeModal = function(id) { document.getElementById(id).classList.remove('active'); };
+window.showLogout = function() { document.getElementById('logoutModal').classList.add('active'); };
+
+document.getElementById('confirmLogout').addEventListener('click', async () => {
+  await signOut(auth);
+  window.location.href = 'index.html';
+});
+
+// SECTION NAVIGATION
+window.showSection = function(name) {
+  document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.sidebar-item').forEach(s => s.classList.remove('active'));
+  document.getElementById('sec-'+name).classList.add('active');
+  loadSectionData(name);
+};
+
+function loadSectionData(name) {
+  switch(name) {
+    case 'revenue': loadRevenue(); break;
+    case 'users': loadUsers(); break;
+    case 'adminWorking': loadAdminWorking(); break;
+    case 'jobRequests': loadJobRequests(); break;
+    case 'joblist': loadJobList(); break;
+    case 'candidates': loadCandidates(); break;
+    case 'connectReqs': loadRequests('employerConnect','connectReqsBody'); break;
+    case 'contactReqs': loadRequests('contact','contactReqsBody'); break;
+    case 'resumeReqs': loadRequests('resumeDownload','resumeReqsBody'); break;
+    case 'membershipReqs': loadMembershipReqs(); break;
+    case 'discounts': loadOffers(); break;
+    case 'manageMpin': loadAdminMpinList(); break;
+  }
+}
+
+// MPIN LOGIC
+onAuthStateChanged(auth, async (user) => {
+  if (!user || user.email?.toLowerCase() !== OWNER_EMAIL) {
+    window.location.href = 'index.html'; return;
+  }
+  currentUser = user;
+  document.getElementById('ownerName').textContent = user.displayName || user.email;
+  document.getElementById('loader').style.display = 'none';
+
+  // Check if MPIN exists
+  const mpinSnap = await getDoc(doc(db, 'mpins', MPIN_DOC));
+  isMpinSet = mpinSnap.exists() && mpinSnap.data().mpin;
+
+  if (!isMpinSet) {
+    // First time – set MPIN
+    document.getElementById('mpinSubtext').textContent = 'Set your 4-digit MPIN for first time access';
+    document.getElementById('mpinHint').textContent = 'You will use this MPIN every time you log in as Owner.';
+    document.getElementById('mpinBtnText').textContent = 'Set MPIN & Unlock';
+    document.getElementById('mpinScreen').style.display = 'block';
+  } else {
+    document.getElementById('mpinScreen').style.display = 'block';
+  }
+});
+
+// MPIN INPUTS auto-tab
+const mpinInputs = document.querySelectorAll('.mpin-input');
+mpinInputs.forEach((input, i) => {
+  input.addEventListener('input', () => {
+    if (input.value && i < mpinInputs.length - 1) mpinInputs[i+1].focus();
+  });
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Backspace' && !input.value && i > 0) mpinInputs[i-1].focus();
+  });
+});
+
+document.getElementById('mpinSubmitBtn').addEventListener('click', async () => {
+  const mpin = Array.from(mpinInputs).map(i => i.value).join('');
+  if (mpin.length !== 4 || !/^\d{4}$/.test(mpin)) {
+    showMpinAlert('Please enter a valid 4-digit MPIN.'); return;
+  }
+  if (!isMpinSet) {
+    // Set MPIN
+    await setDoc(doc(db, 'mpins', MPIN_DOC), { mpin, updatedAt: serverTimestamp() });
+    showToast('MPIN set successfully!');
+    unlockDashboard();
+  } else {
+    const snap = await getDoc(doc(db, 'mpins', MPIN_DOC));
+    if (snap.data().mpin === mpin) {
+      unlockDashboard();
+    } else {
+      showMpinAlert('Incorrect MPIN. Please try again.');
+      mpinInputs.forEach(i => { i.value = ''; }); mpinInputs[0].focus();
+    }
+  }
+});
+
+function showMpinAlert(msg) {
+  const el = document.getElementById('mpinAlert');
+  el.textContent = msg; el.className = 'alert alert-danger show';
+}
+
+function unlockDashboard() {
+  document.getElementById('mpinScreen').style.display = 'none';
+  document.getElementById('mainDashboard').style.display = 'block';
+  loadRevenue();
+}
+
+// REVENUE
+async function loadRevenue() {
+  try {
+    const usersSnap = await getDocs(collection(db, 'users'));
+    const users = usersSnap.docs.map(d => d.data());
+    const totalUsers = users.length;
+    const normalUsers = users.filter(u => u.role === 'User').length;
+    const primeUsers = users.filter(u => u.role === 'Prime').length;
+    const admins = users.filter(u => u.role === 'Admin').length;
+
+    const appsSnap = await getDocs(collection(db, 'applications'));
+    const apps = appsSnap.docs.map(d => d.data());
+    const totalApps = apps.length;
+    const hiredCount = apps.filter(a => a.status === 'Hired').length;
+    const pendingCount = apps.filter(a => a.status === 'Pending').length;
+
+    const jobsSnap = await getDocs(collection(db, 'jobPosts'));
+    const jobs = jobsSnap.docs.map(d => d.data());
+    const liveJobs = jobs.filter(j => j.status === 'live').length;
+    const totalPosters = new Set(jobs.map(j => j.userId)).size;
+
+    const reqsSnap = await getDocs(collection(db, 'requests'));
+    const reqs = reqsSnap.docs.map(d => d.data());
+    const approvedConnect = reqs.filter(r => r.type === 'employerConnect' && r.status === 'approved').length;
+    const approvedResume = reqs.filter(r => r.type === 'resumeDownload' && r.status === 'approved').length;
+    const approvedContact = reqs.filter(r => r.type === 'contact' && r.status === 'approved').length;
+
+    const totalRevenue = primeUsers * 499;
+
+    document.getElementById('revenueStats').innerHTML = `
+      ${statCard('fa-users','Total Users', totalUsers,'All registered users')}
+      ${statCard('fa-user','Normal Users', normalUsers,'Free tier users')}
+      ${statCard('fa-crown','Prime Members', primeUsers,'Active memberships')}
+      ${statCard('fa-user-shield','Admins', admins,'System admins')}
+      ${statCard('fa-rupee-sign','Total Revenue', '₹'+totalRevenue.toLocaleString(),'From memberships')}
+      ${statCard('fa-paper-plane','Total Applications', totalApps,'Job applications')}
+      ${statCard('fa-briefcase','Live Jobs', liveJobs,'Active job posts')}
+      ${statCard('fa-building','Job Posters', totalPosters,'Unique employers')}
+      ${statCard('fa-check-circle','Hired Candidates', hiredCount,'Successfully placed')}
+      ${statCard('fa-clock','Pending Candidates', pendingCount,'Awaiting review')}
+      ${statCard('fa-link','Connect Approved', approvedConnect,'Employer connections')}
+      ${statCard('fa-file-download','Resume Approved', approvedResume,'Resume downloads')}
+      ${statCard('fa-phone','Contact Approved', approvedContact,'Contact reveals')}`;
+
+    // Average stats
+    const days = 30;
+    document.getElementById('avgStats').innerHTML = `
+      ${statCard('fa-user-plus','Avg. Signup/Day', (totalUsers/days).toFixed(1),'Last 30 days')}
+      ${statCard('fa-crown','Avg. Prime Sale/Day', (primeUsers/days).toFixed(1),'Per day')}
+      ${statCard('fa-briefcase','Avg. Job Post/Day', (liveJobs/days).toFixed(1),'Per day')}
+      ${statCard('fa-paper-plane','Avg. Apply/Day', (totalApps/days).toFixed(1),'Per day')}
+      ${statCard('fa-check','Avg. Hired/Day', (hiredCount/days).toFixed(1),'Per day')}`;
+
+    document.getElementById('revenueChartFallback').textContent = `Total Revenue from ${primeUsers} Prime memberships: ₹${totalRevenue.toLocaleString()}`;
+  } catch(e) {
+    document.getElementById('revenueStats').innerHTML = '<div style="color:var(--danger)">Error loading stats</div>';
+  }
+}
+
+function statCard(icon, label, value, sub) {
+  return `<div class="stat-card"><div class="stat-icon"><i class="fas ${icon}"></i></div><div class="stat-label">${label}</div><div class="stat-value">${value}</div><div class="stat-sub">${sub}</div></div>`;
+}
+
+// USERS
+async function loadUsers() {
+  try {
+    const snap = await getDocs(collection(db, 'users'));
+    allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderUsersTable(allUsers);
+  } catch(e) {}
+}
+
+function renderUsersTable(users) {
+  const tbody = document.getElementById('usersTableBody');
+  if (!users.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">No users found</td></tr>'; return; }
+  tbody.innerHTML = users.map(u => `<tr>
+    <td style="cursor:pointer;color:var(--gold)" onclick="viewUserDetails('${u.id}')">${u.displayName || 'N/A'}</td>
+    <td>${u.email}</td>
+    <td><span class="badge ${u.role==='Owner'?'badge-live':u.role==='Admin'?'badge-rejected':u.role==='Prime'?'badge-approved':'badge-pending'}">${u.tag || u.role || 'User'}</span></td>
+    <td>${u.createdAt?.toDate?.()?.toLocaleDateString() || 'N/A'}</td>
+    <td>${u.membershipCount || 0}x (${u.role==='Prime'?'Active':'None'})</td>
+    <td>
+      <button class="btn btn-sm btn-info" onclick="viewUserDetails('${u.id}')">Details</button>
+      ${u.role !== 'Owner' && u.role !== 'Admin' ? `<button class="btn btn-sm btn-warning" style="background:linear-gradient(135deg,#ffc107,#e0a800);color:#000" onclick="openPromote('${u.id}','${u.displayName||u.email}')">Promote Admin</button>` : ''}
+      ${u.role === 'Admin' ? `<button class="btn btn-sm btn-danger" onclick="demoteAdmin('${u.id}')">Demote</button>` : ''}
+    </td>
+  </tr>`).join('');
+}
+
+window.searchUsers = function(val) {
+  const q = val.toLowerCase();
+  const filtered = allUsers.filter(u => (u.displayName||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q));
+  renderUsersTable(filtered);
+};
+
+window.filterUserTable = function(val) { window.searchUsers(val); };
+
+window.viewUserDetails = async function(uid) {
+  const user = allUsers.find(u => u.id === uid) || {};
+  let appsHtml = '', postsHtml = '';
+  try {
+    const appsSnap = await getDocs(query(collection(db, 'applications'), where('userId','==',uid)));
+    appsHtml = appsSnap.docs.map(d => { const a = d.data(); return `<tr><td>${a.jobTitle}</td><td>${a.appliedAt?.toDate?.()?.toLocaleDateString()||'N/A'}</td><td><span class="badge badge-${a.status==='Hired'?'hired':'pending'}">${a.status}</span></td></tr>`; }).join('') || '<tr><td colspan="3" style="color:var(--gray)">None</td></tr>';
+    const postsSnap = await getDocs(query(collection(db, 'jobPosts'), where('userId','==',uid)));
+    postsHtml = postsSnap.docs.map(d => { const p = d.data(); return `<tr><td>${p.position}</td><td>${p.createdAt?.toDate?.()?.toLocaleDateString()||'N/A'}</td><td><span class="badge badge-${p.status==='live'?'live':'pending'}">${p.status}</span></td></tr>`; }).join('') || '<tr><td colspan="3" style="color:var(--gray)">None</td></tr>';
+  } catch(e) {}
+  document.getElementById('userDetailsContent').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;font-size:13px">
+      <div><span style="color:var(--gray)">Name:</span> <strong>${user.displayName||'N/A'}</strong></div>
+      <div><span style="color:var(--gray)">Email:</span> ${user.email}</div>
+      <div><span style="color:var(--gray)">Role:</span> <span class="badge badge-pending">${user.role}</span></div>
+      <div><span style="color:var(--gray)">Joined:</span> ${user.createdAt?.toDate?.()?.toLocaleDateString()||'N/A'}</div>
+      <div><span style="color:var(--gray)">Phone:</span> ${user.phone||'N/A'}</div>
+      <div><span style="color:var(--gray)">Type:</span> ${user.userType||'N/A'}</div>
+      <div><span style="color:var(--gray)">Membership Count:</span> ${user.membershipCount||0}</div>
+      <div><span style="color:var(--gray)">Membership Expiry:</span> ${user.membershipExpiryAt?.toDate?.()?.toLocaleDateString()||'N/A'}</div>
+    </div>
+    <div style="font-weight:700;color:var(--gold);margin-bottom:8px">Applications</div>
+    <table style="width:100%;font-size:12px;margin-bottom:16px"><thead><tr><th>Job</th><th>Date</th><th>Status</th></tr></thead><tbody>${appsHtml}</tbody></table>
+    <div style="font-weight:700;color:var(--gold);margin-bottom:8px">Job Posts</div>
+    <table style="width:100%;font-size:12px"><thead><tr><th>Position</th><th>Date</th><th>Status</th></tr></thead><tbody>${postsHtml}</tbody></table>`;
+  document.getElementById('userDetailsModal').classList.add('active');
+};
+
+window.openPromote = function(uid, name) {
+  promoteUserId = uid;
+  document.getElementById('promoteUserName').textContent = 'Promoting: ' + name;
+  document.getElementById('promoteModal').classList.add('active');
+};
+
+window.confirmPromote = async function() {
+  if (!promoteUserId) return;
+  const authorities = {
+    dashboard: document.getElementById('auth_dashboard').checked,
+    connectEmployer: document.getElementById('auth_connectEmployer').checked,
+    resumeDownload: document.getElementById('auth_resumeDownload').checked,
+    contact: document.getElementById('auth_contact').checked,
+    membership: document.getElementById('auth_membership').checked,
+    jobPost: document.getElementById('auth_jobPost').checked,
+    jobList: document.getElementById('auth_jobList').checked
+  };
+  await updateDoc(doc(db, 'users', promoteUserId), {
+    role: 'Admin', tag: 'Admin', authorities, promotedAt: serverTimestamp()
+  });
+  closeModal('promoteModal');
+  showToast('User promoted to Admin successfully!');
+  loadUsers();
+  loadAdminMpinList();
+};
+
+window.demoteAdmin = async function(uid) {
+  if (!confirm('Are you sure you want to demote this admin?')) return;
+  await updateDoc(doc(db, 'users', uid), { role: 'User', tag: 'User', authorities: {} });
+  showToast('Admin demoted to User.');
+  loadUsers();
+};
+
+// ADMIN WORKING
+async function loadAdminWorking() {
+  try {
+    const adminsSnap = await getDocs(query(collection(db, 'users'), where('role','==','Admin')));
+    const tbody = document.getElementById('adminWorkingBody');
+    if (adminsSnap.empty) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">No admins yet</td></tr>'; return; }
+    const rows = await Promise.all(adminsSnap.docs.map(async d => {
+      const admin = d.data();
+      const adminId = d.id;
+      const [jobsApproved, contactApproved, resumeApproved, membershipApproved, hiredCandidates] = await Promise.all([
+        getDocs(query(collection(db, 'jobPosts'), where('approvedBy','==',adminId))),
+        getDocs(query(collection(db, 'requests'), where('approvedBy','==',adminId), where('type','==','contact'))),
+        getDocs(query(collection(db, 'requests'), where('approvedBy','==',adminId), where('type','==','resumeDownload'))),
+        getDocs(query(collection(db, 'requests'), where('approvedBy','==',adminId), where('type','==','membership'))),
+        getDocs(query(collection(db, 'applications'), where('hiredBy','==',adminId)))
+      ]);
+      return `<tr>
+        <td>${admin.displayName||admin.email}</td>
+        <td>${jobsApproved.size}</td>
+        <td>${contactApproved.size}</td>
+        <td>${resumeApproved.size}</td>
+        <td>${membershipApproved.size}</td>
+        <td>${hiredCandidates.size}</td>
+      </tr>`;
+    }));
+    tbody.innerHTML = rows.join('');
+  } catch(e) {}
+}
+
+// JOB REQUESTS
+async function loadJobRequests() {
+  try {
+    const snap = await getDocs(query(collection(db, 'jobPosts'), where('status','==','pending')));
+    const tbody = document.getElementById('jobReqsBody');
+    if (snap.empty) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--gray);padding:20px">No pending job posts</td></tr>'; return; }
+    tbody.innerHTML = snap.docs.map(d => {
+      const j = d.data();
+      return `<tr>
+        <td>${j.position}</td><td>${j.companyName}</td><td>${j.location}, ${j.state}</td>
+        <td>${j.salaryText||j.salary}</td><td>${j.userEmail}</td>
+        <td>${j.createdAt?.toDate?.()?.toLocaleDateString()||'N/A'}</td>
+        <td><span class="badge badge-pending">Pending</span></td>
+        <td>
+          <button class="btn btn-sm btn-success" onclick="approveJob('${d.id}')"><i class="fas fa-check"></i> Approve</button>
+          <button class="btn btn-sm btn-danger" onclick="rejectJob('${d.id}')"><i class="fas fa-times"></i> Reject</button>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch(e) {}
+}
+
+window.approveJob = async function(id) {
+  await updateDoc(doc(db, 'jobPosts', id), { status: 'live', approvedBy: currentUser.uid, approvedAt: serverTimestamp() });
+  showToast('Job post approved and is now live!');
+  loadJobRequests();
+};
+window.rejectJob = async function(id) {
+  await updateDoc(doc(db, 'jobPosts', id), { status: 'rejected' });
+  showToast('Job post rejected.', 'error');
+  loadJobRequests();
+};
+
+// JOB LIST
+async function loadJobList() {
+  try {
+    const snap = await getDocs(collection(db, 'jobPosts'));
+    const tbody = document.getElementById('jobListBody');
+    if (snap.empty) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--gray);padding:20px">No jobs found</td></tr>'; return; }
+    tbody.innerHTML = snap.docs.map(d => {
+      const j = d.data();
+      return `<tr>
+        <td>${j.position||j.title}</td><td>${j.companyName||'N/A'}</td><td>${j.location}, ${j.state}</td>
+        <td>${j.salaryText||j.salary}</td><td>${j.vacancy}</td>
+        <td><span class="badge badge-${j.status==='live'?'live':'pending'}">${j.status}</span></td>
+        <td>
+          <button class="btn btn-sm btn-info" onclick="editJob('${d.id}')"><i class="fas fa-edit"></i></button>
+          <button class="btn btn-sm btn-danger" onclick="deleteJob('${d.id}')"><i class="fas fa-trash"></i></button>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch(e) {}
+}
+
+window.deleteJob = async function(id) {
+  if (!confirm('Delete this job?')) return;
+  await deleteDoc(doc(db, 'jobPosts', id));
+  showToast('Job deleted.');
+  loadJobList();
+};
+
+window.editJob = async function(id) {
+  const snap = await getDoc(doc(db, 'jobPosts', id));
+  const j = snap.data();
+  document.getElementById('editJobContent').innerHTML = `
+    <div class="form-row">
+      <div class="form-group"><label>Position</label><input id="ej_pos" class="form-control" value="${j.position||j.title||''}"/></div>
+      <div class="form-group"><label>Salary</label><input id="ej_sal" class="form-control" value="${j.salaryText||j.salary||''}"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Location</label><input id="ej_loc" class="form-control" value="${j.location||''}"/></div>
+      <div class="form-group"><label>Vacancies</label><input id="ej_vac" class="form-control" type="number" value="${j.vacancy||0}"/></div>
+    </div>
+    <div class="form-group"><label>Description</label><textarea id="ej_desc" class="form-control" rows="3">${j.description||''}</textarea></div>
+    <button class="btn btn-primary" onclick="saveJob('${id}')"><i class="fas fa-save"></i> Save Changes</button>`;
+  document.getElementById('editJobModal').classList.add('active');
+};
+
+window.saveJob = async function(id) {
+  await updateDoc(doc(db, 'jobPosts', id), {
+    position: document.getElementById('ej_pos').value,
+    title: document.getElementById('ej_pos').value,
+    salaryText: document.getElementById('ej_sal').value,
+    salary: parseInt(document.getElementById('ej_sal').value.replace(/[^0-9]/g,''))||0,
+    location: document.getElementById('ej_loc').value,
+    vacancy: parseInt(document.getElementById('ej_vac').value)||0,
+    description: document.getElementById('ej_desc').value
+  });
+  closeModal('editJobModal');
+  showToast('Job updated!');
+  loadJobList();
+};
+
+// CANDIDATES
+async function loadCandidates() {
+  try {
+    const snap = await getDocs(collection(db, 'applications'));
+    const tbody = document.getElementById('candidatesBody');
+    if (snap.empty) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--gray);padding:20px">No candidates yet</td></tr>'; return; }
+    tbody.innerHTML = snap.docs.map(d => {
+      const a = d.data();
+      return `<tr>
+        <td>${a.userName}</td><td>${a.userEmail}</td><td>${a.phone}</td>
+        <td>${a.jobTitle||'N/A'}</td><td>${a.experience}</td><td>${a.noticePeriod}</td>
+        <td><span class="badge badge-${a.status==='Hired'?'hired':a.status==='Rejected'?'rejected':'pending'}">${a.status}</span></td>
+        <td>
+          <button class="btn btn-sm btn-success" onclick="updateCandidateStatus('${d.id}','Hired')">Hire</button>
+          <button class="btn btn-sm btn-danger" onclick="updateCandidateStatus('${d.id}','Rejected')">Reject</button>
+          ${a.cvUrl?`<a href="${a.cvUrl}" target="_blank" class="btn btn-sm btn-info"><i class="fas fa-file"></i></a>`:''}
+        </td>
+      </tr>`;
+    }).join('');
+  } catch(e) {}
+}
+
+window.updateCandidateStatus = async function(id, status) {
+  await updateDoc(doc(db, 'applications', id), { status, updatedAt: serverTimestamp(), hiredBy: currentUser.uid });
+  showToast(`Candidate status updated to ${status}`);
+  loadCandidates();
+};
+
+// GENERIC REQUESTS
+async function loadRequests(type, bodyId) {
+  try {
+    const snap = await getDocs(query(collection(db, 'requests'), where('type','==',type)));
+    const tbody = document.getElementById(bodyId);
+    if (snap.empty) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">No requests</td></tr>'; return; }
+    tbody.innerHTML = snap.docs.map(d => {
+      const r = d.data();
+      return `<tr>
+        <td>${r.requesterEmail}</td>
+        <td>${r.candidateName||r.jobTitle||'N/A'}</td>
+        <td>${r.createdAt?.toDate?.()?.toLocaleDateString()||'N/A'}</td>
+        <td><span class="badge badge-${r.status==='approved'?'approved':r.status==='rejected'?'rejected':'pending'}">${r.status}</span></td>
+        <td>
+          ${r.status==='pending'?`
+            <button class="btn btn-sm btn-success" onclick="approveRequest('${d.id}','${type}','${bodyId}')">Approve</button>
+            <button class="btn btn-sm btn-danger" onclick="rejectRequest('${d.id}','${type}','${bodyId}')">Reject</button>
+          `:'Done'}
+        </td>
+      </tr>`;
+    }).join('');
+  } catch(e) {}
+}
+
+window.approveRequest = async function(id, type, bodyId) {
+  await updateDoc(doc(db, 'requests', id), { status: 'approved', approvedBy: currentUser.uid, approvedAt: serverTimestamp() });
+  showToast('Request approved!');
+  loadRequests(type, bodyId);
+};
+window.rejectRequest = async function(id, type, bodyId) {
+  await updateDoc(doc(db, 'requests', id), { status: 'rejected' });
+  showToast('Request rejected.', 'error');
+  loadRequests(type, bodyId);
+};
+
+// MEMBERSHIP REQUESTS
+async function loadMembershipReqs() {
+  try {
+    const snap = await getDocs(query(collection(db, 'requests'), where('type','==','membership')));
+    const tbody = document.getElementById('membershipReqsBody');
+    if (snap.empty) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">No membership requests</td></tr>'; return; }
+    tbody.innerHTML = snap.docs.map(d => {
+      const r = d.data();
+      return `<tr>
+        <td>${r.userName||'N/A'}</td><td>${r.requesterEmail}</td>
+        <td>${r.createdAt?.toDate?.()?.toLocaleDateString()||'N/A'}</td>
+        <td>₹${r.amount||499}</td>
+        <td><span class="badge badge-${r.status==='approved'?'approved':r.status==='rejected'?'rejected':'pending'}">${r.status}</span></td>
+        <td>
+          ${r.status==='pending'?`
+            <button class="btn btn-sm btn-success" onclick="approveMembership('${d.id}','${r.requesterId}')">Approve</button>
+            <button class="btn btn-sm btn-danger" onclick="rejectRequest('${d.id}','membership','membershipReqsBody')">Reject</button>
+          `:'Done'}
+        </td>
+      </tr>`;
+    }).join('');
+  } catch(e) {}
+}
+
+window.approveMembership = async function(reqId, userId) {
+  const expiry = new Date(); expiry.setDate(expiry.getDate() + 30);
+  const userSnap = await getDoc(doc(db, 'users', userId));
+  const count = (userSnap.data()?.membershipCount || 0) + 1;
+  await Promise.all([
+    updateDoc(doc(db, 'requests', reqId), { status: 'approved', approvedBy: currentUser.uid, approvedAt: serverTimestamp() }),
+    updateDoc(doc(db, 'users', userId), {
+      role: 'Prime', tag: `Prime${count>1?count:''}`,
+      membershipCount: count, membershipPurchasedAt: serverTimestamp(),
+      membershipExpiryAt: expiry
+    })
+  ]);
+  showToast('Membership approved! User upgraded to Prime.');
+  loadMembershipReqs();
+};
+
+// DISCOUNTS
+window.toggleDiscountFields = function() {
+  const t = document.getElementById('discountType').value;
+  document.getElementById('percentField').style.display = t === 'percent' ? 'block' : 'none';
+  document.getElementById('amountField').style.display = t === 'amount' ? 'block' : 'none';
+};
+
+async function loadOffers() {
+  try {
+    const snap = await getDocs(collection(db, 'offers'));
+    const tbody = document.getElementById('offersTableBody');
+    if (snap.empty) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">No active offers</td></tr>'; return; }
+    tbody.innerHTML = snap.docs.map(d => {
+      const o = d.data();
+      return `<tr>
+        <td>${o.discountPercent?'Percentage':'Flat Amount'}</td>
+        <td>${o.discountPercent?o.discountPercent+'%':'₹'+o.discountAmount}</td>
+        <td>${o.extraDays||0} days</td>
+        <td>${o.targetUserId||'All Users'}</td>
+        <td><button class="btn btn-sm btn-danger" onclick="deleteOffer('${d.id}')"><i class="fas fa-trash"></i></button></td>
+      </tr>`;
+    }).join('');
+  } catch(e) {}
+}
+
+window.addDiscount = async function() {
+  const type = document.getElementById('discountType').value;
+  const extraDays = parseInt(document.getElementById('extraDays').value)||0;
+  const targetUserId = document.getElementById('discountUserId').value.trim();
+  const data = { active: true, extraDays, targetUserId: targetUserId||'', createdAt: serverTimestamp() };
+  if (type === 'percent') data.discountPercent = parseInt(document.getElementById('discountPercent').value)||0;
+  else data.discountAmount = parseInt(document.getElementById('discountAmount').value)||0;
+  await addDoc(collection(db, 'offers'), data);
+  showToast('Offer added successfully!');
+  loadOffers();
+};
+
+window.deleteOffer = async function(id) {
+  await deleteDoc(doc(db, 'offers', id));
+  showToast('Offer removed.');
+  loadOffers();
+};
+
+window.upgradePrice = async function() {
+  const price = parseInt(document.getElementById('upgradePrice').value);
+  const userId = document.getElementById('upgradeUserId').value.trim();
+  if (!price) { showToast('Enter a valid price.','error'); return; }
+  await addDoc(collection(db, 'upgrades'), { newPrice: price, targetUserId: userId||'', createdAt: serverTimestamp() });
+  showToast('Membership price updated!');
+};
+
+// MPIN MANAGEMENT
+async function loadAdminMpinList() {
+  try {
+    const snap = await getDocs(query(collection(db, 'users'), where('role','==','Admin')));
+    const sel = document.getElementById('adminMpinSelect');
+    if (snap.empty) { sel.innerHTML = '<option>No admins found</option>'; return; }
+    sel.innerHTML = '<option value="">-- Select Admin --</option>' + snap.docs.map(d => `<option value="${d.id}">${d.data().displayName||d.data().email}</option>`).join('');
+  } catch(e) {}
+}
+
+window.changeOwnerMpin = async function() {
+  const n = document.getElementById('ownerMpinNew').value;
+  const c = document.getElementById('ownerMpinConfirm').value;
+  const el = document.getElementById('ownerMpinMsg');
+  if (n.length !== 4 || !/^\d{4}$/.test(n)) { el.textContent='Enter 4-digit MPIN.'; el.className='alert alert-danger show'; return; }
+  if (n !== c) { el.textContent='MPINs do not match.'; el.className='alert alert-danger show'; return; }
+  await setDoc(doc(db, 'mpins', 'owner'), { mpin: n, updatedAt: serverTimestamp() });
+  el.textContent='Owner MPIN updated!'; el.className='alert alert-success show';
+  showToast('Owner MPIN updated successfully!');
+};
+
+window.setAdminMpin = async function() {
+  const adminId = document.getElementById('adminMpinSelect').value;
+  const n = document.getElementById('adminMpinNew').value;
+  const el = document.getElementById('adminMpinMsg');
+  if (!adminId) { el.textContent='Select an admin.'; el.className='alert alert-danger show'; return; }
+  if (n.length !== 4 || !/^\d{4}$/.test(n)) { el.textContent='Enter 4-digit MPIN.'; el.className='alert alert-danger show'; return; }
+  await setDoc(doc(db, 'mpins', adminId), { mpin: n, updatedAt: serverTimestamp() });
+  el.textContent='Admin MPIN set!'; el.className='alert alert-success show';
+  showToast('Admin MPIN set successfully!');
+};
+
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', (e) => { if(e.target === el) el.classList.remove('active'); });
+});
+</script>
+</body>
+</html>

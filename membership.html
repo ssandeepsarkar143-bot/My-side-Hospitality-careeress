@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Prime Membership – Hospitality Careers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<link rel="stylesheet" href="css/styles.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+body { background: linear-gradient(135deg, #0d0d2b, #1a1a4e); }
+.prime-badge { background: linear-gradient(135deg, #a78bfa, #6c63ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 32px; font-weight: 900; }
+.membership-features { background: rgba(167,139,250,0.06); border: 1px solid rgba(167,139,250,0.2); border-radius: 16px; padding: 24px; }
+.payment-methods { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 24px; }
+.payment-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(167,139,250,0.2); border-radius: 16px; padding: 24px; text-align: center; transition: all 0.3s; cursor: pointer; }
+.payment-card:hover { border-color: #a78bfa; transform: translateY(-3px); box-shadow: 0 10px 30px rgba(167,139,250,0.2); }
+.payment-icon { font-size: 36px; margin-bottom: 12px; }
+.qr-wrapper { background: #fff; border-radius: 12px; padding: 16px; display: inline-block; margin: 12px auto; position: relative; }
+.qr-blur-overlay { position: absolute; inset: 0; background: rgba(255,255,255,0.8); backdrop-filter: blur(10px); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; transition: all 0.3s; cursor: pointer; }
+.offer-banner { background: linear-gradient(135deg, rgba(167,139,250,0.15), rgba(108,99,255,0.1)); border: 1px solid rgba(167,139,250,0.3); border-radius: 16px; padding: 16px 20px; margin-bottom: 20px; display: none; }
+</style>
+</head>
+<body>
+<div id="loader"><div class="loader-ring"></div><div class="loader-text">Prime Zone</div></div>
+
+<!-- NAVBAR -->
+<nav class="navbar" style="background:rgba(26,26,78,0.9);border-bottom:1px solid rgba(167,139,250,0.3)">
+  <div class="navbar-brand">
+    <img src="jogo.png" class="navbar-logo" onerror="this.style.display='none'" alt="Logo"/>
+    <div class="navbar-title">Hospitality Careers</div>
+  </div>
+  <div class="navbar-right">
+    <button class="btn btn-sm btn-outline" onclick="history.back()" style="border-color:#a78bfa;color:#a78bfa"><i class="fas fa-arrow-left"></i> Back</button>
+  </div>
+</nav>
+
+<div style="max-width:800px;margin:0 auto;padding:40px 20px">
+  <!-- OFFER BANNER -->
+  <div class="offer-banner" id="offerBanner">
+    <div style="display:flex;align-items:center;gap:12px">
+      <i class="fas fa-tag" style="color:#a78bfa;font-size:20px"></i>
+      <div>
+        <div style="font-weight:700;color:#a78bfa" id="offerTitle">Special Offer!</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.7)" id="offerDesc">Limited time offer available</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HEADER -->
+  <div style="text-align:center;margin-bottom:32px">
+    <div class="prime-badge">⭐ Prime Membership</div>
+    <div style="font-size:14px;color:rgba(255,255,255,0.6);margin-top:8px">Unlock all premium features of Hospitality Careers</div>
+  </div>
+
+  <!-- PRICE CARD -->
+  <div class="membership-card" style="margin-bottom:32px">
+    <div id="originalPrice" style="font-size:14px;color:var(--gray);text-decoration:line-through;display:none">₹499/month</div>
+    <div class="price-tag" id="displayPrice">₹499</div>
+    <div class="price-period" id="displayPeriod">per month</div>
+    <div id="validityNote" style="font-size:12px;color:#a78bfa;margin-top:4px"></div>
+
+    <ul class="feature-list">
+      <li><i class="fas fa-check-circle"></i> Full access to Candidate List with contact details</li>
+      <li><i class="fas fa-check-circle"></i> Connect with Employers directly</li>
+      <li><i class="fas fa-check-circle"></i> Request Resume Downloads</li>
+      <li><i class="fas fa-check-circle"></i> Priority Job Applications</li>
+      <li><i class="fas fa-check-circle"></i> Post unlimited job vacancies (instant live)</li>
+      <li><i class="fas fa-check-circle"></i> Prime <span id="memberCount">1</span>x Tag on your profile</li>
+      <li><i class="fas fa-check-circle"></i> Dedicated support & early access</li>
+    </ul>
+
+    <!-- PAYMENT METHODS -->
+    <div style="font-size:14px;font-weight:700;color:#a78bfa;margin-bottom:16px">Choose Payment Method</div>
+    <div class="payment-methods">
+      <!-- UPI -->
+      <div class="payment-card" onclick="payWithUPI()">
+        <div class="payment-icon">📱</div>
+        <div style="font-weight:700;color:#a78bfa">Pay with UPI</div>
+        <div style="font-size:12px;color:var(--gray);margin-top:4px">PhonePe, GPay, Paytm & more</div>
+        <div style="font-size:18px;font-weight:800;color:#fff;margin-top:8px" id="upiAmount">₹499</div>
+      </div>
+      <!-- QR -->
+      <div class="payment-card" onclick="showQR()">
+        <div class="payment-icon">📷</div>
+        <div style="font-weight:700;color:#a78bfa">Scan QR Code</div>
+        <div style="font-size:12px;color:var(--gray);margin-top:4px">Scan to pay instantly</div>
+        <div style="font-size:18px;font-weight:800;color:#fff;margin-top:8px" id="qrAmount">₹499</div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;font-size:12px;color:var(--gray);text-align:center">
+      <i class="fas fa-shield-alt" style="color:#a78bfa"></i> Secure payment via UPI · ssandeepsarkar143-2@okhdfcbank
+    </div>
+
+    <div style="margin-top:16px;padding:12px;background:rgba(167,139,250,0.08);border-radius:10px;font-size:12px;color:rgba(255,255,255,0.7)">
+      <i class="fas fa-info-circle" style="color:#a78bfa"></i>
+      After payment, your account will be upgraded to Prime within 24 hours upon verification.
+    </div>
+  </div>
+</div>
+
+<!-- QR MODAL -->
+<div class="modal-overlay" id="qrModal">
+  <div class="modal-box" style="text-align:center;max-width:380px">
+    <div class="modal-header">
+      <div class="modal-title"><i class="fas fa-qrcode"></i> Scan to Pay</div>
+      <button class="modal-close" onclick="closeQR()">&times;</button>
+    </div>
+    <div style="font-size:13px;color:var(--gray);margin-bottom:16px">Scan this QR with any UPI app to pay</div>
+    <div style="position:relative;display:inline-block" id="qrWrapper">
+      <div class="qr-wrapper">
+        <div id="qrCode"></div>
+      </div>
+      <div class="qr-blur-overlay" id="qrBlurOverlay">
+        <i class="fas fa-eye" style="font-size:24px;color:#6c63ff"></i>
+        <span style="font-size:13px;font-weight:700;color:#6c63ff">Click to Reveal QR</span>
+      </div>
+    </div>
+    <div style="margin-top:16px">
+      <div style="font-size:22px;font-weight:800;color:#a78bfa" id="qrModalAmount">₹499</div>
+      <div style="font-size:13px;color:var(--gray)">Hospitality Careers</div>
+      <div style="font-size:12px;color:var(--gray);margin-top:4px">UPI: ssandeepsarkar143-2@okhdfcbank</div>
+    </div>
+    <button class="btn mt-16" style="background:linear-gradient(135deg,#a78bfa,#6c63ff);color:#fff;width:100%" onclick="downloadQR()"><i class="fas fa-download"></i> Download QR</button>
+    <div style="font-size:11px;color:var(--gray);margin-top:12px">After payment, contact us with your transaction ID for quick activation.</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><i class="fas fa-check-circle"></i><span id="toastMsg"></span></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, doc, getDoc, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCuAuc9qhA7D_-Lqt-69pbG81KTIiDFVpg",
+  authDomain: "hospitality-careers-e662f.firebaseapp.com",
+  projectId: "hospitality-careers-e662f",
+  storageBucket: "hospitality-careers-e662f.firebasestorage.app",
+  messagingSenderId: "45029895717",
+  appId: "1:45029895717:web:f54f86f608b98751cad9cc"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+let finalAmount = 499;
+let validityDays = 30;
+let qrGenerated = false;
+let currentUserData = null;
+
+const UPI_ID = 'ssandeepsarkar143-2@okhdfcbank';
+const BUSINESS_NAME = 'Hospitality Careers';
+
+async function loadOffers(userId) {
+  try {
+    // Global offers
+    const offersSnap = await getDocs(collection(db, 'offers'));
+    let bestDiscount = 0;
+    let offerDesc = '';
+    let extraDays = 0;
+
+    offersSnap.forEach(d => {
+      const offer = d.data();
+      if (!offer.active) return;
+      if (offer.targetUserId && offer.targetUserId !== userId) return;
+      if (offer.discountPercent) {
+        const disc = Math.round(499 * offer.discountPercent / 100);
+        if (disc > bestDiscount) { bestDiscount = disc; offerDesc = `${offer.discountPercent}% OFF - Save ₹${disc}`; }
+      }
+      if (offer.discountAmount && offer.discountAmount > bestDiscount) {
+        bestDiscount = offer.discountAmount; offerDesc = `Flat ₹${offer.discountAmount} OFF`;
+      }
+      if (offer.extraDays) { extraDays = Math.max(extraDays, offer.extraDays); }
+    });
+
+    // Upgrade prices
+    const upgradesSnap = await getDocs(collection(db, 'upgrades'));
+    upgradesSnap.forEach(d => {
+      const upg = d.data();
+      if (upg.targetUserId && upg.targetUserId !== userId) return;
+      if (upg.newPrice) { finalAmount = upg.newPrice; }
+    });
+
+    if (bestDiscount > 0) {
+      finalAmount = Math.max(1, 499 - bestDiscount);
+      document.getElementById('originalPrice').style.display = 'block';
+      document.getElementById('offerBanner').style.display = 'block';
+      document.getElementById('offerTitle').textContent = 'Special Offer Applied!';
+      document.getElementById('offerDesc').textContent = offerDesc;
+    }
+
+    if (extraDays > 0) { validityDays += extraDays; }
+
+    document.getElementById('displayPrice').textContent = `₹${finalAmount}`;
+    document.getElementById('upiAmount').textContent = `₹${finalAmount}`;
+    document.getElementById('qrAmount').textContent = `₹${finalAmount}`;
+    document.getElementById('qrModalAmount').textContent = `₹${finalAmount}`;
+    if (extraDays > 0) document.getElementById('validityNote').textContent = `Valid for ${validityDays} days (Offer Extended!)`;
+    if (currentUserData) document.getElementById('memberCount').textContent = (currentUserData.membershipCount || 0) + 1;
+  } catch(e) {}
+}
+
+window.payWithUPI = function() {
+  const upiUrl = `upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent(BUSINESS_NAME)}&am=${finalAmount}&cu=INR&tn=${encodeURIComponent('Hospitality Careers Prime Membership')}`;
+  const a = document.createElement('a');
+  a.href = upiUrl;
+  a.click();
+  showToast('Opening your UPI app...');
+};
+
+window.showQR = function() {
+  document.getElementById('qrModal').classList.add('active');
+  if (!qrGenerated) {
+    const qrData = `upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent(BUSINESS_NAME)}&am=${finalAmount}&cu=INR&tn=${encodeURIComponent('Prime Membership')}`;
+    document.getElementById('qrCode').innerHTML = '';
+    new QRCode(document.getElementById('qrCode'), {
+      text: qrData, width: 200, height: 200,
+      colorDark: '#000000', colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.H
+    });
+    qrGenerated = true;
+  }
+};
+
+window.closeQR = function() { document.getElementById('qrModal').classList.remove('active'); };
+
+document.getElementById('qrBlurOverlay').addEventListener('click', function() {
+  this.style.display = 'none';
+});
+
+window.downloadQR = function() {
+  const canvas = document.querySelector('#qrCode canvas');
+  if (!canvas) return;
+  const link = document.createElement('a');
+  link.download = 'hospitality-careers-payment-qr.png';
+  link.href = canvas.toDataURL();
+  link.click();
+};
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  t.className = 'toast show success';
+  setTimeout(() => t.classList.remove('show'), 4000);
+}
+
+onAuthStateChanged(auth, async (user) => {
+  document.getElementById('loader').style.display = 'none';
+  if (!user) return;
+  const snap = await getDoc(doc(db, 'users', user.uid));
+  if (snap.exists()) currentUserData = snap.data();
+  await loadOffers(user.uid);
+});
+
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', (e) => { if(e.target === el) el.classList.remove('active'); });
+});
+</script>
+</body>
+</html>

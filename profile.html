@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Complete Profile – Hospitality Careers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<link rel="stylesheet" href="css/styles.css"/>
+</head>
+<body>
+<!-- BG -->
+<div class="hero-bg">
+  <div class="hero-slide active" style="background-image:url('https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1600&q=80')"></div>
+  <div class="hero-overlay"></div>
+</div>
+
+<div class="login-container">
+  <div class="login-box" style="max-width:520px">
+    <div class="logo-wrapper">
+      <img src="jogo.png" class="logo-img" onerror="this.style.display='none'" alt="Logo"/>
+    </div>
+    <div class="site-title" style="margin-bottom:4px">Complete Your Profile</div>
+    <div class="site-subtitle">Help us personalise your experience</div>
+    <div id="profileAlert" class="alert"></div>
+
+    <form id="profileForm">
+      <div class="form-group">
+        <label>I am a</label>
+        <select id="userType" class="form-control" required>
+          <option value="">-- Select your role --</option>
+          <option value="jobseeker">Job Seeker</option>
+          <option value="employer">Employer</option>
+        </select>
+      </div>
+
+      <!-- JOB SEEKER FIELDS -->
+      <div id="seekerFields" style="display:none">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="seekerName" class="form-control" placeholder="Your full name"/>
+        </div>
+        <div class="form-group">
+          <label>Mobile Number</label>
+          <input type="tel" id="seekerPhone" class="form-control" placeholder="+91 XXXXXXXXXX"/>
+        </div>
+        <div class="form-group">
+          <label>Position / Designation</label>
+          <input type="text" id="seekerPosition" class="form-control" placeholder="e.g. F&B Captain, Front Desk"/>
+        </div>
+        <div class="form-group">
+          <label>Experience</label>
+          <input type="text" id="seekerExp" class="form-control" placeholder="e.g. 3 years"/>
+        </div>
+        <div class="form-group">
+          <label>Joining Availability</label>
+          <select id="seekerJoining" class="form-control">
+            <option value="">-- Select --</option>
+            <option value="immediate">I am an Immediate Joiner</option>
+            <option value="notice">I have a Notice Period</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- EMPLOYER FIELDS -->
+      <div id="employerFields" style="display:none">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="empName" class="form-control" placeholder="Your full name"/>
+        </div>
+        <div class="form-group">
+          <label>Mobile Number</label>
+          <input type="tel" id="empPhone" class="form-control" placeholder="+91 XXXXXXXXXX"/>
+        </div>
+        <div class="form-group">
+          <label>Organisation Name</label>
+          <input type="text" id="empOrg" class="form-control" placeholder="Hotel / Company name"/>
+        </div>
+        <div class="form-group">
+          <label>Your Role in Organisation</label>
+          <select id="empRole" class="form-control">
+            <option value="">-- Select --</option>
+            <option value="hr">I am from HR</option>
+            <option value="management">I am from Management</option>
+            <option value="manager">I am a Manager</option>
+          </select>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary w-full mt-16" id="profileSubmitBtn">
+        <i class="fas fa-check"></i> Submit Profile
+      </button>
+    </form>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCuAuc9qhA7D_-Lqt-69pbG81KTIiDFVpg",
+  authDomain: "hospitality-careers-e662f.firebaseapp.com",
+  projectId: "hospitality-careers-e662f",
+  storageBucket: "hospitality-careers-e662f.firebasestorage.app",
+  messagingSenderId: "45029895717",
+  appId: "1:45029895717:web:f54f86f608b98751cad9cc"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+let currentUser = null;
+
+onAuthStateChanged(auth, (user) => {
+  if (!user) { window.location.href = 'index.html'; return; }
+  currentUser = user;
+});
+
+// Toggle fields by role
+document.getElementById('userType').addEventListener('change', function() {
+  document.getElementById('seekerFields').style.display = this.value === 'jobseeker' ? 'block' : 'none';
+  document.getElementById('employerFields').style.display = this.value === 'employer' ? 'block' : 'none';
+});
+
+function showAlert(msg, type='danger') {
+  const el = document.getElementById('profileAlert');
+  el.textContent = msg;
+  el.className = `alert alert-${type} show`;
+}
+
+document.getElementById('profileForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const type = document.getElementById('userType').value;
+  if (!type) { showAlert('Please select your role.'); return; }
+  const btn = document.getElementById('profileSubmitBtn');
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+  btn.disabled = true;
+
+  let profileData = { userType: type, profileComplete: true, updatedAt: serverTimestamp() };
+
+  if (type === 'jobseeker') {
+    const name = document.getElementById('seekerName').value.trim();
+    const phone = document.getElementById('seekerPhone').value.trim();
+    if (!name || !phone) { showAlert('Please fill all required fields.'); btn.innerHTML = '<i class="fas fa-check"></i> Submit Profile'; btn.disabled = false; return; }
+    profileData = { ...profileData,
+      displayName: name, phone, position: document.getElementById('seekerPosition').value,
+      experience: document.getElementById('seekerExp').value, joiningAvailability: document.getElementById('seekerJoining').value };
+  } else {
+    const name = document.getElementById('empName').value.trim();
+    const phone = document.getElementById('empPhone').value.trim();
+    const org = document.getElementById('empOrg').value.trim();
+    if (!name || !phone || !org) { showAlert('Please fill all required fields.'); btn.innerHTML = '<i class="fas fa-check"></i> Submit Profile'; btn.disabled = false; return; }
+    profileData = { ...profileData, displayName: name, phone, organisation: org, orgRole: document.getElementById('empRole').value };
+  }
+
+  try {
+    await updateDoc(doc(db, 'users', currentUser.uid), profileData);
+    // Show thank you
+    document.getElementById('profileForm').innerHTML = `
+      <div style="text-align:center;padding:24px">
+        <div style="font-size:48px;margin-bottom:16px">🎉</div>
+        <div style="font-size:18px;font-weight:700;color:var(--gold);margin-bottom:8px">Profile Complete!</div>
+        <div style="font-size:13px;color:var(--gray);margin-bottom:24px">Thank you for completing your profile. Redirecting you now...</div>
+        <div class="loader-ring" style="margin:0 auto"></div>
+      </div>`;
+    setTimeout(() => window.location.href = 'user-feed.html', 2500);
+  } catch(err) {
+    showAlert('Failed to save profile. Please try again.');
+    btn.innerHTML = '<i class="fas fa-check"></i> Submit Profile';
+    btn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>

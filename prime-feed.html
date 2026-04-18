@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Prime Dashboard – Hospitality Careers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<link rel="stylesheet" href="css/styles.css"/>
+<style>
+:root { --prime-accent: #a78bfa; --prime-dark: #1a1a4e; }
+body { background: linear-gradient(135deg, #0d0d2b, #1a1a4e); }
+.prime-navbar { background: rgba(26,26,78,0.9); border-bottom: 1px solid rgba(167,139,250,0.3); }
+.prime-hero-find { background-image: url('https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?w=1600&q=80'); }
+.prime-hero-hire { background-image: url('https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=1600&q=80'); }
+.prime-mode-btn.active { background: linear-gradient(135deg, #a78bfa, #6c63ff); color: #fff; }
+.prime-job-card { background: rgba(167,139,250,0.06); border: 1px solid rgba(167,139,250,0.2); }
+.prime-job-card:hover { border-color: #a78bfa; box-shadow: 0 10px 30px rgba(167,139,250,0.15); }
+.prime-section-title { background: linear-gradient(to right, #a78bfa, #6c63ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+</style>
+</head>
+<body>
+<div id="loader"><div class="loader-ring"></div><div class="loader-text">Prime Access Loading...</div></div>
+
+<!-- NAVBAR -->
+<nav class="navbar prime-navbar">
+  <div class="navbar-brand">
+    <img src="jogo.png" class="navbar-logo" onerror="this.style.display='none'" alt="Logo"/>
+    <div class="navbar-title">Hospitality Careers</div>
+  </div>
+  <div class="navbar-right">
+    <span class="user-tag tag-prime" id="primeTagEl">Prime</span>
+    <span class="tag-user-name" id="primeNameEl"></span>
+    <button class="btn btn-sm btn-danger" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+  </div>
+</nav>
+
+<!-- MODE SLIDER -->
+<div style="padding:24px 24px 0">
+  <div class="mode-slider" style="border-color:rgba(167,139,250,0.3)">
+    <button class="mode-btn prime-mode-btn active" id="primeFindBtn" onclick="switchMode('find')"><i class="fas fa-search"></i> Find Job</button>
+    <button class="mode-btn prime-mode-btn" id="primeHireBtn" onclick="switchMode('hire')"><i class="fas fa-users"></i> Hire Staff</button>
+  </div>
+</div>
+
+<!-- FIND JOB MODE -->
+<div id="primeFindMode" style="padding:0 24px 32px">
+  <div class="feed-hero">
+    <div class="prime-hero-find" style="background-size:cover;background-position:center;position:absolute;inset:0;border-radius:20px"></div>
+    <div class="hero-overlay" style="border-radius:20px;background:linear-gradient(135deg,rgba(26,26,78,0.8),rgba(108,99,255,0.4))"></div>
+    <div class="feed-hero-content">
+      <div class="feed-hero-title prime-section-title">Prime Job Discovery</div>
+      <div class="feed-hero-sub">Exclusive hospitality opportunities for Prime members</div>
+    </div>
+  </div>
+
+  <!-- My Activity -->
+  <div class="card mb-16" style="border-color:rgba(167,139,250,0.25)">
+    <div class="card-title prime-section-title" style="cursor:pointer" onclick="toggleActivity('primeFindActivity')">
+      <i class="fas fa-chart-line" style="-webkit-text-fill-color:#a78bfa"></i> My Activity
+      <i class="fas fa-chevron-down" style="margin-left:auto;font-size:12px;color:var(--gray)"></i>
+    </div>
+    <div id="primeFindActivity" style="display:none">
+      <table style="width:100%;font-size:13px;margin-bottom:16px">
+        <thead><tr><th>Job Title</th><th>Applied On</th><th>Status</th><th>Employer Request</th></tr></thead>
+        <tbody id="primeApplicationsTbody"><tr><td colspan="4" style="text-align:center;color:var(--gray);padding:20px">No applications yet</td></tr></tbody>
+      </table>
+      <div class="card" style="border-color:rgba(167,139,250,0.2);margin-bottom:0">
+        <div class="card-title prime-section-title">Membership Details</div>
+        <div id="membershipDetails" style="font-size:13px;color:rgba(255,255,255,0.7)">Loading...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter -->
+  <div class="filter-section" style="border-color:rgba(167,139,250,0.2)">
+    <div style="font-size:14px;font-weight:700;margin-bottom:16px;color:#a78bfa"><i class="fas fa-filter"></i> Search & Filter Jobs</div>
+    <div class="filter-grid">
+      <div class="form-group">
+        <label>Department</label>
+        <select id="pFilterDept" class="form-control" onchange="pUpdatePositions()">
+          <option value="">All Departments</option>
+          <option value="fnb">F&B Service</option><option value="kitchen">Kitchen / Culinary</option>
+          <option value="housekeeping">Housekeeping</option><option value="frontoffice">Front Office</option>
+          <option value="security">Security</option><option value="spa">Spa & Wellness</option>
+          <option value="sales">Sales & Marketing</option><option value="hr">Human Resources</option>
+          <option value="accounts">Accounts & Finance</option><option value="engineering">Engineering & Maintenance</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Position</label>
+        <select id="pFilterPosition" class="form-control"><option value="">All Positions</option></select>
+      </div>
+      <div class="form-group">
+        <label>State</label>
+        <select id="pFilterState" class="form-control">
+          <option value="">All States</option>
+          <option>Andhra Pradesh</option><option>Assam</option><option>Bihar</option><option>Delhi</option>
+          <option>Goa</option><option>Gujarat</option><option>Haryana</option><option>Himachal Pradesh</option>
+          <option>Jharkhand</option><option>Karnataka</option><option>Kerala</option><option>Madhya Pradesh</option>
+          <option>Maharashtra</option><option>Odisha</option><option>Punjab</option><option>Rajasthan</option>
+          <option>Tamil Nadu</option><option>Telangana</option><option>Uttar Pradesh</option><option>Uttarakhand</option>
+          <option>West Bengal</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>City</label>
+        <input type="text" id="pFilterCity" class="form-control" placeholder="Enter city"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Salary Range: <span id="pSalaryDisplay">₹0 – ₹50,000+</span></label>
+      <input type="range" id="pSalaryMin" min="0" max="50000" step="1000" value="0" oninput="pUpdateSalary()"/>
+      <input type="range" id="pSalaryMax" min="0" max="50000" step="1000" value="50000" oninput="pUpdateSalary()"/>
+    </div>
+    <button class="btn" style="background:linear-gradient(135deg,#a78bfa,#6c63ff);color:#fff" onclick="pFilterJobs()"><i class="fas fa-search"></i> Search</button>
+    <button class="btn btn-outline btn-sm" style="margin-left:8px;border-color:#a78bfa;color:#a78bfa" onclick="pResetFilters()">Reset</button>
+  </div>
+
+  <div class="jobs-grid" id="primeJobsGrid"></div>
+  <div class="pagination" id="primePagination"></div>
+</div>
+
+<!-- HIRE STAFF MODE -->
+<div id="primeHireMode" style="display:none;padding:0 24px 32px">
+  <div class="feed-hero">
+    <div class="prime-hero-hire" style="background-size:cover;background-position:center;position:absolute;inset:0;border-radius:20px"></div>
+    <div class="hero-overlay" style="border-radius:20px;background:linear-gradient(135deg,rgba(26,26,78,0.8),rgba(108,99,255,0.4))"></div>
+    <div class="feed-hero-content">
+      <div class="feed-hero-title prime-section-title">Prime Hiring Hub</div>
+      <div class="feed-hero-sub">Access top talent with full candidate details & direct contact</div>
+    </div>
+  </div>
+
+  <!-- My Posts Activity -->
+  <div class="card mb-16" style="border-color:rgba(167,139,250,0.25)">
+    <div class="card-title prime-section-title" style="cursor:pointer" onclick="toggleActivity('primeHireActivity')">
+      <i class="fas fa-briefcase" style="-webkit-text-fill-color:#a78bfa"></i> My Job Posts
+    </div>
+    <div id="primeHireActivity" style="display:none">
+      <table style="width:100%;font-size:13px">
+        <thead><tr><th>Job Title</th><th>Posted</th><th>Applicants</th><th>Status</th><th>Details</th></tr></thead>
+        <tbody id="primePostsTbody"><tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">No job posts yet</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <a href="job-post-from.html" class="btn mb-16" style="background:linear-gradient(135deg,#a78bfa,#6c63ff);color:#fff"><i class="fas fa-plus-circle"></i> Post a Job</a>
+
+  <!-- Candidate List - Prime Unlocked -->
+  <div style="font-size:14px;font-weight:700;color:#a78bfa;margin-bottom:12px"><i class="fas fa-users"></i> Candidate List</div>
+  <div class="table-wrapper" style="border-color:rgba(167,139,250,0.2)">
+    <table>
+      <thead><tr><th>Name</th><th>Position</th><th>Experience</th><th>Status</th><th>Resume</th><th>Contact</th></tr></thead>
+      <tbody id="primeCandidatesTbody"><tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">No candidates yet</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- APPLY MODAL -->
+<div class="modal-overlay" id="primeApplyModal">
+  <div class="modal-box wide">
+    <div class="modal-header">
+      <div class="modal-title" style="-webkit-text-fill-color:#a78bfa"><i class="fas fa-paper-plane" style="color:#a78bfa"></i> Apply for Job</div>
+      <button class="modal-close" onclick="closePrimeApply()">&times;</button>
+    </div>
+    <div id="primeApplyJobTitle" style="font-size:15px;font-weight:700;color:#a78bfa;margin-bottom:16px"></div>
+    <div id="primeApplyAlert" class="alert"></div>
+    <form id="primeApplyForm">
+      <div class="form-row">
+        <div class="form-group"><label>Full Name *</label><input type="text" id="pApplyName" class="form-control" required/></div>
+        <div class="form-group"><label>Phone Number *</label><input type="tel" id="pApplyPhone" class="form-control" required/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Email ID *</label><input type="email" id="pApplyEmail" class="form-control" required/></div>
+        <div class="form-group"><label>Pincode *</label><input type="text" id="pApplyPincode" class="form-control" required/></div>
+      </div>
+      <div class="form-group"><label>Address Line 1 *</label><input type="text" id="pApplyAddr1" class="form-control" required/></div>
+      <div class="form-group"><label>Address Line 2</label><input type="text" id="pApplyAddr2" class="form-control"/></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Total Experience *</label>
+          <select id="pApplyExp" class="form-control" required>
+            <option value="">Select</option><option>0–1 Years</option><option>1–5 Years</option><option>5+ Years</option><option>10+ Years</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Work Status *</label>
+          <select id="pApplyWorkStatus" class="form-control" required onchange="pToggleOrgField()">
+            <option value="">Select</option><option value="working">Currently Working</option><option value="not_working">Not Working</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label id="pOrgLabel">Organisation Name *</label>
+        <input type="text" id="pApplyOrg" class="form-control"/>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Current CTC *</label><input type="text" id="pApplyCTC" class="form-control" required/></div>
+        <div class="form-group"><label>Expected CTC *</label><input type="text" id="pApplyExpCTC" class="form-control" required/></div>
+      </div>
+      <div class="form-group">
+        <label>Notice Period *</label>
+        <select id="pApplyNotice" class="form-control" required>
+          <option value="">Select</option><option>Immediately Joining</option><option>15 Day's</option><option>More than 30 Day's</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Upload CV * (JPG, DOC, PDF, PNG)</label>
+        <input type="file" id="pApplyCv" class="form-control" accept=".jpg,.jpeg,.png,.doc,.docx,.pdf" required/>
+      </div>
+      <button type="submit" class="btn w-full" style="background:linear-gradient(135deg,#a78bfa,#6c63ff);color:#fff"><i class="fas fa-paper-plane"></i> Submit Application</button>
+    </form>
+  </div>
+</div>
+
+<!-- APPLICANTS DETAIL MODAL -->
+<div class="modal-overlay" id="applicantsModal">
+  <div class="modal-box wide">
+    <div class="modal-header">
+      <div class="modal-title">Applicants for <span id="applicantsJobTitle"></span></div>
+      <button class="modal-close" onclick="document.getElementById('applicantsModal').classList.remove('active')">&times;</button>
+    </div>
+    <div id="applicantsListContent"><div style="text-align:center;color:var(--gray)">Loading...</div></div>
+  </div>
+</div>
+
+<!-- LOGOUT MODAL -->
+<div class="modal-overlay" id="primeLogoutModal">
+  <div class="modal-box" style="max-width:380px;text-align:center">
+    <div style="font-size:48px;margin-bottom:12px">👋</div>
+    <div class="modal-title" style="justify-content:center;margin-bottom:8px">Are you sure?</div>
+    <p style="font-size:13px;color:var(--gray);margin-bottom:24px">You will be logged out of Hospitality Careers.</p>
+    <div style="display:flex;gap:12px;justify-content:center">
+      <button class="btn btn-danger" id="primeConfirmLogout"><i class="fas fa-sign-out-alt"></i> Yes, Logout</button>
+      <button class="btn btn-outline" onclick="document.getElementById('primeLogoutModal').classList.remove('active')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="primeToast"><i class="fas fa-check-circle"></i><span id="primeToastMsg"></span></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, doc, getDoc, collection, getDocs, addDoc, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCuAuc9qhA7D_-Lqt-69pbG81KTIiDFVpg",
+  authDomain: "hospitality-careers-e662f.firebaseapp.com",
+  projectId: "hospitality-careers-e662f",
+  storageBucket: "hospitality-careers-e662f.firebasestorage.app",
+  messagingSenderId: "45029895717",
+  appId: "1:45029895717:web:f54f86f608b98751cad9cc"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+let currentUser = null, userData = null, allJobs = [], filteredJobs = [], currentPage = 1;
+const JOBS_PER_PAGE = 10;
+let selectedJobId = null;
+
+const predefinedJobs = [
+  { id:'j1', title:'F&B Service Associate', department:'fnb', location:'Mumbai', state:'Maharashtra', salary:12000, vacancy:4, experience:'0–1 Years', description:'Responsible for food and beverage service in restaurant.' },
+  { id:'j2', title:'Senior Waiter', department:'fnb', location:'Punjab', state:'Punjab', salary:14000, vacancy:2, experience:'1–5 Years', description:'Experienced waiter for fine dining.' },
+  { id:'j3', title:'F&B Trainee', department:'fnb', location:'Delhi', state:'Delhi', salary:16000, vacancy:1, experience:'0–1 Years', description:'Training position for F&B freshers.' },
+  { id:'j4', title:'F&B Captain', department:'fnb', location:'Ahmedabad', state:'Gujarat', salary:18000, vacancy:2, experience:'1–5 Years', description:'Lead the service team.' },
+  { id:'j5', title:'Senior Captain', department:'fnb', location:'Kolkata', state:'West Bengal', salary:22000, vacancy:1, experience:'5+ Years', description:'Senior leadership in F&B operations.' },
+  { id:'j6', title:'F&B Supervisor', department:'fnb', location:'Mumbai', state:'Maharashtra', salary:25000, vacancy:3, experience:'5+ Years', description:'Oversee daily F&B operations.' },
+  { id:'j7', title:'Kitchen Helper', department:'kitchen', location:'Rajkot', state:'Gujarat', salary:11000, vacancy:4, experience:'0–1 Years', description:'Assist kitchen team.' },
+  { id:'j8', title:'Housekeeping GSA / Room Attendant', department:'housekeeping', location:'Bangalore', state:'Karnataka', salary:13000, vacancy:4, experience:'0–1 Years', description:'Maintain cleanliness of guest rooms.' },
+  { id:'j9', title:'Front Office Associate', department:'frontoffice', location:'Rishikesh', state:'Uttarakhand', salary:14000, vacancy:2, experience:'1–5 Years', description:'Handle guest check-in and check-out.' },
+  { id:'j10', title:'Chef de Partie', department:'kitchen', location:'Ahmedabad', state:'Gujarat', salary:13000, vacancy:4, experience:'1–5 Years', description:'Section chef responsible for specific kitchen area.' },
+];
+
+const positionsByDept = {
+  fnb:['Trainee','Steward','Waiter','Senior Waiter','Captain','Senior Captain','Supervisor','Assistant Manager','Manager'],
+  kitchen:['Kitchen Helper','Commis Chef','Chef de Partie','Sous Chef','Head Chef','Executive Chef'],
+  housekeeping:['Room Attendant','GSA','Housekeeping Supervisor','Executive Housekeeper'],
+  frontoffice:['Front Desk Associate','Guest Relations','Night Auditor','Duty Manager','Front Office Manager'],
+  security:['Security Guard','Security Supervisor'],spa:['Therapist','Spa Manager'],
+  sales:['Sales Executive','Sales Manager'],hr:['HR Executive','HR Manager'],
+  accounts:['Accounts Executive','Finance Controller'],engineering:['Technician','Chief Engineer']
+};
+
+window.switchMode = function(mode) {
+  document.getElementById('primeFindMode').style.display = mode === 'find' ? 'block' : 'none';
+  document.getElementById('primeHireMode').style.display = mode === 'hire' ? 'block' : 'none';
+  document.getElementById('primeFindBtn').classList.toggle('active', mode === 'find');
+  document.getElementById('primeHireBtn').classList.toggle('active', mode === 'hire');
+};
+
+window.toggleActivity = function(id) {
+  const el = document.getElementById(id);
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+};
+
+function showToast(msg) {
+  const t = document.getElementById('primeToast');
+  document.getElementById('primeToastMsg').textContent = msg;
+  t.className = 'toast show success';
+  setTimeout(() => t.classList.remove('show'), 4000);
+}
+
+window.pUpdatePositions = function() {
+  const dept = document.getElementById('pFilterDept').value;
+  const sel = document.getElementById('pFilterPosition');
+  sel.innerHTML = '<option value="">All Positions</option>';
+  if (dept && positionsByDept[dept]) positionsByDept[dept].forEach(p => sel.innerHTML += `<option>${p}</option>`);
+};
+
+window.pUpdateSalary = function() {
+  const min = parseInt(document.getElementById('pSalaryMin').value);
+  const max = parseInt(document.getElementById('pSalaryMax').value);
+  document.getElementById('pSalaryDisplay').textContent = `₹${min.toLocaleString()} – ₹${Math.max(min,max).toLocaleString()}${max>=50000?'+':''}`;
+};
+
+window.pFilterJobs = function() {
+  const dept = document.getElementById('pFilterDept').value;
+  const pos = document.getElementById('pFilterPosition').value.toLowerCase();
+  const state = document.getElementById('pFilterState').value;
+  const city = document.getElementById('pFilterCity').value.toLowerCase();
+  const min = parseInt(document.getElementById('pSalaryMin').value);
+  const max = parseInt(document.getElementById('pSalaryMax').value);
+  filteredJobs = allJobs.filter(j => {
+    if (dept && j.department !== dept) return false;
+    if (pos && !j.title.toLowerCase().includes(pos)) return false;
+    if (state && j.state !== state) return false;
+    if (city && !j.location.toLowerCase().includes(city)) return false;
+    if (j.salary < min || j.salary > Math.max(min,max)) return false;
+    return true;
+  });
+  currentPage = 1;
+  renderPrimeJobs();
+};
+
+window.pResetFilters = function() {
+  document.getElementById('pFilterDept').value = '';
+  document.getElementById('pFilterPosition').innerHTML = '<option value="">All Positions</option>';
+  document.getElementById('pFilterState').value = '';
+  document.getElementById('pFilterCity').value = '';
+  document.getElementById('pSalaryMin').value = 0;
+  document.getElementById('pSalaryMax').value = 50000;
+  pUpdateSalary();
+  filteredJobs = [...allJobs];
+  currentPage = 1;
+  renderPrimeJobs();
+};
+
+function renderPrimeJobs() {
+  const grid = document.getElementById('primeJobsGrid');
+  const start = (currentPage - 1) * JOBS_PER_PAGE;
+  const paginated = filteredJobs.slice(start, start + JOBS_PER_PAGE);
+  if (!paginated.length) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--gray)"><i class="fas fa-search" style="font-size:32px;margin-bottom:12px;display:block;color:#a78bfa"></i>No jobs found</div>';
+  } else {
+    grid.innerHTML = paginated.map(j => `
+      <div class="job-card prime-job-card">
+        <div class="job-title">${j.title}</div>
+        <div class="job-meta">
+          <span class="job-tag" style="background:rgba(167,139,250,0.1);color:#c4b5fd"><i class="fas fa-map-marker-alt"></i> ${j.location}</span>
+          <span class="job-tag" style="background:rgba(167,139,250,0.1);color:#c4b5fd"><i class="fas fa-rupee-sign"></i> ${(j.salary/1000).toFixed(0)}k/month</span>
+          <span class="job-tag" style="background:rgba(167,139,250,0.1);color:#c4b5fd"><i class="fas fa-users"></i> ${j.vacancy} Vacancy</span>
+        </div>
+        ${j.description ? `<div style="font-size:12px;color:var(--gray);margin-bottom:12px">${j.description.substring(0,80)}...</div>` : ''}
+        <div class="job-footer">
+          <span class="badge" style="background:rgba(167,139,250,0.2);color:#a78bfa;border-color:rgba(167,139,250,0.3)">Prime Live</span>
+          <button class="btn btn-sm" style="background:linear-gradient(135deg,#a78bfa,#6c63ff);color:#fff" onclick="openPrimeApply('${j.id}','${j.title}')"><i class="fas fa-paper-plane"></i> Apply</button>
+        </div>
+      </div>`).join('');
+  }
+  renderPrimePagination();
+}
+
+function renderPrimePagination() {
+  const total = Math.ceil(filteredJobs.length / JOBS_PER_PAGE);
+  const pag = document.getElementById('primePagination');
+  if (total <= 1) { pag.innerHTML = ''; return; }
+  let html = `<button class="page-btn" onclick="pGoPage(1)" ${currentPage===1?'disabled':''}>«</button>
+    <button class="page-btn" onclick="pGoPage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹</button>`;
+  for (let i = Math.max(1,currentPage-2); i <= Math.min(total,currentPage+2); i++) {
+    html += `<button class="page-btn ${i===currentPage?'active':''}" onclick="pGoPage(${i})" style="${i===currentPage?'background:linear-gradient(135deg,#a78bfa,#6c63ff);border-color:#a78bfa;':''}">${i}</button>`;
+  }
+  html += `<button class="page-btn" onclick="pGoPage(${currentPage+1})" ${currentPage===total?'disabled':''}>›</button>
+    <button class="page-btn" onclick="pGoPage(${total})" ${currentPage===total?'disabled':''}>»</button>`;
+  pag.innerHTML = html;
+}
+
+window.pGoPage = function(p) {
+  const total = Math.ceil(filteredJobs.length / JOBS_PER_PAGE);
+  if (p < 1 || p > total) return;
+  currentPage = p;
+  renderPrimeJobs();
+};
+
+window.openPrimeApply = function(jobId, jobTitle) {
+  selectedJobId = jobId;
+  document.getElementById('primeApplyJobTitle').textContent = 'Applying for: ' + jobTitle;
+  if (currentUser) {
+    document.getElementById('pApplyEmail').value = currentUser.email || '';
+    document.getElementById('pApplyName').value = userData?.displayName || currentUser.displayName || '';
+  }
+  document.getElementById('primeApplyModal').classList.add('active');
+};
+
+window.closePrimeApply = function() {
+  document.getElementById('primeApplyModal').classList.remove('active');
+  document.getElementById('primeApplyForm').reset();
+  selectedJobId = null;
+};
+
+window.pToggleOrgField = function() {
+  const status = document.getElementById('pApplyWorkStatus').value;
+  document.getElementById('pOrgLabel').textContent = status === 'working' ? 'Organisation Name *' : 'Previous Organisation Name *';
+};
+
+document.getElementById('primeApplyForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const cvFile = document.getElementById('pApplyCv').files[0];
+  if (!cvFile) { showPrimeApplyAlert('Please upload your CV.'); return; }
+  const btn = e.target.querySelector('[type="submit"]');
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...'; btn.disabled = true;
+  try {
+    const cvRef = ref(storage, `cvs/${currentUser.uid}/${Date.now()}_${cvFile.name}`);
+    const snap = await uploadBytes(cvRef, cvFile);
+    const cvUrl = await getDownloadURL(snap.ref);
+    const job = allJobs.find(j => j.id === selectedJobId);
+    await addDoc(collection(db, 'applications'), {
+      userId: currentUser.uid, userEmail: currentUser.email, userRole: 'Prime',
+      userName: document.getElementById('pApplyName').value, phone: document.getElementById('pApplyPhone').value,
+      email: document.getElementById('pApplyEmail').value, address1: document.getElementById('pApplyAddr1').value,
+      address2: document.getElementById('pApplyAddr2').value, pincode: document.getElementById('pApplyPincode').value,
+      experience: document.getElementById('pApplyExp').value, workStatus: document.getElementById('pApplyWorkStatus').value,
+      organisation: document.getElementById('pApplyOrg').value, currentCTC: document.getElementById('pApplyCTC').value,
+      expectedCTC: document.getElementById('pApplyExpCTC').value, noticePeriod: document.getElementById('pApplyNotice').value,
+      cvUrl, jobId: selectedJobId, jobTitle: job ? job.title : '', status: 'Pending', appliedAt: serverTimestamp()
+    });
+    closePrimeApply();
+    showToast('Application submitted successfully!');
+    loadPrimeApplications();
+  } catch(err) { showPrimeApplyAlert('Submission failed: ' + err.message); }
+  btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Application'; btn.disabled = false;
+});
+
+function showPrimeApplyAlert(msg) {
+  const el = document.getElementById('primeApplyAlert');
+  el.textContent = msg; el.className = 'alert alert-danger show';
+}
+
+async function requestResumeDownload(candidateId, candidateName) {
+  await addDoc(collection(db, 'requests'), {
+    type: 'resumeDownload', requesterId: currentUser.uid, requesterEmail: currentUser.email,
+    candidateId, candidateName, status: 'pending', createdAt: serverTimestamp()
+  });
+  showToast('Resume download request sent! You will be notified on approval.');
+}
+
+async function requestContact(candidateId, candidateName) {
+  await addDoc(collection(db, 'requests'), {
+    type: 'contact', requesterId: currentUser.uid, requesterEmail: currentUser.email,
+    candidateId, candidateName, status: 'pending', createdAt: serverTimestamp()
+  });
+  showToast('Contact request sent! You will be notified on approval.');
+}
+
+async function requestEmployerConnect(jobId, jobTitle) {
+  await addDoc(collection(db, 'requests'), {
+    type: 'employerConnect', requesterId: currentUser.uid, requesterEmail: currentUser.email,
+    jobId, jobTitle, status: 'pending', createdAt: serverTimestamp()
+  });
+  showToast('Connect Employer request sent!');
+}
+
+window.viewApplicants = async function(jobId, jobTitle) {
+  document.getElementById('applicantsJobTitle').textContent = jobTitle;
+  document.getElementById('applicantsModal').classList.add('active');
+  document.getElementById('applicantsListContent').innerHTML = '<div style="text-align:center;color:var(--gray);padding:20px"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+  try {
+    const q = query(collection(db, 'applications'), where('jobId','==',jobId));
+    const snap = await getDocs(q);
+    if (snap.empty) {
+      document.getElementById('applicantsListContent').innerHTML = '<div style="text-align:center;color:var(--gray);padding:20px">No applicants yet.</div>';
+      return;
+    }
+    document.getElementById('applicantsListContent').innerHTML = `
+      <table style="width:100%;font-size:13px">
+        <thead><tr><th>Name</th><th>Experience</th><th>CTC</th><th>Notice Period</th><th>Status</th><th>Resume</th><th>Contact</th></tr></thead>
+        <tbody>
+          ${snap.docs.map(d => {
+            const data = d.data();
+            return `<tr>
+              <td>${data.userName}</td><td>${data.experience}</td>
+              <td>₹${data.currentCTC}</td><td>${data.noticePeriod}</td>
+              <td><span class="badge badge-${data.status==='Hired'?'hired':'pending'}">${data.status}</span></td>
+              <td><button class="btn btn-sm btn-info" onclick="requestResumeDownload('${d.id}','${data.userName}')"><i class="fas fa-download"></i> Request</button></td>
+              <td><button class="btn btn-sm btn-outline" onclick="requestContact('${d.id}','${data.userName}')"><i class="fas fa-phone"></i> Request</button></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>`;
+  } catch(e) { document.getElementById('applicantsListContent').innerHTML = '<div style="color:var(--danger)">Error loading applicants.</div>'; }
+};
+
+async function loadPrimeApplications() {
+  if (!currentUser) return;
+  try {
+    const q = query(collection(db, 'applications'), where('userId','==',currentUser.uid));
+    const snap = await getDocs(q);
+    const tbody = document.getElementById('primeApplicationsTbody');
+    if (snap.empty) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--gray);padding:20px">No applications yet</td></tr>'; return; }
+    tbody.innerHTML = snap.docs.map(d => {
+      const data = d.data();
+      return `<tr>
+        <td>${data.jobTitle || 'N/A'}</td>
+        <td>${data.appliedAt?.toDate?.()?.toLocaleDateString() || 'N/A'}</td>
+        <td><span class="badge badge-${data.status==='Hired'?'hired':data.status==='Rejected'?'rejected':'pending'}">${data.status}</span></td>
+        <td><button class="btn btn-sm" style="background:linear-gradient(135deg,#a78bfa,#6c63ff);color:#fff;font-size:10px" onclick="requestEmployerConnect('${data.jobId}','${data.jobTitle}')"><i class="fas fa-link"></i> Connect Employer</button></td>
+      </tr>`;
+    }).join('');
+  } catch(e) {}
+}
+
+async function loadPrimePosts() {
+  if (!currentUser) return;
+  try {
+    const q = query(collection(db, 'jobPosts'), where('userId','==',currentUser.uid));
+    const snap = await getDocs(q);
+    const tbody = document.getElementById('primePostsTbody');
+    if (snap.empty) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">No job posts yet</td></tr>'; return; }
+    tbody.innerHTML = snap.docs.map(d => {
+      const data = d.data();
+      return `<tr>
+        <td>${data.position || data.jobTitle}</td>
+        <td>${data.createdAt?.toDate?.()?.toLocaleDateString() || 'N/A'}</td>
+        <td>${data.applicantCount || 0}</td>
+        <td><span class="badge badge-${data.status==='live'?'live':'pending'}">${data.status || 'Pending'}</span></td>
+        <td><button class="btn btn-sm btn-info" onclick="viewApplicants('${d.id}','${data.position||data.jobTitle}')">Details</button></td>
+      </tr>`;
+    }).join('');
+  } catch(e) {}
+}
+
+async function loadPrimeCandidates() {
+  try {
+    const snap = await getDocs(collection(db, 'applications'));
+    const tbody = document.getElementById('primeCandidatesTbody');
+    if (snap.empty) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">No candidates yet</td></tr>'; return; }
+    tbody.innerHTML = snap.docs.map(d => {
+      const data = d.data();
+      return `<tr>
+        <td>${data.userName}</td>
+        <td>${data.jobTitle || 'N/A'}</td>
+        <td>${data.experience}</td>
+        <td><span class="badge badge-${data.status==='Hired'?'hired':'pending'}">${data.status}</span></td>
+        <td><button class="btn btn-sm btn-info" onclick="requestResumeDownload('${d.id}','${data.userName}')"><i class="fas fa-download"></i> Request</button></td>
+        <td><button class="btn btn-sm btn-outline" style="color:#a78bfa;border-color:#a78bfa" onclick="requestContact('${d.id}','${data.userName}')"><i class="fas fa-phone"></i> Request</button></td>
+      </tr>`;
+    }).join('');
+  } catch(e) {}
+}
+
+async function loadMembershipDetails() {
+  if (!userData) return;
+  const count = userData.membershipCount || 1;
+  const purchaseDate = userData.membershipPurchasedAt?.toDate?.()?.toLocaleDateString() || 'N/A';
+  const expiryDate = userData.membershipExpiryAt?.toDate?.()?.toLocaleDateString() || 'N/A';
+  document.getElementById('membershipDetails').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px">
+      <div><span style="color:var(--gray)">Membership Count:</span> <strong style="color:#a78bfa">${count}</strong></div>
+      <div><span style="color:var(--gray)">Purchase Date:</span> <strong>${purchaseDate}</strong></div>
+      <div><span style="color:var(--gray)">Expiry Date:</span> <strong style="color:#f59e0b">${expiryDate}</strong></div>
+      <div><span style="color:var(--gray)">Tag:</span> <span class="user-tag tag-prime">Prime${count>1?count:''}</span></div>
+    </div>`;
+  const tagEl = document.getElementById('primeTagEl');
+  tagEl.textContent = count > 1 ? `Prime${count}` : 'Prime';
+}
+
+async function loadJobs() {
+  allJobs = [...predefinedJobs];
+  try {
+    const snap = await getDocs(query(collection(db, 'jobPosts'), where('status','==','live')));
+    snap.docs.forEach(d => { allJobs.push({ id: d.id, ...d.data() }); });
+  } catch(e) {}
+  filteredJobs = [...allJobs];
+  renderPrimeJobs();
+}
+
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  document.getElementById('primeLogoutModal').classList.add('active');
+});
+document.getElementById('primeConfirmLogout').addEventListener('click', async () => {
+  await signOut(auth);
+  window.location.href = 'index.html';
+});
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) { window.location.href = 'index.html'; return; }
+  currentUser = user;
+  document.getElementById('primeNameEl').textContent = user.displayName || user.email;
+  const snap = await getDoc(doc(db, 'users', user.uid));
+  if (snap.exists()) {
+    userData = snap.data();
+    const role = userData.role;
+    if (role === 'Owner') { window.location.href = 'owner-feed.html'; return; }
+    if (role === 'Admin') { window.location.href = 'admin-feed.html'; return; }
+    if (role === 'User') { window.location.href = 'user-feed.html'; return; }
+  }
+  setTimeout(() => { document.getElementById('loader').style.display = 'none'; }, 600);
+  loadJobs();
+  loadPrimeApplications();
+  loadPrimePosts();
+  loadPrimeCandidates();
+  loadMembershipDetails();
+});
+
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', (e) => { if(e.target === el) el.classList.remove('active'); });
+});
+window.pUpdateSalary();
+</script>
+</body>
+</html>
