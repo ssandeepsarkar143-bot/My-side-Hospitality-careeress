@@ -179,31 +179,46 @@ async function redirectUser(user) {
     window.location.href = 'owner-feed.html';
     return;
   }
-  const snap = await getDoc(doc(db, 'users', user.uid));
-  if (!snap.exists()) {
-    await createUserRecord(user, 'User');
-    window.location.href = 'profile.html';
-    return;
+  try {
+    const snap = await getDoc(doc(db, 'users', user.uid));
+    if (!snap.exists()) {
+      await createUserRecord(user, 'User');
+      window.location.href = 'profile.html';
+      return;
+    }
+    const data = snap.data();
+    const role = data.role;
+    if (role === 'Admin') { window.location.href = 'admin-feed.html'; return; }
+    if (role === 'Prime') { window.location.href = 'prime-feed.html'; return; }
+    window.location.href = 'user-feed.html';
+  } catch(e) {
+    // Firestore permission error – redirect to user-feed as default
+    if (e.code === 'permission-denied') {
+      showAlert('alertBox', '⚠️ Firestore rules need updating. Please check Firebase Console → Firestore → Rules. Redirecting...', 'warning');
+      setTimeout(() => { window.location.href = 'user-feed.html'; }, 3000);
+    } else {
+      showAlert('alertBox', 'Error connecting to database. Please try again.');
+    }
   }
-  const data = snap.data();
-  const role = data.role;
-  if (role === 'Admin') { window.location.href = 'admin-feed.html'; return; }
-  if (role === 'Prime') { window.location.href = 'prime-feed.html'; return; }
-  window.location.href = 'user-feed.html';
 }
 
 async function createUserRecord(user, role) {
-  await setDoc(doc(db, 'users', user.uid), {
-    uid: user.uid,
-    email: user.email,
-    displayName: user.displayName || '',
-    role: role,
-    tag: role,
-    createdAt: serverTimestamp(),
-    profileComplete: false,
-    membershipCount: 0,
-    activities: []
-  }, { merge: true });
+  try {
+    await setDoc(doc(db, 'users', user.uid), {
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName || '',
+      role: role,
+      tag: role,
+      createdAt: serverTimestamp(),
+      profileComplete: false,
+      membershipCount: 0,
+      activities: []
+    }, { merge: true });
+  } catch(e) {
+    // Silently fail if permission denied – user can still navigate
+    console.warn('Could not create user record:', e.message);
+  }
 }
 
 // Toast

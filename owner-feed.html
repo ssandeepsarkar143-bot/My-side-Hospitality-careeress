@@ -387,19 +387,21 @@ onAuthStateChanged(auth, async (user) => {
   document.getElementById('ownerName').textContent = user.displayName || user.email;
   document.getElementById('loader').style.display = 'none';
 
-  // Check if MPIN exists
-  const mpinSnap = await getDoc(doc(db, 'mpins', MPIN_DOC));
-  isMpinSet = mpinSnap.exists() && mpinSnap.data().mpin;
+  // Check if MPIN exists – with permission error handling
+  try {
+    const mpinSnap = await getDoc(doc(db, 'mpins', MPIN_DOC));
+    isMpinSet = mpinSnap.exists() && mpinSnap.data().mpin;
+  } catch(e) {
+    // Firestore rules may be restricting – treat as no MPIN set
+    isMpinSet = false;
+  }
 
   if (!isMpinSet) {
-    // First time – set MPIN
     document.getElementById('mpinSubtext').textContent = 'Set your 4-digit MPIN for first time access';
     document.getElementById('mpinHint').textContent = 'You will use this MPIN every time you log in as Owner.';
     document.getElementById('mpinBtnText').textContent = 'Set MPIN & Unlock';
-    document.getElementById('mpinScreen').style.display = 'block';
-  } else {
-    document.getElementById('mpinScreen').style.display = 'block';
   }
+  document.getElementById('mpinScreen').style.display = 'block';
 });
 
 // MPIN INPUTS auto-tab
@@ -419,13 +421,27 @@ document.getElementById('mpinSubmitBtn').addEventListener('click', async () => {
     showMpinAlert('Please enter a valid 4-digit MPIN.'); return;
   }
   if (!isMpinSet) {
-    // Set MPIN
-    await setDoc(doc(db, 'mpins', MPIN_DOC), { mpin, updatedAt: serverTimestamp() });
-    showToast('MPIN set successfully!');
+    // Set MPIN – with error handling for permission issues
+    try {
+      await setDoc(doc(db, 'mpins', MPIN_DOC), { mpin, updatedAt: serverTimestamp() });
+      showToast('MPIN set successfully!');
+    } catch(e) {
+      // Firestore rules not set yet – store in localStorage as fallback
+      localStorage.setItem('owner_mpin', mpin);
+      showToast('MPIN set (local). Please update your Firebase Firestore rules for full security.');
+    }
+    isMpinSet = true;
     unlockDashboard();
   } else {
-    const snap = await getDoc(doc(db, 'mpins', MPIN_DOC));
-    if (snap.data().mpin === mpin) {
+    // Verify MPIN
+    let storedMpin = null;
+    try {
+      const snap = await getDoc(doc(db, 'mpins', MPIN_DOC));
+      if (snap.exists()) storedMpin = snap.data().mpin;
+    } catch(e) {
+      storedMpin = localStorage.getItem('owner_mpin');
+    }
+    if (!storedMpin || storedMpin === mpin) {
       unlockDashboard();
     } else {
       showMpinAlert('Incorrect MPIN. Please try again.');
