@@ -69,7 +69,22 @@
       Don't have an account? <span class="text-link" id="openSignup">Create an Account</span>
     </div>
 
-    <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.08);display:flex;justify-content:center;gap:16px;flex-wrap:wrap">
+    <!-- DOWNLOAD APP BUTTONS (controlled from owner site settings) -->
+    <div id="downloadAppSection" style="display:none;margin-top:20px;padding:14px 0 6px;border-top:1px solid rgba(255,255,255,0.1)">
+      <p style="text-align:center;font-size:12px;color:var(--gray);margin-bottom:10px;letter-spacing:0.5px">📱 DOWNLOAD OUR APP</p>
+      <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap">
+        <a id="androidBtn" href="#" target="_blank" style="display:none;align-items:center;gap:8px;background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid rgba(255,255,255,0.15);border-radius:10px;padding:8px 16px;text-decoration:none;color:#fff;font-size:13px;transition:all 0.25s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.15)'">
+          <i class="fab fa-google-play" style="color:#34d058;font-size:18px"></i>
+          <span><span style="font-size:9px;display:block;opacity:0.7;letter-spacing:0.5px">GET IT ON</span>Google Play</span>
+        </a>
+        <a id="iosBtn" href="#" target="_blank" style="display:none;align-items:center;gap:8px;background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid rgba(255,255,255,0.15);border-radius:10px;padding:8px 16px;text-decoration:none;color:#fff;font-size:13px;transition:all 0.25s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.15)'">
+          <i class="fab fa-apple" style="color:#ccc;font-size:20px"></i>
+          <span><span style="font-size:9px;display:block;opacity:0.7;letter-spacing:0.5px">DOWNLOAD ON THE</span>App Store</span>
+        </a>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.08);display:flex;justify-content:center;gap:16px;flex-wrap:wrap">
       <a href="about.html" style="color:var(--gray);font-size:12px;text-decoration:none;transition:color 0.2s" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--gray)'"><i class="fas fa-info-circle"></i> About</a>
       <a href="contact.html" style="color:var(--gray);font-size:12px;text-decoration:none;transition:color 0.2s" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--gray)'"><i class="fas fa-envelope"></i> Contact</a>
       <a href="feedback.html" style="color:var(--gray);font-size:12px;text-decoration:none;transition:color 0.2s" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--gray)'"><i class="fas fa-star"></i> Feedback</a>
@@ -171,6 +186,31 @@ setInterval(() => {
   slideIdx = (slideIdx + 1) % slides.length;
   slides[slideIdx].classList.add('active');
 }, 5000);
+
+// LOAD DOWNLOAD APP BUTTONS
+(async () => {
+  try {
+    const snap = await getDoc(doc(db, 'siteContent', 'settings'));
+    if (snap.exists()) {
+      const s = snap.data();
+      const section = document.getElementById('downloadAppSection');
+      const andBtn = document.getElementById('androidBtn');
+      const iosBtn = document.getElementById('iosBtn');
+      let show = false;
+      if (s.showAndroid && s.androidLink) {
+        andBtn.href = s.androidLink;
+        andBtn.style.display = 'flex';
+        show = true;
+      }
+      if (s.showIos && s.iosLink) {
+        iosBtn.href = s.iosLink;
+        iosBtn.style.display = 'flex';
+        show = true;
+      }
+      if (show) section.style.display = 'block';
+    }
+  } catch(e) {}
+})();
 
 // AUTH STATE - hide loader when auth resolves
 onAuthStateChanged(auth, async (user) => {
