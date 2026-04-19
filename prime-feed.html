@@ -506,27 +506,43 @@ function showPrimeApplyAlert(msg) {
 }
 
 async function requestResumeDownload(candidateId, candidateName) {
-  await addDoc(collection(db, 'requests'), {
-    type: 'resumeDownload', requesterId: currentUser.uid, requesterEmail: currentUser.email,
-    candidateId, candidateName, status: 'pending', createdAt: serverTimestamp()
-  });
-  showToast('Resume download request sent! You will be notified on approval.');
+  try {
+    const existing = await getDocs(query(collection(db,'requests'), where('type','==','resumeDownload'), where('requesterId','==',currentUser.uid), where('candidateId','==',candidateId)));
+    if (!existing.empty) { showToast('You already sent a resume request for this candidate.', 'info'); return; }
+    await addDoc(collection(db, 'requests'), {
+      type: 'resumeDownload', requesterId: currentUser.uid, requesterEmail: currentUser.email,
+      candidateId, candidateName, status: 'pending', createdAt: serverTimestamp()
+    });
+    showToast('✅ Resume request sent to Admin/Owner! You will be notified on approval.');
+  } catch(e) {
+    showToast('❌ Failed to send request. Please try again.', 'error');
+  }
 }
 
 async function requestContact(candidateId, candidateName) {
-  await addDoc(collection(db, 'requests'), {
-    type: 'contact', requesterId: currentUser.uid, requesterEmail: currentUser.email,
-    candidateId, candidateName, status: 'pending', createdAt: serverTimestamp()
-  });
-  showToast('Contact request sent! You will be notified on approval.');
+  try {
+    const existing = await getDocs(query(collection(db,'requests'), where('type','==','contact'), where('requesterId','==',currentUser.uid), where('candidateId','==',candidateId)));
+    if (!existing.empty) { showToast('You already sent a contact request for this candidate.', 'info'); return; }
+    await addDoc(collection(db, 'requests'), {
+      type: 'contact', requesterId: currentUser.uid, requesterEmail: currentUser.email,
+      candidateId, candidateName, status: 'pending', createdAt: serverTimestamp()
+    });
+    showToast('✅ Contact request sent to Admin/Owner! You will be notified on approval.');
+  } catch(e) {
+    showToast('❌ Failed to send request. Please try again.', 'error');
+  }
 }
 
 async function requestEmployerConnect(jobId, jobTitle) {
-  await addDoc(collection(db, 'requests'), {
-    type: 'employerConnect', requesterId: currentUser.uid, requesterEmail: currentUser.email,
-    jobId, jobTitle, status: 'pending', createdAt: serverTimestamp()
-  });
-  showToast('Connect Employer request sent!');
+  try {
+    await addDoc(collection(db, 'requests'), {
+      type: 'employerConnect', requesterId: currentUser.uid, requesterEmail: currentUser.email,
+      jobId, jobTitle, status: 'pending', createdAt: serverTimestamp()
+    });
+    showToast('✅ Connect Employer request sent to Admin/Owner!');
+  } catch(e) {
+    showToast('❌ Failed to send request. Please try again.', 'error');
+  }
 }
 
 window.viewApplicants = async function(jobId, jobTitle) {

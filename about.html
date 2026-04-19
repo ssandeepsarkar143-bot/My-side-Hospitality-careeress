@@ -187,10 +187,12 @@ body { background: var(--dark); color: #fff; font-family: 'Poppins', sans-serif;
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 const app = initializeApp({ apiKey:"AIzaSyCuAuc9qhA7D_-Lqt-69pbG81KTIiDFVpg", authDomain:"hospitality-careers-e662f.firebaseapp.com", projectId:"hospitality-careers-e662f", storageBucket:"hospitality-careers-e662f.firebasestorage.app", messagingSenderId:"45029895717", appId:"1:45029895717:web:f54f86f608b98751cad9cc" });
 const db = getFirestore(app);
 try {
+  try { await signInAnonymously(getAuth(app)); } catch(_) {}
   const snap = await getDoc(doc(db, 'siteContent', 'settings'));
   if (snap.exists()) {
     const s = snap.data();
