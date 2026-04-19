@@ -37,15 +37,32 @@
 <div id="mainDashboard" style="display:none">
   <nav class="navbar" style="background:rgba(180,30,30,0.15);border-bottom:1px solid rgba(233,69,96,0.3)">
     <div class="navbar-brand">
-      <img src="jogo.png" class="navbar-logo" onerror="this.style.display='none'" alt="Logo"/>
+      <img src="/logo.png" class="navbar-logo" onerror="this.style.display='none'" alt="Logo"/>
       <div class="navbar-title">Hospitality Careers</div>
     </div>
     <div class="navbar-right">
       <span class="user-tag tag-admin">Admin</span>
       <span class="tag-user-name" id="adminNameEl"></span>
+      <button class="btn btn-sm" style="position:relative;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#fff" onclick="document.getElementById('adminNotifModal').classList.add('active');loadAdminNotifications()">
+        <i class="fas fa-bell"></i>
+        <span id="adminNotifBadge" class="notif-badge" style="display:none">0</span>
+      </button>
       <button class="btn btn-sm btn-danger" onclick="document.getElementById('logoutModal').classList.add('active')"><i class="fas fa-sign-out-alt"></i> Logout</button>
     </div>
   </nav>
+
+  <!-- ADMIN NOTIFICATION MODAL -->
+  <div class="modal-overlay" id="adminNotifModal">
+    <div class="modal-box" style="max-width:560px;max-height:80vh;overflow-y:auto">
+      <div class="modal-header">
+        <div class="modal-title" style="color:#e94560"><i class="fas fa-bell"></i> Notifications</div>
+        <button class="modal-close" onclick="document.getElementById('adminNotifModal').classList.remove('active')">&times;</button>
+      </div>
+      <div id="adminNotifList" style="margin-top:16px">
+        <div style="text-align:center;color:var(--gray);padding:20px"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+      </div>
+    </div>
+  </div>
 
   <div class="dashboard-layout">
     <div class="sidebar" style="border-right-color:rgba(233,69,96,0.15)">
@@ -246,6 +263,7 @@ function unlockDashboard() {
   document.getElementById('mainDashboard').style.display = 'block';
   setupAuthority();
   loadDashboard();
+  checkAdminNotifBadge();
 }
 
 function setupAuthority() {
@@ -527,6 +545,44 @@ onAuthStateChanged(auth, async (user) => {
 document.querySelectorAll('.modal-overlay').forEach(el => {
   el.addEventListener('click', (e) => { if(e.target === el) el.classList.remove('active'); });
 });
+
+// ADMIN NOTIFICATIONS
+window.loadAdminNotifications = async function() {
+  if (!currentUser) return;
+  try {
+    const snap = await getDocs(query(collection(db, 'notifications'), where('userId','==',currentUser.uid)));
+    const notifs = snap.docs.map(d => ({id:d.id,...d.data()})).sort((a,b) => (b.createdAt?.toDate?.()?.getTime()||0)-(a.createdAt?.toDate?.()?.getTime()||0));
+    const unread = notifs.filter(n => !n.read).length;
+    const badge = document.getElementById('adminNotifBadge');
+    if (unread > 0) { badge.textContent = unread; badge.style.display = 'flex'; } else badge.style.display = 'none';
+    if (!notifs.length) {
+      document.getElementById('adminNotifList').innerHTML = '<div style="text-align:center;color:var(--gray);padding:30px"><i class="fas fa-bell-slash" style="font-size:32px;margin-bottom:12px;display:block"></i>No notifications yet</div>';
+      return;
+    }
+    document.getElementById('adminNotifList').innerHTML = notifs.map(n => `
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:14px;border-bottom:1px solid rgba(255,255,255,0.06);${!n.read?'background:rgba(233,69,96,0.04)':''}">
+        <div style="width:36px;height:36px;border-radius:50%;background:rgba(${n.type==='success'?'34,197,94':n.type==='danger'?'239,68,68':'233,69,96'},0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <i class="fas fa-${n.type==='success'?'check-circle':n.type==='danger'?'times-circle':'info-circle'}" style="color:${n.type==='success'?'#22c55e':n.type==='danger'?'#ef4444':'#e94560'}"></i>
+        </div>
+        <div style="flex:1">
+          <div style="font-size:13px;color:${!n.read?'#fff':'rgba(255,255,255,0.7)'};">${n.message}</div>
+          <div style="font-size:11px;color:var(--gray);margin-top:4px">${n.createdAt?.toDate?.()?.toLocaleString()||'Just now'}</div>
+        </div>
+        ${!n.read?`<span style="width:8px;height:8px;border-radius:50%;background:#e94560;flex-shrink:0;margin-top:6px;display:block"></span>`:''}
+      </div>`).join('');
+    await Promise.all(snap.docs.filter(d => !d.data().read).map(d => updateDoc(doc(db, 'notifications', d.id), { read: true })));
+    badge.style.display = 'none';
+  } catch(e) {}
+};
+
+async function checkAdminNotifBadge() {
+  if (!currentUser) return;
+  try {
+    const snap = await getDocs(query(collection(db, 'notifications'), where('userId','==',currentUser.uid), where('read','==',false)));
+    const badge = document.getElementById('adminNotifBadge');
+    if (snap.size > 0) { badge.textContent = snap.size; badge.style.display = 'flex'; }
+  } catch(e) {}
+}
 </script>
 </body>
 </html>

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Feedback – Hospitality Careers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<link rel="stylesheet" href="css/styles.css"/>
+<style>
+body { background: var(--dark); color: #fff; font-family: 'Poppins', sans-serif; margin: 0; }
+.feedback-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+@media(max-width:768px) { .feedback-grid { grid-template-columns: 1fr; } }
+.review-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(212,175,55,0.1); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+.review-stars { color: #f59e0b; letter-spacing: 2px; font-size: 16px; margin-bottom: 8px; }
+.review-text { font-size: 13px; color: rgba(255,255,255,0.8); font-style: italic; line-height: 1.6; margin-bottom: 10px; }
+.review-author { font-size: 12px; font-weight: 700; color: var(--gold); }
+</style>
+</head>
+<body>
+
+<nav class="pub-nav">
+  <div class="navbar-brand">
+    <img src="/logo.png" class="navbar-logo" onerror="this.style.display='none'" alt="Logo"/>
+    <div class="navbar-title">Hospitality Careers</div>
+  </div>
+  <div class="pub-nav-links">
+    <a href="index.html" class="pub-nav-link"><i class="fas fa-home"></i> Home</a>
+    <a href="about.html" class="pub-nav-link"><i class="fas fa-info-circle"></i> About</a>
+    <a href="contact.html" class="pub-nav-link"><i class="fas fa-envelope"></i> Contact</a>
+    <a href="feedback.html" class="pub-nav-link active"><i class="fas fa-star"></i> Feedback</a>
+    <a href="help.html" class="pub-nav-link"><i class="fas fa-question-circle"></i> Help</a>
+  </div>
+</nav>
+
+<div class="pub-hero">
+  <div>
+    <div class="pub-hero-title"><i class="fas fa-star" style="-webkit-text-fill-color:var(--gold)"></i> Your Feedback</div>
+    <div class="pub-hero-sub">Help us improve by sharing your experience with Hospitality Careers</div>
+  </div>
+</div>
+
+<div class="pub-section">
+  <div class="feedback-grid">
+    <!-- FEEDBACK FORM -->
+    <div>
+      <div class="pub-card">
+        <div class="pub-card-title"><i class="fas fa-edit"></i> Share Your Experience</div>
+        <div id="fbAlert" class="alert" style="margin-bottom:16px"></div>
+        <form id="feedbackForm">
+          <div class="form-row">
+            <div class="form-group"><label>Your Name *</label><input type="text" id="fb_name" class="form-control" placeholder="Full name" required/></div>
+            <div class="form-group"><label>Email Address</label><input type="email" id="fb_email" class="form-control" placeholder="your@email.com"/></div>
+          </div>
+          <div class="form-group"><label>You are a...</label>
+            <select id="fb_type" class="form-control">
+              <option value="jobseeker">Job Seeker</option>
+              <option value="employer">Employer / Hotel</option>
+              <option value="prime">Prime Member</option>
+              <option value="general">General User</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Overall Rating *</label>
+            <div class="rating-stars" id="starContainer">
+              <button type="button" class="star-btn" data-star="1" onclick="setRating(1)">★</button>
+              <button type="button" class="star-btn" data-star="2" onclick="setRating(2)">★</button>
+              <button type="button" class="star-btn" data-star="3" onclick="setRating(3)">★</button>
+              <button type="button" class="star-btn" data-star="4" onclick="setRating(4)">★</button>
+              <button type="button" class="star-btn" data-star="5" onclick="setRating(5)">★</button>
+            </div>
+            <div id="ratingLabel" style="font-size:12px;color:var(--gray);margin-top:6px">Click to rate</div>
+          </div>
+          <div class="form-group"><label>Category</label>
+            <select id="fb_category" class="form-control">
+              <option value="overall">Overall Experience</option>
+              <option value="job_quality">Job Listings Quality</option>
+              <option value="membership">Prime Membership Value</option>
+              <option value="ui">Website Design & Usability</option>
+              <option value="support">Customer Support</option>
+              <option value="hiring">Hiring Process</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Your Feedback *</label>
+            <textarea id="fb_message" class="form-control" rows="5" placeholder="Tell us about your experience. Your feedback helps us improve!" required></textarea>
+          </div>
+          <div class="form-group">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+              <input type="checkbox" id="fb_public"/> Allow this review to be displayed publicly
+            </label>
+          </div>
+          <button type="submit" id="fbSubmitBtn" class="btn btn-primary w-full" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#000">
+            <i class="fas fa-paper-plane"></i> Submit Feedback
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- RECENT REVIEWS -->
+    <div>
+      <div class="pub-card">
+        <div class="pub-card-title"><i class="fas fa-comments"></i> What People Say</div>
+        <div id="publicReviews">
+          <div class="review-card">
+            <div class="review-stars">★★★★★</div>
+            <div class="review-text">"Excellent platform for hospitality professionals. Found my ideal job within 10 days. Highly recommended!"</div>
+            <div class="review-author">Amit Kumar – F&B Manager, Delhi</div>
+          </div>
+          <div class="review-card">
+            <div class="review-stars">★★★★★</div>
+            <div class="review-text">"The Prime membership is absolutely worth it. The quality of job listings and the support from the team is outstanding."</div>
+            <div class="review-author">Sneha Patel – Housekeeping Supervisor, Mumbai</div>
+          </div>
+          <div class="review-card">
+            <div class="review-stars">★★★★☆</div>
+            <div class="review-text">"Great platform with a professional design. As an employer, I found multiple qualified candidates quickly."</div>
+            <div class="review-author">HR Team – Grand Hyatt, Bangalore</div>
+          </div>
+        </div>
+        <div id="loadedReviews"></div>
+      </div>
+      <div class="pub-card">
+        <div class="pub-card-title"><i class="fas fa-chart-bar"></i> Rating Summary</div>
+        <div id="ratingSummary" style="text-align:center">
+          <div style="font-size:60px;font-weight:900;color:var(--gold)" id="avgRating">4.8</div>
+          <div style="color:#f59e0b;font-size:22px;letter-spacing:3px;margin-bottom:8px">★★★★★</div>
+          <div style="font-size:13px;color:var(--gray)" id="totalReviews">Based on verified reviews</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="pub-footer">
+  <div class="pub-footer-links">
+    <a href="index.html" class="pub-footer-link">Home</a>
+    <a href="about.html" class="pub-footer-link">About</a>
+    <a href="contact.html" class="pub-footer-link">Contact</a>
+    <a href="feedback.html" class="pub-footer-link">Feedback</a>
+    <a href="help.html" class="pub-footer-link">Help</a>
+  </div>
+  <div>© 2026 Hospitality Careers. All rights reserved.</div>
+</div>
+
+<div class="toast" id="toast"><i class="fas fa-check-circle"></i><span id="toastMsg"></span></div>
+
+<script>
+let selectedRating = 0;
+window.setRating = function(r) {
+  selectedRating = r;
+  const labels = ['','Poor','Fair','Good','Very Good','Excellent'];
+  document.getElementById('ratingLabel').textContent = `${labels[r]} (${r}/5)`;
+  document.querySelectorAll('.star-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', i < r);
+  });
+};
+</script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, addDoc, getDocs, collection, query, where, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+const app = initializeApp({ apiKey:"AIzaSyCuAuc9qhA7D_-Lqt-69pbG81KTIiDFVpg", authDomain:"hospitality-careers-e662f.firebaseapp.com", projectId:"hospitality-careers-e662f", storageBucket:"hospitality-careers-e662f.firebasestorage.app", messagingSenderId:"45029895717", appId:"1:45029895717:web:f54f86f608b98751cad9cc" });
+const db = getFirestore(app);
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast'); document.getElementById('toastMsg').textContent = msg;
+  t.className = `toast show ${type}`; setTimeout(() => t.classList.remove('show'), 4000);
+}
+
+// Load public reviews
+try {
+  const snap = await getDocs(query(collection(db, 'feedback'), where('isPublic','==',true)));
+  const reviews = snap.docs.map(d => d.data()).sort((a,b) => (b.createdAt?.toDate?.()?.getTime()||0)-(a.createdAt?.toDate?.()?.getTime()||0));
+  if (reviews.length > 0) {
+    const totalRating = reviews.reduce((s,r) => s+(r.rating||0), 0);
+    document.getElementById('avgRating').textContent = (totalRating/reviews.length).toFixed(1);
+    document.getElementById('totalReviews').textContent = `Based on ${reviews.length} verified reviews`;
+    const starsCount = Math.round(totalRating/reviews.length);
+    document.querySelector('#ratingSummary div:nth-child(2)').textContent = '★'.repeat(starsCount)+'☆'.repeat(5-starsCount);
+    document.getElementById('loadedReviews').innerHTML = reviews.slice(0,5).map(r => `
+      <div class="review-card">
+        <div class="review-stars">${'★'.repeat(r.rating||0)}${'☆'.repeat(5-(r.rating||0))}</div>
+        <div class="review-text">"${r.message}"</div>
+        <div class="review-author">${r.name} – ${r.fb_type||'User'}</div>
+      </div>`).join('');
+  }
+} catch(e) {}
+
+document.getElementById('feedbackForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!selectedRating) {
+    const al = document.getElementById('fbAlert'); al.textContent='Please select a rating.'; al.className='alert alert-danger show'; return;
+  }
+  const btn = document.getElementById('fbSubmitBtn');
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...'; btn.disabled = true;
+  try {
+    await addDoc(collection(db, 'feedback'), {
+      name: document.getElementById('fb_name').value,
+      email: document.getElementById('fb_email').value,
+      userType: document.getElementById('fb_type').value,
+      category: document.getElementById('fb_category').value,
+      rating: selectedRating,
+      message: document.getElementById('fb_message').value,
+      isPublic: document.getElementById('fb_public').checked,
+      createdAt: serverTimestamp()
+    });
+    document.getElementById('feedbackForm').reset();
+    selectedRating = 0;
+    document.querySelectorAll('.star-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('ratingLabel').textContent = 'Click to rate';
+    const al = document.getElementById('fbAlert');
+    al.textContent = '✅ Thank you for your feedback! It has been submitted successfully.';
+    al.className = 'alert alert-success show';
+    showToast('Feedback submitted! Thank you.');
+  } catch(err) {
+    const al = document.getElementById('fbAlert');
+    al.textContent = '❌ Submission failed. Please try again.';
+    al.className = 'alert alert-danger show';
+  }
+  btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Feedback'; btn.disabled = false;
+});
+</script>
+</body>
+</html>

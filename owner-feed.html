@@ -40,12 +40,15 @@
   <!-- NAVBAR -->
   <nav class="navbar">
     <div class="navbar-brand">
-      <img src="jogo.png" class="navbar-logo" onerror="this.style.display='none'" alt="Logo"/>
+      <img src="/logo.png" class="navbar-logo" onerror="this.style.display='none'" alt="Logo"/>
       <div class="navbar-title">Hospitality Careers</div>
     </div>
     <div class="navbar-right">
       <span class="user-tag tag-owner">Owner</span>
       <span class="tag-user-name" id="ownerName"></span>
+      <button class="btn btn-sm" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#fff;position:relative" onclick="showSection('notifications')">
+        <i class="fas fa-bell"></i> <span id="notifBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;font-size:10px;width:18px;height:18px;border-radius:50%;display:none;align-items:center;justify-content:center;font-weight:700" id="notifBadge">0</span>
+      </button>
       <button class="btn btn-sm btn-danger" onclick="showLogout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
     </div>
   </nav>
@@ -74,6 +77,11 @@
       <div class="sidebar-item" onclick="showSection('membershipReqs')"><i class="fas fa-crown"></i> Membership Requests</div>
       <div class="sidebar-section">Finance</div>
       <div class="sidebar-item" onclick="showSection('discounts')"><i class="fas fa-tag"></i> Discounts & Offers</div>
+      <div class="sidebar-section">Engagement</div>
+      <div class="sidebar-item" onclick="showSection('notifications')"><i class="fas fa-bell"></i> Notifications</div>
+      <div class="sidebar-item" onclick="showSection('feedbackRecords')"><i class="fas fa-star"></i> Feedback Records</div>
+      <div class="sidebar-section">Site Content</div>
+      <div class="sidebar-item" onclick="showSection('siteSettings')"><i class="fas fa-cog"></i> Edit Site Content</div>
       <div class="sidebar-section">Settings</div>
       <div class="sidebar-item" onclick="showSection('manageMpin')"><i class="fas fa-key"></i> Manage MPINs</div>
     </div>
@@ -96,12 +104,23 @@
       <!-- USER CONTROL -->
       <div id="sec-users" class="page-section">
         <div class="section-title"><i class="fas fa-users"></i> User Control</div>
-        <div style="margin-bottom:16px">
-          <input type="text" id="userTableSearch" class="form-control" placeholder="Search by name or email..." oninput="filterUserTable(this.value)" style="max-width:400px"/>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-sm user-tab-btn active" id="tab_all" onclick="setUserTab('all')"><i class="fas fa-users"></i> All Users</button>
+            <button class="btn btn-sm user-tab-btn" id="tab_membership" onclick="setUserTab('membership')"><i class="fas fa-crown"></i> Membership Users</button>
+            <button class="btn btn-sm user-tab-btn" id="tab_admin" onclick="setUserTab('admin')"><i class="fas fa-user-shield"></i> Admin Users</button>
+          </div>
+          <select id="userSortSelect" class="form-control" style="max-width:220px;padding:6px 10px;font-size:12px" onchange="applyUserSort()">
+            <option value="new_old">Sort: New → Old</option>
+            <option value="old_new">Sort: Old → New</option>
+            <option value="highest_prime">Sort: Highest Prime Tag → Lowest</option>
+            <option value="lowest_prime">Sort: Lowest Prime Tag → Highest</option>
+          </select>
+          <input type="text" id="userTableSearch" class="form-control" placeholder="🔍 Search by name or email..." oninput="filterUserTable(this.value)" style="max-width:280px;padding:6px 10px;font-size:12px"/>
         </div>
         <div class="table-wrapper">
           <table>
-            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th><th>Membership</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Name</th><th>Email</th><th>Role / Tag</th><th>Joined</th><th>Membership</th><th>Actions</th></tr></thead>
             <tbody id="usersTableBody"><tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr></tbody>
           </table>
         </div>
@@ -112,8 +131,8 @@
         <div class="section-title"><i class="fas fa-user-shield"></i> Admin Working Dashboard</div>
         <div class="table-wrapper">
           <table>
-            <thead><tr><th>Admin Name</th><th>Jobs Approved</th><th>Contacts Approved</th><th>Resumes Approved</th><th>Membership Approved</th><th>Candidates Hired</th></tr></thead>
-            <tbody id="adminWorkingBody"><tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
+            <thead><tr><th>Admin Name</th><th>Email</th><th>Jobs</th><th>Contacts</th><th>Resumes</th><th>Memberships</th><th>Hired</th><th>Actions</th></tr></thead>
+            <tbody id="adminWorkingBody"><tr><td colspan="8" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -227,6 +246,74 @@
             <tbody id="offersTableBody"><tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">No active offers</td></tr></tbody></table>
           </div>
         </div>
+      </div>
+
+      <!-- NOTIFICATIONS -->
+      <div id="sec-notifications" class="page-section">
+        <div class="section-title"><i class="fas fa-bell"></i> Notifications</div>
+        <div class="card mb-16">
+          <div class="card-title"><i class="fas fa-broadcast-tower"></i> Broadcast Notification</div>
+          <div class="form-group"><label>Target</label>
+            <select id="notifTarget" class="form-control">
+              <option value="all">All Users</option>
+              <option value="prime">Prime Members Only</option>
+              <option value="user">Free Users Only</option>
+              <option value="admin">Admins Only</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Message</label><textarea id="notifMessage" class="form-control" rows="3" placeholder="Enter notification message..."></textarea></div>
+          <button class="btn btn-primary" onclick="broadcastNotification()"><i class="fas fa-paper-plane"></i> Send Notification</button>
+        </div>
+        <div class="card">
+          <div class="card-title"><i class="fas fa-list"></i> All Notifications</div>
+          <div class="table-wrapper" style="margin:0">
+            <table><thead><tr><th>Message</th><th>Target</th><th>Type</th><th>Sent On</th><th>Read</th></tr></thead>
+            <tbody id="notificationsBody"><tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- FEEDBACK RECORDS -->
+      <div id="sec-feedbackRecords" class="page-section">
+        <div class="section-title"><i class="fas fa-star"></i> Feedback Records</div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Name</th><th>Email</th><th>Rating</th><th>Message</th><th>Date</th></tr></thead>
+            <tbody id="feedbackBody"><tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- SITE SETTINGS -->
+      <div id="sec-siteSettings" class="page-section">
+        <div class="section-title"><i class="fas fa-cog"></i> Site Content Settings</div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title"><i class="fas fa-info-circle"></i> About Us Content</div>
+            <div class="form-group"><label>Website Launch Date</label><input type="text" id="ss_launchDate" class="form-control" placeholder="e.g. January 2024"/></div>
+            <div class="form-group"><label>Owner Name</label><input type="text" id="ss_ownerName" class="form-control" placeholder="Suman Sarkar"/></div>
+            <div class="form-group"><label>Owner Photo URL (or upload below)</label><input type="text" id="ss_ownerPhoto" class="form-control" placeholder="https://..."/></div>
+            <div class="form-group"><label>About Us Description</label><textarea id="ss_aboutDesc" class="form-control" rows="4" placeholder="Write about the company..."></textarea></div>
+            <div class="form-group"><label>Success Story 1</label><input type="text" id="ss_story1" class="form-control" placeholder="Story title – Short description"/></div>
+            <div class="form-group"><label>Success Story 2</label><input type="text" id="ss_story2" class="form-control" placeholder="Story title – Short description"/></div>
+            <div class="form-group"><label>Success Story 3</label><input type="text" id="ss_story3" class="form-control" placeholder="Story title – Short description"/></div>
+          </div>
+          <div class="card">
+            <div class="card-title"><i class="fas fa-envelope"></i> Contact Us Settings</div>
+            <div class="form-group"><label>Contact Email</label><input type="email" id="ss_contactEmail" class="form-control" placeholder="contact@hospitalitycareers.in"/></div>
+            <div class="form-group"><label>Contact Phone</label><input type="text" id="ss_contactPhone" class="form-control" placeholder="+91 XXXXXXXXXX"/></div>
+            <div class="form-group"><label>Office Address</label><textarea id="ss_address" class="form-control" rows="3" placeholder="Office address..."></textarea></div>
+            <div class="card-title" style="margin-top:16px"><i class="fas fa-question-circle"></i> Help / FAQ Settings</div>
+            <div class="form-group"><label>FAQ 1 – Question</label><input type="text" id="ss_faq1q" class="form-control" placeholder="Question"/></div>
+            <div class="form-group"><label>FAQ 1 – Answer</label><textarea id="ss_faq1a" class="form-control" rows="2" placeholder="Answer"></textarea></div>
+            <div class="form-group"><label>FAQ 2 – Question</label><input type="text" id="ss_faq2q" class="form-control" placeholder="Question"/></div>
+            <div class="form-group"><label>FAQ 2 – Answer</label><textarea id="ss_faq2a" class="form-control" rows="2" placeholder="Answer"></textarea></div>
+            <div class="form-group"><label>FAQ 3 – Question</label><input type="text" id="ss_faq3q" class="form-control" placeholder="Question"/></div>
+            <div class="form-group"><label>FAQ 3 – Answer</label><textarea id="ss_faq3a" class="form-control" rows="2" placeholder="Answer"></textarea></div>
+          </div>
+        </div>
+        <button class="btn btn-success w-full mt-16" onclick="saveSiteSettings()"><i class="fas fa-save"></i> Save All Site Settings</button>
+        <div id="siteSettingsMsg" class="alert mt-8"></div>
       </div>
 
       <!-- MANAGE MPINS -->
@@ -360,6 +447,7 @@ const MPIN_DOC = 'owner';
 let currentUser = null;
 let allUsers = [], promoteUserId = null;
 let isMpinSet = false;
+let currentUserTab = 'all';
 
 // Toast
 function showToast(msg, type='success') {
@@ -399,6 +487,9 @@ function loadSectionData(name) {
     case 'membershipReqs': loadMembershipReqs(); break;
     case 'discounts': loadOffers(); break;
     case 'manageMpin': loadAdminMpinList(); break;
+    case 'notifications': loadNotifications(); break;
+    case 'feedbackRecords': loadFeedbackRecords(); break;
+    case 'siteSettings': loadSiteSettings(); break;
   }
 }
 
@@ -633,13 +724,69 @@ async function loadUsers() {
   try {
     const snap = await getDocs(collection(db, 'users'));
     allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderUsersTable(allUsers);
+    applyUserTab();
   } catch(e) {}
 }
 
-function renderUsersTable(users) {
+window.setUserTab = function(tab) {
+  currentUserTab = tab;
+  document.querySelectorAll('.user-tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab_'+tab)?.classList.add('active');
+  applyUserTab();
+};
+
+function applyUserTab() {
+  let filtered = [...allUsers];
+  if (currentUserTab === 'membership') filtered = filtered.filter(u => u.role === 'Prime');
+  else if (currentUserTab === 'admin') filtered = filtered.filter(u => u.role === 'Admin');
+  filtered = applySortToUsers(filtered);
+  const searchVal = document.getElementById('userTableSearch')?.value || '';
+  if (searchVal) {
+    const q = searchVal.toLowerCase();
+    filtered = filtered.filter(u => (u.displayName||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q));
+  }
+  renderUsersTable(filtered, currentUserTab);
+}
+
+function applySortToUsers(users) {
+  const sort = document.getElementById('userSortSelect')?.value || 'new_old';
+  if (sort === 'new_old') return users.sort((a,b) => (b.createdAt?.toDate?.()?.getTime()||0) - (a.createdAt?.toDate?.()?.getTime()||0));
+  if (sort === 'old_new') return users.sort((a,b) => (a.createdAt?.toDate?.()?.getTime()||0) - (b.createdAt?.toDate?.()?.getTime()||0));
+  if (sort === 'highest_prime') return users.sort((a,b) => (b.membershipCount||0) - (a.membershipCount||0));
+  if (sort === 'lowest_prime') return users.sort((a,b) => (a.membershipCount||0) - (b.membershipCount||0));
+  return users;
+}
+
+window.applyUserSort = function() { applyUserTab(); };
+
+function renderUsersTable(users, tab) {
   const tbody = document.getElementById('usersTableBody');
   if (!users.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">No users found</td></tr>'; return; }
+  if (tab === 'membership') {
+    tbody.innerHTML = users.map(u => `<tr>
+      <td style="cursor:pointer;color:var(--gold)" onclick="viewUserDetails('${u.id}')">${u.displayName || 'N/A'}</td>
+      <td>${u.email}</td>
+      <td><span class="badge badge-approved">${u.tag || 'Prime'}</span></td>
+      <td>${u.createdAt?.toDate?.()?.toLocaleDateString() || 'N/A'}</td>
+      <td>${u.membershipCount || 1}x (Expiry: ${u.membershipExpiryAt?.toDate?.()?.toLocaleDateString()||'N/A'})</td>
+      <td><button class="btn btn-sm btn-info" onclick="viewUserDetails('${u.id}')">Details</button></td>
+    </tr>`).join('');
+    return;
+  }
+  if (tab === 'admin') {
+    tbody.innerHTML = users.map(u => `<tr>
+      <td style="cursor:pointer;color:var(--gold)" onclick="viewUserDetails('${u.id}')">${u.displayName || 'N/A'}</td>
+      <td>${u.email}</td>
+      <td><span class="badge badge-rejected">Admin</span></td>
+      <td>${u.createdAt?.toDate?.()?.toLocaleDateString() || 'N/A'}</td>
+      <td>—</td>
+      <td>
+        <button class="btn btn-sm btn-info" onclick="viewUserDetails('${u.id}')">Details</button>
+        <button class="btn btn-sm btn-danger" onclick="demoteAdmin('${u.id}')"><i class="fas fa-user-minus"></i> Remove Admin</button>
+      </td>
+    </tr>`).join('');
+    return;
+  }
   tbody.innerHTML = users.map(u => `<tr>
     <td style="cursor:pointer;color:var(--gold)" onclick="viewUserDetails('${u.id}')">${u.displayName || 'N/A'}</td>
     <td>${u.email}</td>
@@ -649,18 +796,13 @@ function renderUsersTable(users) {
     <td>
       <button class="btn btn-sm btn-info" onclick="viewUserDetails('${u.id}')">Details</button>
       ${u.role !== 'Owner' && u.role !== 'Admin' ? `<button class="btn btn-sm btn-warning" style="background:linear-gradient(135deg,#ffc107,#e0a800);color:#000" onclick="openPromote('${u.id}','${u.displayName||u.email}')">Promote Admin</button>` : ''}
-      ${u.role === 'Admin' ? `<button class="btn btn-sm btn-danger" onclick="demoteAdmin('${u.id}')">Demote</button>` : ''}
+      ${u.role === 'Admin' ? `<button class="btn btn-sm btn-danger" onclick="demoteAdmin('${u.id}')"><i class="fas fa-user-minus"></i> Remove Admin</button>` : ''}
     </td>
   </tr>`).join('');
 }
 
-window.searchUsers = function(val) {
-  const q = val.toLowerCase();
-  const filtered = allUsers.filter(u => (u.displayName||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q));
-  renderUsersTable(filtered);
-};
-
-window.filterUserTable = function(val) { window.searchUsers(val); };
+window.searchUsers = function(val) { applyUserTab(); };
+window.filterUserTable = function(val) { applyUserTab(); };
 
 window.viewUserDetails = async function(uid) {
   const user = allUsers.find(u => u.id === uid) || {};
@@ -727,7 +869,7 @@ async function loadAdminWorking() {
   try {
     const adminsSnap = await getDocs(query(collection(db, 'users'), where('role','==','Admin')));
     const tbody = document.getElementById('adminWorkingBody');
-    if (adminsSnap.empty) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">No admins yet</td></tr>'; return; }
+    if (adminsSnap.empty) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--gray);padding:20px">No admins yet</td></tr>'; return; }
     const rows = await Promise.all(adminsSnap.docs.map(async d => {
       const admin = d.data();
       const adminId = d.id;
@@ -739,12 +881,14 @@ async function loadAdminWorking() {
         getDocs(query(collection(db, 'applications'), where('hiredBy','==',adminId)))
       ]);
       return `<tr>
-        <td>${admin.displayName||admin.email}</td>
-        <td>${jobsApproved.size}</td>
-        <td>${contactApproved.size}</td>
-        <td>${resumeApproved.size}</td>
-        <td>${membershipApproved.size}</td>
-        <td>${hiredCandidates.size}</td>
+        <td>${admin.displayName||'N/A'}</td>
+        <td style="font-size:11px">${admin.email}</td>
+        <td style="text-align:center">${jobsApproved.size}</td>
+        <td style="text-align:center">${contactApproved.size}</td>
+        <td style="text-align:center">${resumeApproved.size}</td>
+        <td style="text-align:center">${membershipApproved.size}</td>
+        <td style="text-align:center">${hiredCandidates.size}</td>
+        <td><button class="btn btn-sm btn-danger" onclick="demoteAdmin('${adminId}')"><i class="fas fa-user-minus"></i> Remove</button></td>
       </tr>`;
     }));
     tbody.innerHTML = rows.join('');
@@ -935,12 +1079,30 @@ async function loadRequests(type, bodyId) {
 }
 
 window.approveRequest = async function(id, type, bodyId) {
+  const reqSnap = await getDoc(doc(db, 'requests', id));
+  const reqData = reqSnap.data() || {};
   await updateDoc(doc(db, 'requests', id), { status: 'approved', approvedBy: currentUser.uid, approvedAt: serverTimestamp() });
+  const typeMessages = {
+    employerConnect: `✅ Your Employer Connect request has been approved!`,
+    contact: `✅ Your Contact Request has been approved! You can now see the candidate's contact.`,
+    resumeDownload: `✅ Your Resume Download Request has been approved! You can now download the resume.`,
+    membership: `✅ Your Membership request has been approved!`
+  };
+  if (reqData.requesterId) await sendNotification(reqData.requesterId, typeMessages[type] || '✅ Your request has been approved!', 'success');
   showToast('Request approved!');
   loadRequests(type, bodyId);
 };
 window.rejectRequest = async function(id, type, bodyId) {
+  const reqSnap = await getDoc(doc(db, 'requests', id));
+  const reqData = reqSnap.data() || {};
   await updateDoc(doc(db, 'requests', id), { status: 'rejected' });
+  const typeMessages = {
+    employerConnect: `❌ Your Employer Connect request has been rejected.`,
+    contact: `❌ Your Contact Request has been rejected.`,
+    resumeDownload: `❌ Your Resume Download Request has been rejected.`,
+    membership: `❌ Your Membership request has been rejected. Please contact support.`
+  };
+  if (reqData.requesterId) await sendNotification(reqData.requesterId, typeMessages[type] || '❌ Your request has been rejected.', 'danger');
   showToast('Request rejected.', 'error');
   loadRequests(type, bodyId);
 };
@@ -974,14 +1136,16 @@ window.approveMembership = async function(reqId, userId) {
   const expiry = new Date(); expiry.setDate(expiry.getDate() + 30);
   const userSnap = await getDoc(doc(db, 'users', userId));
   const count = (userSnap.data()?.membershipCount || 0) + 1;
+  const tag = `Prime${count > 1 ? count : ''}`;
   await Promise.all([
     updateDoc(doc(db, 'requests', reqId), { status: 'approved', approvedBy: currentUser.uid, approvedAt: serverTimestamp() }),
     updateDoc(doc(db, 'users', userId), {
-      role: 'Prime', tag: `Prime${count>1?count:''}`,
+      role: 'Prime', tag,
       membershipCount: count, membershipPurchasedAt: serverTimestamp(),
       membershipExpiryAt: expiry
     })
   ]);
+  await sendNotification(userId, `🎉 Congratulations! Your Prime Membership has been approved. Your tag is "${tag}". Validity: 30 days.`, 'success');
   showToast('Membership approved! User upgraded to Prime.');
   loadMembershipReqs();
 };
@@ -1072,6 +1236,133 @@ window.setAdminMpin = async function() {
 document.querySelectorAll('.modal-overlay').forEach(el => {
   el.addEventListener('click', (e) => { if(e.target === el) el.classList.remove('active'); });
 });
+
+// SEND NOTIFICATION
+async function sendNotification(userId, message, type='info', broadcast=false, targetRole='') {
+  try {
+    await addDoc(collection(db, 'notifications'), {
+      userId: userId || '', message, type, read: false, broadcast, targetRole,
+      createdAt: serverTimestamp(), createdBy: 'owner'
+    });
+  } catch(e) {}
+}
+
+// NOTIFICATIONS SECTION
+async function loadNotifications() {
+  try {
+    const snap = await getDocs(query(collection(db, 'notifications')));
+    const tbody = document.getElementById('notificationsBody');
+    if (snap.empty) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">No notifications yet</td></tr>'; return; }
+    const rows = snap.docs.sort((a,b) => (b.data().createdAt?.toDate?.()?.getTime()||0) - (a.data().createdAt?.toDate?.()?.getTime()||0));
+    tbody.innerHTML = rows.map(d => {
+      const n = d.data();
+      return `<tr>
+        <td style="max-width:320px;font-size:12px">${n.message}</td>
+        <td>${n.broadcast ? (n.targetRole ? n.targetRole.charAt(0).toUpperCase()+n.targetRole.slice(1) : 'All Users') : 'User Specific'}</td>
+        <td><span class="badge badge-${n.type==='success'?'approved':n.type==='danger'?'rejected':'pending'}">${n.type}</span></td>
+        <td style="font-size:11px">${n.createdAt?.toDate?.()?.toLocaleString()||'N/A'}</td>
+        <td><span class="badge badge-${n.read?'approved':'pending'}">${n.read?'Read':'Unread'}</span></td>
+      </tr>`;
+    }).join('');
+  } catch(e) {}
+}
+
+window.broadcastNotification = async function() {
+  const target = document.getElementById('notifTarget').value;
+  const message = document.getElementById('notifMessage').value.trim();
+  if (!message) { showToast('Enter a message first.', 'error'); return; }
+  try {
+    let users = [];
+    const snap = await getDocs(collection(db, 'users'));
+    snap.docs.forEach(d => {
+      const u = d.data();
+      if (target === 'all' || (target === 'prime' && u.role === 'Prime') || (target === 'user' && u.role === 'User') || (target === 'admin' && u.role === 'Admin')) {
+        users.push(d.id);
+      }
+    });
+    await Promise.all(users.map(uid => sendNotification(uid, message, 'info', true, target)));
+    document.getElementById('notifMessage').value = '';
+    showToast(`Notification sent to ${users.length} users!`);
+    loadNotifications();
+  } catch(e) { showToast('Failed to send notification.', 'error'); }
+};
+
+// FEEDBACK RECORDS
+async function loadFeedbackRecords() {
+  try {
+    const snap = await getDocs(query(collection(db, 'feedback')));
+    const tbody = document.getElementById('feedbackBody');
+    if (snap.empty) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">No feedback yet</td></tr>'; return; }
+    const rows = snap.docs.sort((a,b) => (b.data().createdAt?.toDate?.()?.getTime()||0) - (a.data().createdAt?.toDate?.()?.getTime()||0));
+    tbody.innerHTML = rows.map(d => {
+      const f = d.data();
+      const stars = '★'.repeat(f.rating||0)+'☆'.repeat(5-(f.rating||0));
+      return `<tr>
+        <td>${f.name||'N/A'}</td><td style="font-size:11px">${f.email||'N/A'}</td>
+        <td style="color:#f59e0b;letter-spacing:2px">${stars}</td>
+        <td style="max-width:300px;font-size:12px">${f.message||''}</td>
+        <td style="font-size:11px">${f.createdAt?.toDate?.()?.toLocaleDateString()||'N/A'}</td>
+      </tr>`;
+    }).join('');
+  } catch(e) {}
+}
+
+// SITE SETTINGS
+async function loadSiteSettings() {
+  try {
+    const snap = await getDoc(doc(db, 'siteContent', 'settings'));
+    if (snap.exists()) {
+      const s = snap.data();
+      document.getElementById('ss_launchDate').value = s.launchDate||'';
+      document.getElementById('ss_ownerName').value = s.ownerName||'Suman Sarkar';
+      document.getElementById('ss_ownerPhoto').value = s.ownerPhoto||'';
+      document.getElementById('ss_aboutDesc').value = s.aboutDesc||'';
+      document.getElementById('ss_story1').value = s.story1||'';
+      document.getElementById('ss_story2').value = s.story2||'';
+      document.getElementById('ss_story3').value = s.story3||'';
+      document.getElementById('ss_contactEmail').value = s.contactEmail||'';
+      document.getElementById('ss_contactPhone').value = s.contactPhone||'';
+      document.getElementById('ss_address').value = s.address||'';
+      document.getElementById('ss_faq1q').value = s.faq1q||'';
+      document.getElementById('ss_faq1a').value = s.faq1a||'';
+      document.getElementById('ss_faq2q').value = s.faq2q||'';
+      document.getElementById('ss_faq2a').value = s.faq2a||'';
+      document.getElementById('ss_faq3q').value = s.faq3q||'';
+      document.getElementById('ss_faq3a').value = s.faq3a||'';
+    }
+  } catch(e) {}
+}
+
+window.saveSiteSettings = async function() {
+  const data = {
+    launchDate: document.getElementById('ss_launchDate').value,
+    ownerName: document.getElementById('ss_ownerName').value,
+    ownerPhoto: document.getElementById('ss_ownerPhoto').value,
+    aboutDesc: document.getElementById('ss_aboutDesc').value,
+    story1: document.getElementById('ss_story1').value,
+    story2: document.getElementById('ss_story2').value,
+    story3: document.getElementById('ss_story3').value,
+    contactEmail: document.getElementById('ss_contactEmail').value,
+    contactPhone: document.getElementById('ss_contactPhone').value,
+    address: document.getElementById('ss_address').value,
+    faq1q: document.getElementById('ss_faq1q').value,
+    faq1a: document.getElementById('ss_faq1a').value,
+    faq2q: document.getElementById('ss_faq2q').value,
+    faq2a: document.getElementById('ss_faq2a').value,
+    faq3q: document.getElementById('ss_faq3q').value,
+    faq3a: document.getElementById('ss_faq3a').value,
+    updatedAt: serverTimestamp()
+  };
+  try {
+    await setDoc(doc(db, 'siteContent', 'settings'), data);
+    const msg = document.getElementById('siteSettingsMsg');
+    msg.textContent = '✅ Site settings saved successfully!'; msg.className = 'alert alert-success show';
+    showToast('Site settings saved!');
+  } catch(e) {
+    const msg = document.getElementById('siteSettingsMsg');
+    msg.textContent = '❌ Failed to save. Check Firestore permissions.'; msg.className = 'alert alert-danger show';
+  }
+};
 </script>
 </body>
 </html>

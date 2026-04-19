@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Help & FAQ – Hospitality Careers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<link rel="stylesheet" href="css/styles.css"/>
+<style>
+body { background: var(--dark); color: #fff; font-family: 'Poppins', sans-serif; margin: 0; }
+.help-categories { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; margin-bottom: 40px; }
+.help-cat-btn {
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(212,175,55,0.15); border-radius: 12px;
+  padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s; color: #fff;
+}
+.help-cat-btn:hover, .help-cat-btn.active {
+  background: rgba(212,175,55,0.1); border-color: var(--gold); color: var(--gold);
+}
+.help-cat-btn i { font-size: 24px; margin-bottom: 8px; display: block; }
+.help-cat-btn span { font-size: 12px; font-weight: 600; }
+.search-help { max-width: 500px; margin: 0 auto 40px; position: relative; }
+.search-help input { padding-left: 44px !important; }
+.search-help i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--gray); }
+</style>
+</head>
+<body>
+
+<nav class="pub-nav">
+  <div class="navbar-brand">
+    <img src="/logo.png" class="navbar-logo" onerror="this.style.display='none'" alt="Logo"/>
+    <div class="navbar-title">Hospitality Careers</div>
+  </div>
+  <div class="pub-nav-links">
+    <a href="index.html" class="pub-nav-link"><i class="fas fa-home"></i> Home</a>
+    <a href="about.html" class="pub-nav-link"><i class="fas fa-info-circle"></i> About</a>
+    <a href="contact.html" class="pub-nav-link"><i class="fas fa-envelope"></i> Contact</a>
+    <a href="feedback.html" class="pub-nav-link"><i class="fas fa-star"></i> Feedback</a>
+    <a href="help.html" class="pub-nav-link active"><i class="fas fa-question-circle"></i> Help</a>
+  </div>
+</nav>
+
+<div class="pub-hero">
+  <div>
+    <div class="pub-hero-title"><i class="fas fa-life-ring" style="-webkit-text-fill-color:var(--gold)"></i> Help Center</div>
+    <div class="pub-hero-sub">Find answers to common questions about Hospitality Careers</div>
+  </div>
+</div>
+
+<div class="pub-section">
+  <!-- SEARCH -->
+  <div class="search-help">
+    <i class="fas fa-search"></i>
+    <input type="text" class="form-control" id="faqSearch" placeholder="Search for help topics..." oninput="filterFaq(this.value)"/>
+  </div>
+
+  <!-- CATEGORIES -->
+  <div class="help-categories">
+    <div class="help-cat-btn active" onclick="filterByCategory('all')"><i class="fas fa-th-large"></i><span>All Topics</span></div>
+    <div class="help-cat-btn" onclick="filterByCategory('account')"><i class="fas fa-user-circle"></i><span>Account</span></div>
+    <div class="help-cat-btn" onclick="filterByCategory('jobs')"><i class="fas fa-briefcase"></i><span>Jobs</span></div>
+    <div class="help-cat-btn" onclick="filterByCategory('membership')"><i class="fas fa-crown"></i><span>Membership</span></div>
+    <div class="help-cat-btn" onclick="filterByCategory('payment')"><i class="fas fa-rupee-sign"></i><span>Payment</span></div>
+    <div class="help-cat-btn" onclick="filterByCategory('mpin')"><i class="fas fa-key"></i><span>MPIN</span></div>
+  </div>
+
+  <!-- STATIC FAQs -->
+  <div id="faqContainer">
+
+    <div class="faq-item" data-category="account">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span><i class="fas fa-user-circle" style="color:var(--gold);margin-right:8px"></i> How do I create an account on Hospitality Careers?</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        Visit the homepage and click "Login / Register". Choose "Sign Up" and fill in your details (name, email, password). You can also sign in with your Google account for faster access. Once registered, you'll be directed to your personal dashboard.
+      </div>
+    </div>
+
+    <div class="faq-item" data-category="account">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span><i class="fas fa-lock" style="color:var(--gold);margin-right:8px"></i> What is MPIN and how do I use it?</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        MPIN is a 4-digit security PIN used to protect your dashboard access. For Owners, you set your own MPIN on first login. For Admins, the Owner sets your MPIN from the Admin Management section. You must enter your MPIN every time you access the dashboard. If you forget your MPIN, contact the system owner.
+      </div>
+    </div>
+
+    <div class="faq-item" data-category="jobs">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span><i class="fas fa-briefcase" style="color:var(--gold);margin-right:8px"></i> How do I apply for a job?</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        Browse jobs from your dashboard's "Find Job" mode. Click the "Apply" button on any job listing. Fill in your details and upload your CV (PDF, DOC, or image). Wait for the CV to upload completely before submitting. Once submitted, you can track your application status in "My Activity".
+      </div>
+    </div>
+
+    <div class="faq-item" data-category="jobs">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span><i class="fas fa-plus-circle" style="color:var(--gold);margin-right:8px"></i> How do I post a job vacancy?</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        Go to your dashboard and switch to "Hire Staff" mode, or click "Add Job" from the sidebar. Fill in all job details. If you are a regular User, your post goes to "Pending" status and needs admin approval. Prime Members, Admins and Owners can post jobs that go live immediately.
+      </div>
+    </div>
+
+    <div class="faq-item" data-category="membership">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span><i class="fas fa-crown" style="color:var(--gold);margin-right:8px"></i> What is Prime Membership and what are its benefits?</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        Prime Membership (₹499/month) gives you access to exclusive job listings, the ability to post jobs that go live immediately (no approval needed), view candidate resumes, connect with employers directly, and get a verified Prime tag on your profile. Your tag is numbered (Prime, Prime2, Prime3...) based on how many times you've renewed.
+      </div>
+    </div>
+
+    <div class="faq-item" data-category="payment">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span><i class="fas fa-rupee-sign" style="color:var(--gold);margin-right:8px"></i> How do I purchase Prime Membership?</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        Go to "Membership" from your dashboard sidebar. Scan the UPI QR code or use the UPI ID provided to pay ₹499. After payment, enter your UTR (Unique Transaction Reference) number in the provided field and click "Submit Request". Your membership will be activated by the admin within 24 hours after UTR verification.
+      </div>
+    </div>
+
+    <div class="faq-item" data-category="payment">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span><i class="fas fa-receipt" style="color:var(--gold);margin-right:8px"></i> Where do I find my UTR number?</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        After making a UPI payment, open your UPI app (PhonePe, Google Pay, Paytm, etc.) and go to your transaction history. Open the payment you made to us and look for "UTR", "Transaction ID" or "Reference Number" – it's usually a 12-digit number. Copy this and paste it in the UTR field on our membership page.
+      </div>
+    </div>
+
+    <div class="faq-item" data-category="membership">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span><i class="fas fa-tag" style="color:var(--gold);margin-right:8px"></i> What is the Prime tag numbering system?</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        Your Prime tag reflects how many times you've purchased membership. Your first membership gives you the "Prime" tag. The second renewal gives "Prime2", third gives "Prime3", and so on. Higher numbered Prime tags signal to employers that you are a long-term, committed platform member.
+      </div>
+    </div>
+
+    <div class="faq-item" data-category="mpin">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span><i class="fas fa-key" style="color:var(--gold);margin-right:8px"></i> I forgot my Admin MPIN. What should I do?</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        Admin MPINs are set and managed by the Owner. If you've forgotten your MPIN, contact the Owner of the system. The Owner can set a new MPIN for you from the Owner Dashboard → Settings → Manage MPINs → Set Admin MPIN.
+      </div>
+    </div>
+
+    <div class="faq-item" data-category="account">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span><i class="fas fa-bell" style="color:var(--gold);margin-right:8px"></i> How do notifications work?</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        You receive in-app notifications when your requests (membership, contact, resume download) are approved or rejected. You can also receive broadcast notifications from the Owner. Look for the bell icon in your dashboard navbar to see your notifications. Allow browser notifications for instant alerts.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- DYNAMIC FAQs FROM FIRESTORE -->
+  <div id="dynamicFaqs"></div>
+
+  <!-- STILL NEED HELP? -->
+  <div class="pub-card" style="text-align:center;margin-top:32px">
+    <div class="pub-card-title" style="justify-content:center"><i class="fas fa-headset"></i> Still Need Help?</div>
+    <p style="color:var(--gray);font-size:14px;margin-bottom:20px">Can't find what you're looking for? Our support team is ready to help you.</p>
+    <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap">
+      <a href="contact.html" class="btn btn-primary" style="background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:#000">
+        <i class="fas fa-envelope"></i> Contact Support
+      </a>
+      <a href="feedback.html" class="btn btn-outline"><i class="fas fa-star"></i> Give Feedback</a>
+    </div>
+  </div>
+
+</div>
+
+<div class="pub-footer">
+  <div class="pub-footer-links">
+    <a href="index.html" class="pub-footer-link">Home</a>
+    <a href="about.html" class="pub-footer-link">About</a>
+    <a href="contact.html" class="pub-footer-link">Contact</a>
+    <a href="feedback.html" class="pub-footer-link">Feedback</a>
+    <a href="help.html" class="pub-footer-link">Help</a>
+  </div>
+  <div>© 2026 Hospitality Careers. All rights reserved.</div>
+</div>
+
+<script>
+window.toggleFaq = function(el) {
+  const answer = el.nextElementSibling;
+  const icon = el.querySelector('.fa-chevron-down, .fa-chevron-up');
+  answer.classList.toggle('open');
+  if (icon) { icon.className = answer.classList.contains('open') ? 'fas fa-chevron-up' : 'fas fa-chevron-down'; }
+};
+
+window.filterByCategory = function(cat) {
+  document.querySelectorAll('.help-cat-btn').forEach(b => b.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  document.querySelectorAll('.faq-item').forEach(item => {
+    if (cat === 'all' || item.dataset.category === cat) item.style.display = 'block';
+    else item.style.display = 'none';
+  });
+};
+
+window.filterFaq = function(val) {
+  const q = val.toLowerCase();
+  document.querySelectorAll('.faq-item').forEach(item => {
+    const text = item.textContent.toLowerCase();
+    item.style.display = text.includes(q) ? 'block' : 'none';
+  });
+};
+</script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+const app = initializeApp({ apiKey:"AIzaSyCuAuc9qhA7D_-Lqt-69pbG81KTIiDFVpg", authDomain:"hospitality-careers-e662f.firebaseapp.com", projectId:"hospitality-careers-e662f", storageBucket:"hospitality-careers-e662f.firebasestorage.app", messagingSenderId:"45029895717", appId:"1:45029895717:web:f54f86f608b98751cad9cc" });
+const db = getFirestore(app);
+try {
+  const snap = await getDoc(doc(db, 'siteContent', 'settings'));
+  if (snap.exists()) {
+    const s = snap.data();
+    const faqs = [[s.faq1q,s.faq1a],[s.faq2q,s.faq2a],[s.faq3q,s.faq3a]].filter(([q]) => q);
+    if (faqs.length > 0) {
+      document.getElementById('dynamicFaqs').innerHTML = faqs.map(([q,a]) => `
+        <div class="faq-item" data-category="all">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <span><i class="fas fa-circle" style="color:var(--gold);margin-right:8px;font-size:8px"></i>${q}</span>
+            <i class="fas fa-chevron-down"></i>
+          </div>
+          <div class="faq-answer">${a}</div>
+        </div>`).join('');
+    }
+  }
+} catch(e) {}
+</script>
+</body>
+</html>
