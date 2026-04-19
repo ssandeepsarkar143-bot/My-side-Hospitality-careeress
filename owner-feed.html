@@ -220,17 +220,27 @@
         <div class="grid-2">
           <div class="card">
             <div class="card-title"><i class="fas fa-percent"></i> Add Discount / Offer</div>
-            <div class="form-group"><label>Discount Type</label>
-              <select id="discountType" class="form-control" onchange="toggleDiscountFields()">
-                <option value="percent">Percentage Discount</option>
-                <option value="amount">Flat Amount Discount</option>
+            <div class="form-group"><label>কাদের জন্য Offer?</label>
+              <select id="discountCategory" class="form-control" onchange="toggleDiscountUserField()">
+                <option value="all">সবার জন্য (All Users)</option>
+                <option value="prime">Prime Members</option>
+                <option value="prime2">Prime2 Members</option>
+                <option value="prime3">Prime3 Members</option>
+                <option value="newUsers1Week">নতুন Users (১ সপ্তাহের মধ্যে যোগ দিয়েছেন)</option>
+                <option value="specificUser">Specific User (নির্দিষ্ট ব্যক্তি)</option>
               </select>
             </div>
-            <div class="form-group" id="percentField"><label>Discount Percentage (%)</label><input type="number" id="discountPercent" class="form-control" placeholder="e.g. 20"/></div>
-            <div class="form-group" id="amountField" style="display:none"><label>Discount Amount (₹)</label><input type="number" id="discountAmount" class="form-control" placeholder="e.g. 100"/></div>
-            <div class="form-group"><label>Extra Validity Days (Offer)</label><input type="number" id="extraDays" class="form-control" placeholder="e.g. 7"/></div>
-            <div class="form-group"><label>Apply to Specific User (Optional – leave blank for all)</label><input type="text" id="discountUserId" class="form-control" placeholder="User ID or email"/></div>
-            <button class="btn btn-success" onclick="addDiscount()"><i class="fas fa-plus"></i> Apply Offer</button>
+            <div class="form-group" id="specificUserField" style="display:none"><label>Specific User এর Email বা User ID</label><input type="text" id="discountUserId" class="form-control" placeholder="User email বা ID"/></div>
+            <div class="form-group"><label>Discount Type</label>
+              <select id="discountType" class="form-control" onchange="toggleDiscountFields()">
+                <option value="percent">Percentage Discount (%)</option>
+                <option value="amount">Flat Amount Discount (₹)</option>
+              </select>
+            </div>
+            <div class="form-group" id="percentField"><label>Discount Percentage (%)</label><input type="number" id="discountPercent" class="form-control" placeholder="যেমন: 20"/></div>
+            <div class="form-group" id="amountField" style="display:none"><label>Discount Amount (₹)</label><input type="number" id="discountAmount" class="form-control" placeholder="যেমন: 100"/></div>
+            <div class="form-group"><label>Extra Validity Days (Bonus Days)</label><input type="number" id="extraDays" class="form-control" placeholder="যেমন: 7"/></div>
+            <button class="btn btn-success" onclick="addDiscount()"><i class="fas fa-plus"></i> Offer Apply করুন</button>
           </div>
           <div class="card">
             <div class="card-title"><i class="fas fa-arrow-up"></i> Upgrade Membership Price</div>
@@ -242,8 +252,8 @@
         <div class="card mt-16">
           <div class="card-title"><i class="fas fa-list"></i> Active Offers</div>
           <div class="table-wrapper" style="margin:0">
-            <table><thead><tr><th>Type</th><th>Value</th><th>Extra Days</th><th>Target</th><th>Action</th></tr></thead>
-            <tbody id="offersTableBody"><tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">No active offers</td></tr></tbody></table>
+            <table><thead><tr><th>Category</th><th>Type</th><th>Value</th><th>Extra Days</th><th>Target</th><th>Action</th></tr></thead>
+            <tbody id="offersTableBody"><tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">No active offers</td></tr></tbody></table>
           </div>
         </div>
       </div>
@@ -305,7 +315,25 @@
               <input type="file" id="ss_adminPhotoFile" class="form-control" accept="image/*"/>
               <div id="ss_adminPhotoStatus" style="font-size:12px;margin-top:4px;display:none"></div>
             </div>
-            <div class="form-group"><label>About Us Description</label><textarea id="ss_aboutDesc" class="form-control" rows="4" placeholder="Write about the company..."></textarea></div>
+            <!-- MANAGERS SECTION -->
+            <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.08)">
+              <div style="font-size:14px;font-weight:700;color:var(--gold);margin-bottom:12px"><i class="fas fa-users"></i> Team Members / Managers (About Page)</div>
+              <div id="managersList" style="margin-bottom:12px"></div>
+              <div style="background:rgba(255,255,255,0.03);padding:14px;border-radius:8px;border:1px dashed rgba(255,255,255,0.12)">
+                <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.6);margin-bottom:10px">নতুন Manager যোগ করুন</div>
+                <div class="form-group"><label>Manager Name</label><input type="text" id="newMgrName" class="form-control" placeholder="নাম"/></div>
+                <div class="form-group"><label>Role / Title</label><input type="text" id="newMgrRole" class="form-control" placeholder="যেমন: Operations Manager"/></div>
+                <div class="form-group">
+                  <label>Photo Upload (তাৎক্ষণিক)</label>
+                  <input type="file" id="newMgrPhotoFile" class="form-control" accept="image/*" onchange="previewManagerPhoto(this)"/>
+                  <div id="newMgrPhotoStatus" style="font-size:12px;margin-top:4px;display:none"></div>
+                  <div id="newMgrPhotoPreview" style="margin-top:8px;display:none"><img id="newMgrPhotoImg" style="width:70px;height:70px;border-radius:50%;object-fit:cover;border:2px solid var(--gold)"/></div>
+                </div>
+                <button class="btn btn-primary btn-sm" onclick="addManager()"><i class="fas fa-plus"></i> Manager যোগ করুন</button>
+              </div>
+              <p style="font-size:11px;color:#888;margin-top:6px"><i class="fas fa-info-circle"></i> এই members About Us পেজে দেখাবে।</p>
+            </div>
+            <div class="form-group" style="margin-top:16px"><label>About Us Description</label><textarea id="ss_aboutDesc" class="form-control" rows="4" placeholder="Write about the company..."></textarea></div>
             <div class="form-group"><label>Success Story 1</label><input type="text" id="ss_story1" class="form-control" placeholder="Story title – Short description"/></div>
             <div class="form-group"><label>Success Story 2</label><input type="text" id="ss_story2" class="form-control" placeholder="Story title – Short description"/></div>
             <div class="form-group"><label>Success Story 3</label><input type="text" id="ss_story3" class="form-control" placeholder="Story title – Short description"/></div>
@@ -1185,19 +1213,26 @@ window.toggleDiscountFields = function() {
   document.getElementById('percentField').style.display = t === 'percent' ? 'block' : 'none';
   document.getElementById('amountField').style.display = t === 'amount' ? 'block' : 'none';
 };
+window.toggleDiscountUserField = function() {
+  const cat = document.getElementById('discountCategory').value;
+  document.getElementById('specificUserField').style.display = cat === 'specificUser' ? 'block' : 'none';
+};
+const CATEGORY_LABELS = { all:'সবার জন্য', prime:'Prime Members', prime2:'Prime2 Members', prime3:'Prime3 Members', newUsers1Week:'নতুন Users (১ সপ্তাহ)', specificUser:'Specific User' };
 
 async function loadOffers() {
   try {
     const snap = await getDocs(collection(db, 'offers'));
     const tbody = document.getElementById('offersTableBody');
-    if (snap.empty) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">No active offers</td></tr>'; return; }
+    if (snap.empty) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">No active offers</td></tr>'; return; }
     tbody.innerHTML = snap.docs.map(d => {
       const o = d.data();
+      const catLabel = CATEGORY_LABELS[o.category||'all'] || (o.category||'সবার জন্য');
       return `<tr>
+        <td style="font-size:11px">${catLabel}</td>
         <td>${o.discountPercent?'Percentage':'Flat Amount'}</td>
-        <td>${o.discountPercent?o.discountPercent+'%':'₹'+o.discountAmount}</td>
+        <td>${o.discountPercent?o.discountPercent+'%':'₹'+(o.discountAmount||0)}</td>
         <td>${o.extraDays||0} days</td>
-        <td>${o.targetUserId||'All Users'}</td>
+        <td style="font-size:11px">${o.targetUserId||'—'}</td>
         <td><button class="btn btn-sm btn-danger" onclick="deleteOffer('${d.id}')"><i class="fas fa-trash"></i></button></td>
       </tr>`;
     }).join('');
@@ -1206,13 +1241,18 @@ async function loadOffers() {
 
 window.addDiscount = async function() {
   const type = document.getElementById('discountType').value;
+  const category = document.getElementById('discountCategory').value;
   const extraDays = parseInt(document.getElementById('extraDays').value)||0;
-  const targetUserId = document.getElementById('discountUserId').value.trim();
-  const data = { active: true, extraDays, targetUserId: targetUserId||'', createdAt: serverTimestamp() };
+  const data = { active: true, category, extraDays, createdAt: serverTimestamp() };
+  if (category === 'specificUser') {
+    const uid = document.getElementById('discountUserId').value.trim();
+    if (!uid) { showToast('Specific User এর email বা ID দিন।', 'error'); return; }
+    data.targetUserId = uid;
+  }
   if (type === 'percent') data.discountPercent = parseInt(document.getElementById('discountPercent').value)||0;
   else data.discountAmount = parseInt(document.getElementById('discountAmount').value)||0;
   await addDoc(collection(db, 'offers'), data);
-  showToast('Offer added successfully!');
+  showToast('Offer successfully যোগ হয়েছে!');
   loadOffers();
 };
 
@@ -1336,6 +1376,65 @@ async function loadFeedbackRecords() {
   } catch(e) {}
 }
 
+// MANAGERS
+let tempManagers = [];
+
+function renderManagersList() {
+  const el = document.getElementById('managersList');
+  if (!tempManagers.length) { el.innerHTML = '<p style="font-size:12px;color:var(--gray)">এখনো কোনো manager যোগ করা হয়নি।</p>'; return; }
+  el.innerHTML = tempManagers.map((m, i) => `
+    <div style="display:flex;align-items:center;gap:12px;padding:10px;background:rgba(255,255,255,0.03);border-radius:8px;margin-bottom:8px;border:1px solid rgba(255,255,255,0.07)">
+      ${m.photo ? `<img src="${m.photo}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid var(--gold)"/>` : `<div style="width:44px;height:44px;border-radius:50%;background:rgba(212,175,55,0.15);display:flex;align-items:center;justify-content:center;font-size:18px">👤</div>`}
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:600">${m.name||'No Name'}</div>
+        <div style="font-size:11px;color:var(--gray)">${m.role||'Team Member'}</div>
+      </div>
+      <button class="btn btn-sm btn-danger" onclick="removeManager(${i})"><i class="fas fa-trash"></i></button>
+    </div>
+  `).join('');
+}
+
+window.removeManager = function(idx) {
+  tempManagers.splice(idx, 1);
+  renderManagersList();
+};
+
+window.previewManagerPhoto = async function(input) {
+  const statusEl = document.getElementById('newMgrPhotoStatus');
+  const previewEl = document.getElementById('newMgrPhotoPreview');
+  const imgEl = document.getElementById('newMgrPhotoImg');
+  if (!input.files[0]) return;
+  statusEl.style.display = 'block';
+  statusEl.innerHTML = '<i class="fas fa-spinner fa-spin" style="color:#f59e0b"></i> <span style="color:#f59e0b">Processing...</span>';
+  try {
+    const dataUrl = await compressPhotoToBase64(input.files[0]);
+    imgEl.src = dataUrl;
+    previewEl.style.display = 'block';
+    statusEl.innerHTML = '<i class="fas fa-check-circle" style="color:#22c55e"></i> <span style="color:#22c55e">Photo ready!</span>';
+  } catch(e) {
+    statusEl.innerHTML = '<i class="fas fa-exclamation-circle" style="color:#ef4444"></i> <span style="color:#ef4444">Error reading photo.</span>';
+  }
+};
+
+window.addManager = async function() {
+  const name = document.getElementById('newMgrName').value.trim();
+  const role = document.getElementById('newMgrRole').value.trim();
+  if (!name) { showToast('Manager এর নাম দিন।', 'error'); return; }
+  const fileInput = document.getElementById('newMgrPhotoFile');
+  let photo = '';
+  if (fileInput.files[0]) {
+    try { photo = await compressPhotoToBase64(fileInput.files[0]); } catch(e) {}
+  }
+  tempManagers.push({ name, role, photo });
+  renderManagersList();
+  document.getElementById('newMgrName').value = '';
+  document.getElementById('newMgrRole').value = '';
+  fileInput.value = '';
+  document.getElementById('newMgrPhotoPreview').style.display = 'none';
+  document.getElementById('newMgrPhotoStatus').style.display = 'none';
+  showToast(`${name} manager হিসেবে যোগ হয়েছে। Save করতে নিচের "Save All" button চাপুন।`, 'info');
+};
+
 // SITE SETTINGS
 async function loadSiteSettings() {
   try {
@@ -1364,6 +1463,9 @@ async function loadSiteSettings() {
       document.getElementById('ss_showIos').checked = !!s.showIos;
       document.getElementById('ss_androidLink').value = s.androidLink||'';
       document.getElementById('ss_iosLink').value = s.iosLink||'';
+      // Load managers
+      try { tempManagers = s.managers ? JSON.parse(s.managers) : []; } catch(_) { tempManagers = []; }
+      renderManagersList();
     }
   } catch(e) {}
 }
@@ -1449,12 +1551,13 @@ window.saveSiteSettings = async function() {
     showIos: document.getElementById('ss_showIos').checked,
     androidLink: document.getElementById('ss_androidLink').value,
     iosLink: document.getElementById('ss_iosLink').value,
+    managers: JSON.stringify(tempManagers),
     updatedAt: serverTimestamp()
   };
   try {
     await setDoc(doc(db, 'siteContent', 'settings'), data, { merge: true });
     msg.textContent = '✅ Site settings saved successfully!'; msg.className = 'alert alert-success show';
-    showToast('Site settings saved!');
+    showToast('Site settings সফলভাবে save হয়েছে!');
   } catch(e) {
     msg.textContent = '❌ Failed to save: ' + e.message; msg.className = 'alert alert-danger show';
   }

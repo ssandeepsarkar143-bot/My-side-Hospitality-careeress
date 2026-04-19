@@ -265,6 +265,7 @@ function unlockDashboard() {
   setupAuthority();
   loadDashboard();
   checkAdminNotifBadge();
+  loadAdminAppButtons();
 }
 
 function setupAuthority() {
@@ -585,6 +586,37 @@ async function checkAdminNotifBadge() {
   } catch(e) {}
 }
 
+async function loadAdminAppButtons() {
+  try {
+    const snap = await getDoc(doc(db, 'siteContent', 'settings'));
+    if (snap.exists()) {
+      const s = snap.data();
+      const section = document.getElementById('adminAppDownloadSection');
+      const andBtn = document.getElementById('adminAppAndroidBtn');
+      const iosBtn = document.getElementById('adminAppIosBtn');
+      let show = false;
+      if (s.showAndroid && s.androidLink) { andBtn.href = s.androidLink; andBtn.style.display = 'flex'; show = true; }
+      if (s.showIos && s.iosLink) { iosBtn.href = s.iosLink; iosBtn.style.display = 'flex'; show = true; }
+      if (show) section.style.display = 'block';
+    }
+  } catch(e) {}
+}
+
 </script>
+
+<!-- APP DOWNLOAD SECTION -->
+<div id="adminAppDownloadSection" style="display:none;margin:8px 24px 16px;padding:12px 20px;background:rgba(233,69,96,0.05);border:1px solid rgba(233,69,96,0.15);border-radius:14px;text-align:center">
+  <p style="font-size:11px;color:#e94560;margin-bottom:10px;letter-spacing:0.5px">📱 DOWNLOAD OUR APP</p>
+  <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap">
+    <a id="adminAppAndroidBtn" href="#" target="_blank" style="display:none;align-items:center;gap:8px;background:linear-gradient(135deg,#1a1a2e,#2e1a1a);border:1px solid rgba(233,69,96,0.25);border-radius:10px;padding:8px 16px;text-decoration:none;color:#fff;font-size:13px">
+      <i class="fab fa-google-play" style="color:#34d058;font-size:18px"></i>
+      <span><span style="font-size:9px;display:block;opacity:0.7">GET IT ON</span>Google Play</span>
+    </a>
+    <a id="adminAppIosBtn" href="#" target="_blank" style="display:none;align-items:center;gap:8px;background:linear-gradient(135deg,#1a1a2e,#2e1a1a);border:1px solid rgba(233,69,96,0.25);border-radius:10px;padding:8px 16px;text-decoration:none;color:#fff;font-size:13px">
+      <i class="fab fa-apple" style="color:#ccc;font-size:20px"></i>
+      <span><span style="font-size:9px;display:block;opacity:0.7">DOWNLOAD ON THE</span>App Store</span>
+    </a>
+  </div>
+</div>
 </body>
 </html>

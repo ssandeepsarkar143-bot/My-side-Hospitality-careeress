@@ -320,10 +320,10 @@ window.toggleActivity = function(id) {
   el.style.display = el.style.display === 'none' ? 'block' : 'none';
 };
 
-function showToast(msg) {
+function showToast(msg, type='success') {
   const t = document.getElementById('primeToast');
   document.getElementById('primeToastMsg').textContent = msg;
-  t.className = 'toast show success';
+  t.className = `toast show ${type}`;
   setTimeout(() => t.classList.remove('show'), 4000);
 }
 
@@ -505,45 +505,47 @@ function showPrimeApplyAlert(msg) {
   el.textContent = msg; el.className = 'alert alert-danger show';
 }
 
-async function requestResumeDownload(candidateId, candidateName) {
+window.requestResumeDownload = async function(candidateId, candidateName) {
   try {
     const existing = await getDocs(query(collection(db,'requests'), where('type','==','resumeDownload'), where('requesterId','==',currentUser.uid), where('candidateId','==',candidateId)));
-    if (!existing.empty) { showToast('You already sent a resume request for this candidate.', 'info'); return; }
+    if (!existing.empty) { showToast('ইতিমধ্যে এই candidate এর জন্য resume request পাঠানো হয়েছে।', 'info'); return; }
     await addDoc(collection(db, 'requests'), {
       type: 'resumeDownload', requesterId: currentUser.uid, requesterEmail: currentUser.email,
       candidateId, candidateName, status: 'pending', createdAt: serverTimestamp()
     });
-    showToast('✅ Resume request sent to Admin/Owner! You will be notified on approval.');
+    showToast('✅ Resume request পাঠানো হয়েছে! Approve হলে notification পাবেন।');
   } catch(e) {
-    showToast('❌ Failed to send request. Please try again.', 'error');
+    showToast('❌ Request পাঠানো যায়নি। আবার চেষ্টা করুন।', 'error');
   }
-}
+};
 
-async function requestContact(candidateId, candidateName) {
+window.requestContact = async function(candidateId, candidateName) {
   try {
     const existing = await getDocs(query(collection(db,'requests'), where('type','==','contact'), where('requesterId','==',currentUser.uid), where('candidateId','==',candidateId)));
-    if (!existing.empty) { showToast('You already sent a contact request for this candidate.', 'info'); return; }
+    if (!existing.empty) { showToast('ইতিমধ্যে এই candidate এর জন্য contact request পাঠানো হয়েছে।', 'info'); return; }
     await addDoc(collection(db, 'requests'), {
       type: 'contact', requesterId: currentUser.uid, requesterEmail: currentUser.email,
       candidateId, candidateName, status: 'pending', createdAt: serverTimestamp()
     });
-    showToast('✅ Contact request sent to Admin/Owner! You will be notified on approval.');
+    showToast('✅ Contact request পাঠানো হয়েছে! Approve হলে notification পাবেন।');
   } catch(e) {
-    showToast('❌ Failed to send request. Please try again.', 'error');
+    showToast('❌ Request পাঠানো যায়নি। আবার চেষ্টা করুন।', 'error');
   }
-}
+};
 
-async function requestEmployerConnect(jobId, jobTitle) {
+window.requestEmployerConnect = async function(jobId, jobTitle) {
   try {
+    const existing = await getDocs(query(collection(db,'requests'), where('type','==','employerConnect'), where('requesterId','==',currentUser.uid), where('jobId','==',jobId)));
+    if (!existing.empty) { showToast('ইতিমধ্যে এই job এর জন্য employer connect request পাঠানো হয়েছে।', 'info'); return; }
     await addDoc(collection(db, 'requests'), {
       type: 'employerConnect', requesterId: currentUser.uid, requesterEmail: currentUser.email,
       jobId, jobTitle, status: 'pending', createdAt: serverTimestamp()
     });
-    showToast('✅ Connect Employer request sent to Admin/Owner!');
+    showToast('✅ Connect Employer request পাঠানো হয়েছে!');
   } catch(e) {
-    showToast('❌ Failed to send request. Please try again.', 'error');
+    showToast('❌ Request পাঠানো যায়নি। আবার চেষ্টা করুন।', 'error');
   }
-}
+};
 
 window.viewApplicants = async function(jobId, jobTitle) {
   document.getElementById('applicantsJobTitle').textContent = jobTitle;
@@ -686,6 +688,7 @@ onAuthStateChanged(auth, async (user) => {
   loadPrimeCandidates();
   loadMembershipDetails();
   checkPrimeNotifBadge();
+  loadPrimeAppButtons();
 });
 
 document.querySelectorAll('.modal-overlay').forEach(el => {
@@ -730,10 +733,41 @@ async function checkPrimeNotifBadge() {
     if (snap.size > 0) { badge.textContent = snap.size; badge.style.display = 'flex'; }
   } catch(e) {}
 }
+
+async function loadPrimeAppButtons() {
+  try {
+    const snap = await getDoc(doc(db, 'siteContent', 'settings'));
+    if (snap.exists()) {
+      const s = snap.data();
+      const section = document.getElementById('primeAppDownloadSection');
+      const andBtn = document.getElementById('primeAppAndroidBtn');
+      const iosBtn = document.getElementById('primeAppIosBtn');
+      let show = false;
+      if (s.showAndroid && s.androidLink) { andBtn.href = s.androidLink; andBtn.style.display = 'flex'; show = true; }
+      if (s.showIos && s.iosLink) { iosBtn.href = s.iosLink; iosBtn.style.display = 'flex'; show = true; }
+      if (show) section.style.display = 'block';
+    }
+  } catch(e) {}
+}
 </script>
 
+<!-- APP DOWNLOAD SECTION -->
+<div id="primeAppDownloadSection" style="display:none;margin:0 24px 16px;padding:14px 20px;background:rgba(167,139,250,0.06);border:1px solid rgba(167,139,250,0.2);border-radius:14px;text-align:center">
+  <p style="font-size:11px;color:#a78bfa;margin-bottom:10px;letter-spacing:0.5px">📱 DOWNLOAD OUR APP</p>
+  <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap">
+    <a id="primeAppAndroidBtn" href="#" target="_blank" style="display:none;align-items:center;gap:8px;background:linear-gradient(135deg,#1a1a2e,#1a1a4e);border:1px solid rgba(167,139,250,0.3);border-radius:10px;padding:8px 16px;text-decoration:none;color:#fff;font-size:13px">
+      <i class="fab fa-google-play" style="color:#34d058;font-size:18px"></i>
+      <span><span style="font-size:9px;display:block;opacity:0.7">GET IT ON</span>Google Play</span>
+    </a>
+    <a id="primeAppIosBtn" href="#" target="_blank" style="display:none;align-items:center;gap:8px;background:linear-gradient(135deg,#1a1a2e,#1a1a4e);border:1px solid rgba(167,139,250,0.3);border-radius:10px;padding:8px 16px;text-decoration:none;color:#fff;font-size:13px">
+      <i class="fab fa-apple" style="color:#ccc;font-size:20px"></i>
+      <span><span style="font-size:9px;display:block;opacity:0.7">DOWNLOAD ON THE</span>App Store</span>
+    </a>
+  </div>
+</div>
+
 <!-- SITE FOOTER -->
-<footer style="margin-top:40px;padding:20px 24px;border-top:1px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+<footer style="margin-top:20px;padding:20px 24px;border-top:1px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
   <div style="font-size:12px;color:var(--gray)">© 2025 Hospitality Careers. All rights reserved.</div>
   <div style="display:flex;gap:16px;flex-wrap:wrap">
     <a href="about.html" target="_blank" style="color:var(--gray);font-size:12px;text-decoration:none" onmouseover="this.style.color='#a78bfa'" onmouseout="this.style.color='var(--gray)'"><i class="fas fa-info-circle"></i> About</a>

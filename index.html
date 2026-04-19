@@ -216,7 +216,7 @@ setInterval(() => {
 // AUTH STATE - hide loader when auth resolves
 onAuthStateChanged(auth, async (user) => {
   document.getElementById('loader').style.display = 'none';
-  if (user) {
+  if (user && !user.isAnonymous) {
     await redirectUser(user);
   }
 });

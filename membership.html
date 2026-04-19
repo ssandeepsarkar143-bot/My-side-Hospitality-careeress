@@ -175,8 +175,33 @@ let currentUser = null;
 const UPI_ID = 'ssandeepsarkar143-2@okhdfcbank';
 const BUSINESS_NAME = 'Hospitality Careers';
 
+function userMatchesOfferCategory(offer, userId, userEmail) {
+  const cat = offer.category || 'all';
+  const ud = currentUserData;
+  const role = ud?.role || 'User';
+  if (cat === 'all') return true;
+  if (cat === 'prime' && role === 'Prime') return true;
+  if (cat === 'prime2' && (role === 'Prime2' || (ud?.membershipCount >= 2))) return true;
+  if (cat === 'prime3' && (role === 'Prime3' || (ud?.membershipCount >= 3))) return true;
+  if (cat === 'newUsers1Week') {
+    // Check if user joined within the last 7 days
+    const joinDate = ud?.createdAt?.toDate?.() || new Date(currentUser?.metadata?.creationTime);
+    if (joinDate) {
+      const daysDiff = (Date.now() - joinDate.getTime()) / (1000 * 60 * 60 * 24);
+      if (daysDiff <= 7) return true;
+    }
+    return false;
+  }
+  if (cat === 'specificUser') {
+    const target = offer.targetUserId || '';
+    return target === userId || target === userEmail;
+  }
+  return false;
+}
+
 async function loadOffers(userId) {
   try {
+    const userEmail = currentUser?.email || '';
     // Global offers
     const offersSnap = await getDocs(collection(db, 'offers'));
     let bestDiscount = 0;
@@ -186,7 +211,8 @@ async function loadOffers(userId) {
     offersSnap.forEach(d => {
       const offer = d.data();
       if (!offer.active) return;
-      if (offer.targetUserId && offer.targetUserId !== userId) return;
+      // Category check
+      if (!userMatchesOfferCategory(offer, userId, userEmail)) return;
       if (offer.discountPercent) {
         const disc = Math.round(499 * offer.discountPercent / 100);
         if (disc > bestDiscount) { bestDiscount = disc; offerDesc = `${offer.discountPercent}% OFF - Save ₹${disc}`; }

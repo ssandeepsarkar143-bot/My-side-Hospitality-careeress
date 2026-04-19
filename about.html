@@ -101,6 +101,12 @@ body { background: var(--dark); color: #fff; font-family: 'Poppins', sans-serif;
     </div>
   </div>
 
+  <!-- MANAGERS / TEAM MEMBERS -->
+  <div class="pub-card" id="managersTeamCard" style="display:none">
+    <div class="pub-card-title"><i class="fas fa-users"></i> Our Team Members</div>
+    <div id="managersGrid" style="display:flex;gap:20px;flex-wrap:wrap"></div>
+  </div>
+
   <!-- STATS -->
   <div class="pub-card">
     <div class="pub-card-title"><i class="fas fa-chart-line"></i> Our Impact</div>
@@ -207,6 +213,25 @@ try {
         document.getElementById('adminPhotoWrap').innerHTML = `<img src="${s.adminPhoto}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentNode.innerHTML='<i class=\\'fas fa-user-shield\\' style=\\'font-size:48px;color:#e94560\\'></i>'"/>`;
       }
       if (s.adminName) document.getElementById('adminTeamName').textContent = s.adminName;
+    }
+    // Load managers
+    if (s.managers) {
+      try {
+        const managers = JSON.parse(s.managers);
+        if (managers.length > 0) {
+          const mgrCard = document.getElementById('managersTeamCard');
+          mgrCard.style.display = 'block';
+          document.getElementById('managersGrid').innerHTML = managers.map(m => `
+            <div class="team-card" style="min-width:180px;flex:0 0 180px">
+              <div class="team-photo">
+                ${m.photo ? `<img src="${m.photo}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentNode.innerHTML='<i class=\\'fas fa-user\\' style=\\'font-size:40px;color:var(--gold)\\'></i>'"/>` : `<i class="fas fa-user" style="font-size:40px;color:var(--gold)"></i>`}
+              </div>
+              <div style="font-size:16px;font-weight:800;color:var(--gold)">${m.name||'Manager'}</div>
+              <div style="font-size:12px;color:var(--gray);margin-top:4px">${m.role||'Team Member'}</div>
+            </div>
+          `).join('');
+        }
+      } catch(_) {}
     }
     if (s.launchDate) document.getElementById('launchDateEl').innerHTML = `<span style="background:rgba(212,175,55,0.1);padding:6px 14px;border-radius:20px;font-size:12px;color:var(--gold);font-weight:600"><i class="fas fa-calendar"></i> Platform launched: ${s.launchDate}</span>`;
     const storyMap = [s.story1, s.story2, s.story3].filter(Boolean);
