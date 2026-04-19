@@ -15,7 +15,7 @@
 <!-- NAVBAR -->
 <nav class="navbar">
   <div class="navbar-brand">
-    <img src="jogo.png" class="navbar-logo" onerror="this.style.display='none'" alt="Logo"/>
+    <img src="/logo.png" class="navbar-logo" onerror="this.style.display='none'" alt="Logo"/>
     <div class="navbar-title">Post a Job</div>
   </div>
   <div class="navbar-right">
@@ -153,6 +153,8 @@
       <div class="form-group">
         <label>Upload Company Logo (Optional)</label>
         <input type="file" id="jpLogo" class="form-control" accept="image/*"/>
+        <div id="logoUploadStatus" style="display:none;margin-top:8px;font-size:12px;color:var(--gray)"><i class="fas fa-spinner fa-spin"></i> Uploading logo...</div>
+        <div id="logoUploadDone" style="display:none;margin-top:8px;font-size:12px;color:#22c55e"><i class="fas fa-check-circle"></i> Logo uploaded!</div>
       </div>
 
       <button type="submit" class="btn btn-primary w-full btn-lg mt-16" id="submitJobBtn">

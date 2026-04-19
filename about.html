@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>About Us – Hospitality Careers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<link rel="stylesheet" href="css/styles.css"/>
+<style>
+body { background: var(--dark); color: #fff; font-family: 'Poppins', sans-serif; margin: 0; }
+.timeline { position: relative; padding-left: 32px; }
+.timeline::before { content: ''; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: linear-gradient(to bottom, var(--gold), transparent); }
+.timeline-item { position: relative; margin-bottom: 28px; }
+.timeline-dot { position: absolute; left: -28px; top: 4px; width: 14px; height: 14px; border-radius: 50%; background: var(--gold); border: 2px solid var(--dark); }
+.timeline-year { font-size: 12px; color: var(--gold); font-weight: 700; margin-bottom: 4px; }
+.timeline-text { font-size: 13px; color: var(--gray); }
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="pub-nav">
+  <div class="navbar-brand">
+    <img src="/logo.png" class="navbar-logo" onerror="this.style.display='none'" alt="Logo"/>
+    <div class="navbar-title">Hospitality Careers</div>
+  </div>
+  <div class="pub-nav-links">
+    <a href="index.html" class="pub-nav-link"><i class="fas fa-home"></i> Home</a>
+    <a href="about.html" class="pub-nav-link active"><i class="fas fa-info-circle"></i> About</a>
+    <a href="contact.html" class="pub-nav-link"><i class="fas fa-envelope"></i> Contact</a>
+    <a href="feedback.html" class="pub-nav-link"><i class="fas fa-star"></i> Feedback</a>
+    <a href="help.html" class="pub-nav-link"><i class="fas fa-question-circle"></i> Help</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="pub-hero">
+  <div>
+    <div class="pub-hero-title"><i class="fas fa-hotel" style="-webkit-text-fill-color:var(--gold)"></i> About Us</div>
+    <div class="pub-hero-sub">The story behind India's premier hospitality career platform</div>
+  </div>
+</div>
+
+<div class="pub-section">
+
+  <!-- MISSION -->
+  <div class="pub-card">
+    <div class="pub-card-title"><i class="fas fa-bullseye"></i> Our Mission</div>
+    <p id="aboutDesc" style="font-size:14px;color:rgba(255,255,255,0.8);line-height:1.8;margin:0">
+      Hospitality Careers is dedicated to connecting talented hospitality professionals with the finest hotels, resorts, restaurants and wellness establishments across India. We believe every hospitality professional deserves a fulfilling career, and every employer deserves exceptional talent. Our platform bridges this gap with technology, transparency and trust.
+    </p>
+  </div>
+
+  <!-- FOUNDER -->
+  <div class="pub-card">
+    <div class="pub-card-title"><i class="fas fa-user-tie"></i> Our Founder</div>
+    <div style="display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap">
+      <div class="team-card" style="min-width:220px;flex:0 0 220px">
+        <div class="team-photo" id="founderPhotoWrap">
+          <i class="fas fa-user" style="font-size:48px;color:var(--gold)"></i>
+        </div>
+        <div style="font-size:18px;font-weight:800;color:var(--gold)" id="founderName">Suman Sarkar</div>
+        <div style="font-size:12px;color:var(--gray);margin-top:4px">Founder & CEO</div>
+        <div style="margin-top:12px;display:flex;gap:8px;justify-content:center">
+          <span style="background:rgba(212,175,55,0.1);padding:4px 10px;border-radius:20px;font-size:11px;color:var(--gold)">Hospitality Expert</span>
+        </div>
+      </div>
+      <div style="flex:1;min-width:260px">
+        <div style="font-size:14px;color:rgba(255,255,255,0.85);line-height:1.8;margin-bottom:16px">
+          With over a decade of experience in the hospitality industry, Suman Sarkar founded Hospitality Careers with a vision to create a specialized platform that truly understands the unique needs of hospitality employers and job seekers.
+        </div>
+        <div style="font-size:14px;color:rgba(255,255,255,0.85);line-height:1.8">
+          His deep understanding of the industry's talent landscape, combined with a passion for technology, led to the creation of this comprehensive platform that serves hotels, restaurants, resorts and hospitality professionals across India.
+        </div>
+        <div style="margin-top:16px" id="launchDateEl"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="pub-card">
+    <div class="pub-card-title"><i class="fas fa-chart-line"></i> Our Impact</div>
+    <div class="success-grid" id="successGrid">
+      <div class="success-card">
+        <div class="success-number" id="stat1">500+</div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:4px">Hospitality Professionals</div>
+        <div style="font-size:12px;color:var(--gray)">Connected with top employers across India</div>
+      </div>
+      <div class="success-card">
+        <div class="success-number" id="stat2">200+</div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:4px">Hotel Partners</div>
+        <div style="font-size:12px;color:var(--gray)">Luxury hotels, resorts & restaurants</div>
+      </div>
+      <div class="success-card">
+        <div class="success-number" id="stat3">95%</div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:4px">Satisfaction Rate</div>
+        <div style="font-size:12px;color:var(--gray)">From our Prime members & employers</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUCCESS STORIES -->
+  <div class="pub-card">
+    <div class="pub-card-title"><i class="fas fa-trophy"></i> Success Stories</div>
+    <div id="successStories">
+      <div style="display:grid;gap:16px">
+        <div style="background:rgba(255,255,255,0.03);border-left:3px solid var(--gold);padding:20px;border-radius:8px">
+          <div style="font-size:13px;color:var(--gray);font-style:italic">"Found my dream job at a 5-star hotel within 2 weeks of joining Hospitality Careers. The Prime membership was worth every rupee!"</div>
+          <div style="margin-top:10px;font-size:12px;font-weight:700;color:var(--gold)">— Rahul Sharma, F&B Captain, Mumbai</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.03);border-left:3px solid var(--gold);padding:20px;border-radius:8px">
+          <div style="font-size:13px;color:var(--gray);font-style:italic">"We hired 3 exceptional housekeeping staff through this platform. The quality of candidates is unmatched."</div>
+          <div style="margin-top:10px;font-size:12px;font-weight:700;color:var(--gold)">— HR Manager, Leela Palace, Delhi</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.03);border-left:3px solid var(--gold);padding:20px;border-radius:8px">
+          <div style="font-size:13px;color:var(--gray);font-style:italic">"The platform helped me transition from a small restaurant to a luxury resort. Life-changing experience!"</div>
+          <div style="margin-top:10px;font-size:12px;font-weight:700;color:var(--gold)">— Priya Singh, Spa Manager, Goa</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JOURNEY TIMELINE -->
+  <div class="pub-card">
+    <div class="pub-card-title"><i class="fas fa-road"></i> Our Journey</div>
+    <div class="timeline" id="timelineEl">
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-year">2023 – Foundation</div>
+        <div class="timeline-text">Hospitality Careers was founded with a mission to transform how hospitality professionals find jobs and how hotels find talent.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-year">2024 – Platform Launch</div>
+        <div class="timeline-text">Official platform launch with job posting, CV upload, and Prime membership features. First 100 members onboarded.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-year">2025 – Growth Phase</div>
+        <div class="timeline-text">Expanded to 20+ cities. Partnered with 200+ hotels and restaurants. Achieved 95% member satisfaction rate.</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-year">2026 & Beyond</div>
+        <div class="timeline-text">Continuous growth with advanced AI-powered matching, mobile app, and expanding to Southeast Asia.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<div class="pub-footer">
+  <div class="pub-footer-links">
+    <a href="index.html" class="pub-footer-link">Home</a>
+    <a href="about.html" class="pub-footer-link">About</a>
+    <a href="contact.html" class="pub-footer-link">Contact</a>
+    <a href="feedback.html" class="pub-footer-link">Feedback</a>
+    <a href="help.html" class="pub-footer-link">Help</a>
+  </div>
+  <div>© 2026 Hospitality Careers. All rights reserved. | Founded by Suman Sarkar</div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+const app = initializeApp({ apiKey:"AIzaSyCuAuc9qhA7D_-Lqt-69pbG81KTIiDFVpg", authDomain:"hospitality-careers-e662f.firebaseapp.com", projectId:"hospitality-careers-e662f", storageBucket:"hospitality-careers-e662f.firebasestorage.app", messagingSenderId:"45029895717", appId:"1:45029895717:web:f54f86f608b98751cad9cc" });
+const db = getFirestore(app);
+try {
+  const snap = await getDoc(doc(db, 'siteContent', 'settings'));
+  if (snap.exists()) {
+    const s = snap.data();
+    if (s.aboutDesc) document.getElementById('aboutDesc').textContent = s.aboutDesc;
+    if (s.ownerName) document.getElementById('founderName').textContent = s.ownerName;
+    if (s.ownerPhoto) {
+      document.getElementById('founderPhotoWrap').innerHTML = `<img src="${s.ownerPhoto}" style="width:100%;height:100%;object-fit:cover" onerror="this.parentNode.innerHTML='<i class=\\'fas fa-user\\' style=\\'font-size:48px;color:var(--gold)\\'></i>'"/>`;
+    }
+    if (s.launchDate) document.getElementById('launchDateEl').innerHTML = `<span style="background:rgba(212,175,55,0.1);padding:6px 14px;border-radius:20px;font-size:12px;color:var(--gold);font-weight:600"><i class="fas fa-calendar"></i> Platform launched: ${s.launchDate}</span>`;
+    const storyMap = [s.story1, s.story2, s.story3].filter(Boolean);
+    if (storyMap.length > 0) {
+      document.getElementById('successStories').innerHTML = '<div style="display:grid;gap:16px">' + storyMap.map(st => {
+        const parts = st.split('–');
+        return `<div style="background:rgba(255,255,255,0.03);border-left:3px solid var(--gold);padding:20px;border-radius:8px"><div style="font-size:13px;color:rgba(255,255,255,0.85);font-style:italic">"${parts[1]||st}"</div><div style="margin-top:10px;font-size:12px;font-weight:700;color:var(--gold)">— ${parts[0]||'Hospitality Careers'}</div></div>`;
+      }).join('') + '</div>';
+    }
+  }
+} catch(e) {}
+</script>
+</body>
+</html>
