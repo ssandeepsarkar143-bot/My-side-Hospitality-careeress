@@ -339,6 +339,13 @@ onAuthStateChanged(auth, async (user) => {
   try {
     const snap = await getDoc(doc(db, 'users', user.uid));
     if (snap.exists()) currentUserData = snap.data();
+    // Load base price from settings
+    try {
+      const settingsSnap = await getDoc(doc(db, 'siteContent', 'settings'));
+      if (settingsSnap.exists() && settingsSnap.data().baseMembershipPrice) {
+        finalAmount = parseInt(settingsSnap.data().baseMembershipPrice) || 499;
+      }
+    } catch(_) {}
     await loadOffers(user.uid);
   } catch(e) {}
 });

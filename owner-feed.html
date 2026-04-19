@@ -217,6 +217,19 @@
       <!-- DISCOUNTS & OFFERS -->
       <div id="sec-discounts" class="page-section">
         <div class="section-title"><i class="fas fa-tag"></i> Discounts, Offers & Upgrade</div>
+        <!-- GLOBAL BASE PRICE -->
+        <div class="card mb-16">
+          <div class="card-title"><i class="fas fa-rupee-sign"></i> Membership Base Price (Global)</div>
+          <p style="font-size:12px;color:var(--gray);margin-bottom:12px">এটি সকল user এর জন্য Prime Membership এর base price। Discount পরে এই amount থেকে কাটা হবে। Default: ₹499</p>
+          <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+            <div class="form-group" style="flex:1;margin-bottom:0">
+              <label>Base Price (₹)</label>
+              <input type="number" id="baseMembershipPrice" class="form-control" placeholder="499" min="1"/>
+            </div>
+            <button class="btn btn-primary" onclick="saveBasePrice()" style="white-space:nowrap;height:44px"><i class="fas fa-save"></i> Save Price</button>
+          </div>
+          <div id="basePriceMsg" class="alert mt-8"></div>
+        </div>
         <div class="grid-2">
           <div class="card">
             <div class="card-title"><i class="fas fa-percent"></i> Add Discount / Offer</div>
@@ -308,12 +321,29 @@
               <input type="file" id="ss_ownerPhotoFile" class="form-control" accept="image/*"/>
               <div id="ss_ownerPhotoStatus" style="font-size:12px;margin-top:4px;display:none"></div>
             </div>
-            <div class="form-group"><label>Admin Name (shows on About page)</label><input type="text" id="ss_adminName" class="form-control" placeholder="Admin Name"/></div>
-            <div class="form-group"><label>Admin Photo URL</label><input type="text" id="ss_adminPhoto" class="form-control" placeholder="https://..."/></div>
-            <div class="form-group">
-              <label>Or Upload Admin Photo</label>
-              <input type="file" id="ss_adminPhotoFile" class="form-control" accept="image/*"/>
-              <div id="ss_adminPhotoStatus" style="font-size:12px;margin-top:4px;display:none"></div>
+            <!-- CO-FOUNDER -->
+            <div style="padding:14px;background:rgba(212,175,55,0.04);border-radius:10px;border:1px solid rgba(212,175,55,0.15);margin-bottom:12px">
+              <div style="font-size:13px;font-weight:700;color:var(--gold);margin-bottom:10px"><i class="fas fa-user-tie"></i> Co-Founder (About Page)</div>
+              <div class="form-group"><label>Co-Founder Name</label><input type="text" id="ss_adminName" class="form-control" placeholder="Co-Founder এর নাম"/></div>
+              <div class="form-group">
+                <label>Photo Upload (তাৎক্ষণিক)</label>
+                <input type="file" id="ss_adminPhotoFile" class="form-control" accept="image/*" onchange="previewSitePersonPhoto(this,'ss_adminPhotoStatus','ss_adminPhotoPreview','ss_adminPhoto')"/>
+                <div id="ss_adminPhotoStatus" style="font-size:12px;margin-top:4px;display:none"></div>
+                <div id="ss_adminPhotoPreview" style="margin-top:8px;display:none"><img style="width:60px;height:60px;border-radius:50%;object-fit:cover;border:2px solid var(--gold)" id="ss_adminPhotoImg"/></div>
+                <input type="hidden" id="ss_adminPhoto"/>
+              </div>
+            </div>
+            <!-- OPERATION MANAGER -->
+            <div style="padding:14px;background:rgba(167,139,250,0.04);border-radius:10px;border:1px solid rgba(167,139,250,0.15);margin-bottom:12px">
+              <div style="font-size:13px;font-weight:700;color:#a78bfa;margin-bottom:10px"><i class="fas fa-briefcase"></i> Operation Manager (About Page)</div>
+              <div class="form-group"><label>Operation Manager Name</label><input type="text" id="ss_opName" class="form-control" placeholder="Operation Manager এর নাম"/></div>
+              <div class="form-group">
+                <label>Photo Upload (তাৎক্ষণিক)</label>
+                <input type="file" id="ss_opPhotoFile" class="form-control" accept="image/*" onchange="previewSitePersonPhoto(this,'ss_opPhotoStatus','ss_opPhotoPreview','ss_opPhoto')"/>
+                <div id="ss_opPhotoStatus" style="font-size:12px;margin-top:4px;display:none"></div>
+                <div id="ss_opPhotoPreview" style="margin-top:8px;display:none"><img style="width:60px;height:60px;border-radius:50%;object-fit:cover;border:2px solid #a78bfa" id="ss_opPhotoImg"/></div>
+                <input type="hidden" id="ss_opPhoto"/>
+              </div>
             </div>
             <!-- MANAGERS SECTION -->
             <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.08)">
@@ -1376,6 +1406,40 @@ async function loadFeedbackRecords() {
   } catch(e) {}
 }
 
+// INSTANT PREVIEW FOR SITE PERSON PHOTOS (Co-Founder, Operation)
+window.previewSitePersonPhoto = async function(input, statusId, previewId, hiddenId) {
+  const statusEl = document.getElementById(statusId);
+  const previewEl = document.getElementById(previewId);
+  const imgEl = previewEl?.querySelector('img');
+  if (!input.files[0]) return;
+  statusEl.style.display = 'block';
+  statusEl.innerHTML = '<i class="fas fa-spinner fa-spin" style="color:#f59e0b"></i> <span style="color:#f59e0b">Processing...</span>';
+  try {
+    const dataUrl = await compressPhotoToBase64(input.files[0]);
+    if (imgEl) { imgEl.src = dataUrl; }
+    previewEl.style.display = 'block';
+    document.getElementById(hiddenId).value = dataUrl;
+    statusEl.innerHTML = '<i class="fas fa-check-circle" style="color:#22c55e"></i> <span style="color:#22c55e">Photo ready! Save করলে apply হবে।</span>';
+  } catch(e) {
+    statusEl.innerHTML = '<i class="fas fa-exclamation-circle" style="color:#ef4444"></i> <span style="color:#ef4444">Error reading photo.</span>';
+  }
+};
+
+// GLOBAL BASE PRICE
+window.saveBasePrice = async function() {
+  const price = parseInt(document.getElementById('baseMembershipPrice').value)||499;
+  const msg = document.getElementById('basePriceMsg');
+  msg.textContent = '⏳ Saving...'; msg.className = 'alert alert-info show';
+  try {
+    await setDoc(doc(db, 'siteContent', 'settings'), { baseMembershipPrice: price }, { merge: true });
+    msg.textContent = `✅ Base price ₹${price} সেট করা হয়েছে। Membership page এ এই price দেখাবে।`;
+    msg.className = 'alert alert-success show';
+    showToast(`Membership base price: ₹${price}`);
+  } catch(e) {
+    msg.textContent = '❌ Failed: ' + e.message; msg.className = 'alert alert-danger show';
+  }
+};
+
 // MANAGERS
 let tempManagers = [];
 
@@ -1446,6 +1510,19 @@ async function loadSiteSettings() {
       document.getElementById('ss_ownerPhoto').value = s.ownerPhoto||'';
       document.getElementById('ss_adminName').value = s.adminName||'';
       document.getElementById('ss_adminPhoto').value = s.adminPhoto||'';
+      if (s.adminPhoto) {
+        const prev = document.getElementById('ss_adminPhotoPreview');
+        const img = document.getElementById('ss_adminPhotoImg');
+        if (prev && img) { img.src = s.adminPhoto; prev.style.display = 'block'; }
+      }
+      document.getElementById('ss_opName').value = s.opName||'';
+      document.getElementById('ss_opPhoto').value = s.opPhoto||'';
+      if (s.opPhoto) {
+        const prev = document.getElementById('ss_opPhotoPreview');
+        const img = document.getElementById('ss_opPhotoImg');
+        if (prev && img) { img.src = s.opPhoto; prev.style.display = 'block'; }
+      }
+      document.getElementById('baseMembershipPrice').value = s.baseMembershipPrice||'';
       document.getElementById('ss_aboutDesc').value = s.aboutDesc||'';
       document.getElementById('ss_story1').value = s.story1||'';
       document.getElementById('ss_story2').value = s.story2||'';
@@ -1514,18 +1591,14 @@ window.saveSiteSettings = async function() {
   msg.textContent = '⏳ Saving...'; msg.className = 'alert alert-info show';
 
   let ownerPhotoUrl = document.getElementById('ss_ownerPhoto').value;
+  // Co-Founder and Operation photos use hidden inputs (filled on file select)
   let adminPhotoUrl = document.getElementById('ss_adminPhoto').value;
+  let opPhotoUrl = document.getElementById('ss_opPhoto').value;
 
   const ownerFileInput = document.getElementById('ss_ownerPhotoFile');
-  const adminFileInput = document.getElementById('ss_adminPhotoFile');
-
   if (ownerFileInput.files[0]) {
     const uploaded = await uploadSitePhoto(ownerFileInput, document.getElementById('ss_ownerPhotoStatus'));
     if (uploaded) { ownerPhotoUrl = uploaded; document.getElementById('ss_ownerPhoto').value = uploaded; }
-  }
-  if (adminFileInput.files[0]) {
-    const uploaded = await uploadSitePhoto(adminFileInput, document.getElementById('ss_adminPhotoStatus'));
-    if (uploaded) { adminPhotoUrl = uploaded; document.getElementById('ss_adminPhoto').value = uploaded; }
   }
 
   const data = {
@@ -1534,6 +1607,8 @@ window.saveSiteSettings = async function() {
     ownerPhoto: ownerPhotoUrl,
     adminName: document.getElementById('ss_adminName').value,
     adminPhoto: adminPhotoUrl,
+    opName: document.getElementById('ss_opName').value,
+    opPhoto: opPhotoUrl,
     aboutDesc: document.getElementById('ss_aboutDesc').value,
     story1: document.getElementById('ss_story1').value,
     story2: document.getElementById('ss_story2').value,
