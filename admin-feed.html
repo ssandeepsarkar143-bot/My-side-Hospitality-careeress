@@ -80,8 +80,6 @@
       <div class="sidebar-item hidden" id="nav_jobList" onclick="showSection('jobList')"><i class="fas fa-list"></i> Manage Jobs</div>
       <div class="sidebar-section">Job</div>
       <div class="sidebar-item" onclick="window.open('job-post-from.html','_self')"><i class="fas fa-plus-circle"></i> Add Job (Live)</div>
-      <div class="sidebar-section">Site Content</div>
-      <div class="sidebar-item" id="nav_siteContent" onclick="showSection('siteContent')"><i class="fas fa-cog"></i> Edit Site Content</div>
     </div>
 
     <div class="dashboard-content">
@@ -172,49 +170,6 @@
         </div>
       </div>
 
-      <!-- SITE CONTENT -->
-      <div id="sec-siteContent" class="page-section">
-        <div class="section-title" style="color:#e94560"><i class="fas fa-cog" style="-webkit-text-fill-color:#e94560"></i> Edit Site Content</div>
-        <div class="grid-2">
-          <div class="card">
-            <div class="card-title"><i class="fas fa-info-circle"></i> About Us Content</div>
-            <div class="form-group"><label>Website Launch Date</label><input type="text" id="a_ss_launchDate" class="form-control" placeholder="e.g. January 2024"/></div>
-            <div class="form-group"><label>Owner Name</label><input type="text" id="a_ss_ownerName" class="form-control" placeholder="Suman Sarkar"/></div>
-            <div class="form-group"><label>Owner Photo URL</label><input type="text" id="a_ss_ownerPhoto" class="form-control" placeholder="https://..."/></div>
-            <div class="form-group">
-              <label>Or Upload Owner Photo</label>
-              <input type="file" id="a_ss_ownerPhotoFile" class="form-control" accept="image/*"/>
-              <div id="a_ss_ownerPhotoStatus" style="font-size:12px;margin-top:4px;display:none"></div>
-            </div>
-            <div class="form-group"><label>Admin Name (shows on About page)</label><input type="text" id="a_ss_adminName" class="form-control" placeholder="Admin Name"/></div>
-            <div class="form-group"><label>Admin Photo URL</label><input type="text" id="a_ss_adminPhoto" class="form-control" placeholder="https://..."/></div>
-            <div class="form-group">
-              <label>Or Upload Admin Photo</label>
-              <input type="file" id="a_ss_adminPhotoFile" class="form-control" accept="image/*"/>
-              <div id="a_ss_adminPhotoStatus" style="font-size:12px;margin-top:4px;display:none"></div>
-            </div>
-            <div class="form-group"><label>About Us Description</label><textarea id="a_ss_aboutDesc" class="form-control" rows="4" placeholder="Write about the company..."></textarea></div>
-            <div class="form-group"><label>Success Story 1</label><input type="text" id="a_ss_story1" class="form-control" placeholder="Story title – Short description"/></div>
-            <div class="form-group"><label>Success Story 2</label><input type="text" id="a_ss_story2" class="form-control" placeholder="Story title – Short description"/></div>
-            <div class="form-group"><label>Success Story 3</label><input type="text" id="a_ss_story3" class="form-control" placeholder="Story title – Short description"/></div>
-          </div>
-          <div class="card">
-            <div class="card-title"><i class="fas fa-envelope"></i> Contact Settings</div>
-            <div class="form-group"><label>Contact Email</label><input type="email" id="a_ss_contactEmail" class="form-control" placeholder="contact@hospitalitycareers.in"/></div>
-            <div class="form-group"><label>Contact Phone</label><input type="text" id="a_ss_contactPhone" class="form-control" placeholder="+91 XXXXXXXXXX"/></div>
-            <div class="form-group"><label>Office Address</label><textarea id="a_ss_address" class="form-control" rows="3" placeholder="Office address..."></textarea></div>
-            <div class="card-title" style="margin-top:16px"><i class="fas fa-question-circle"></i> Help / FAQ</div>
-            <div class="form-group"><label>FAQ 1 – Question</label><input type="text" id="a_ss_faq1q" class="form-control" placeholder="Question"/></div>
-            <div class="form-group"><label>FAQ 1 – Answer</label><textarea id="a_ss_faq1a" class="form-control" rows="2" placeholder="Answer"></textarea></div>
-            <div class="form-group"><label>FAQ 2 – Question</label><input type="text" id="a_ss_faq2q" class="form-control" placeholder="Question"/></div>
-            <div class="form-group"><label>FAQ 2 – Answer</label><textarea id="a_ss_faq2a" class="form-control" rows="2" placeholder="Answer"></textarea></div>
-            <div class="form-group"><label>FAQ 3 – Question</label><input type="text" id="a_ss_faq3q" class="form-control" placeholder="Question"/></div>
-            <div class="form-group"><label>FAQ 3 – Answer</label><textarea id="a_ss_faq3a" class="form-control" rows="2" placeholder="Answer"></textarea></div>
-          </div>
-        </div>
-        <button class="btn w-full mt-16" style="background:linear-gradient(135deg,#e94560,#c23152);color:#fff" onclick="adminSaveSiteSettings()"><i class="fas fa-save"></i> Save All Site Settings</button>
-        <div id="a_siteSettingsMsg" class="alert mt-8"></div>
-      </div>
     </div>
   </div>
 </div>
@@ -250,8 +205,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, doc, getDoc, getDocs, collection, query, where, updateDoc, deleteDoc, serverTimestamp, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+import { getFirestore, doc, getDoc, getDocs, collection, query, where, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCuAuc9qhA7D_-Lqt-69pbG81KTIiDFVpg",
@@ -264,7 +218,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const storage = getStorage(app);
 
 let currentUser = null, adminData = null;
 
@@ -342,7 +295,6 @@ window.showSection = function(name) {
     case 'membershipReqs': loadMembershipReqs(); break;
     case 'jobRequests': loadJobRequests(); break;
     case 'jobList': loadJobList(); break;
-    case 'siteContent': adminLoadSiteSettings(); break;
   }
 };
 
@@ -633,99 +585,6 @@ async function checkAdminNotifBadge() {
   } catch(e) {}
 }
 
-// SITE SETTINGS
-async function adminLoadSiteSettings() {
-  try {
-    const snap = await getDoc(doc(db, 'siteContent', 'settings'));
-    if (snap.exists()) {
-      const s = snap.data();
-      document.getElementById('a_ss_launchDate').value = s.launchDate||'';
-      document.getElementById('a_ss_ownerName').value = s.ownerName||'';
-      document.getElementById('a_ss_ownerPhoto').value = s.ownerPhoto||'';
-      document.getElementById('a_ss_adminName').value = s.adminName||'';
-      document.getElementById('a_ss_adminPhoto').value = s.adminPhoto||'';
-      document.getElementById('a_ss_aboutDesc').value = s.aboutDesc||'';
-      document.getElementById('a_ss_story1').value = s.story1||'';
-      document.getElementById('a_ss_story2').value = s.story2||'';
-      document.getElementById('a_ss_story3').value = s.story3||'';
-      document.getElementById('a_ss_contactEmail').value = s.contactEmail||'';
-      document.getElementById('a_ss_contactPhone').value = s.contactPhone||'';
-      document.getElementById('a_ss_address').value = s.address||'';
-      document.getElementById('a_ss_faq1q').value = s.faq1q||'';
-      document.getElementById('a_ss_faq1a').value = s.faq1a||'';
-      document.getElementById('a_ss_faq2q').value = s.faq2q||'';
-      document.getElementById('a_ss_faq2a').value = s.faq2a||'';
-      document.getElementById('a_ss_faq3q').value = s.faq3q||'';
-      document.getElementById('a_ss_faq3a').value = s.faq3a||'';
-    }
-  } catch(e) {}
-}
-
-async function adminUploadPhoto(fileInput, statusEl) {
-  const file = fileInput.files[0];
-  if (!file) return null;
-  statusEl.style.display = 'block';
-  statusEl.innerHTML = '<i class="fas fa-spinner fa-spin" style="color:#f59e0b"></i> <span style="color:#f59e0b">Uploading photo...</span>';
-  try {
-    const photoRef = ref(storage, `sitePhotos/${Date.now()}_${file.name}`);
-    const snap = await uploadBytes(photoRef, file);
-    const url = await getDownloadURL(snap.ref);
-    statusEl.innerHTML = '<i class="fas fa-check-circle" style="color:#22c55e"></i> <span style="color:#22c55e">Photo uploaded!</span>';
-    return url;
-  } catch(e) {
-    statusEl.innerHTML = '<i class="fas fa-exclamation-circle" style="color:#ef4444"></i> <span style="color:#ef4444">Upload failed. Use URL instead.</span>';
-    return null;
-  }
-}
-
-window.adminSaveSiteSettings = async function() {
-  const msg = document.getElementById('a_siteSettingsMsg');
-  msg.textContent = '⏳ Saving...'; msg.className = 'alert alert-info show';
-
-  let ownerPhotoUrl = document.getElementById('a_ss_ownerPhoto').value;
-  let adminPhotoUrl = document.getElementById('a_ss_adminPhoto').value;
-
-  const ownerFile = document.getElementById('a_ss_ownerPhotoFile');
-  const adminFile = document.getElementById('a_ss_adminPhotoFile');
-
-  if (ownerFile.files[0]) {
-    const up = await adminUploadPhoto(ownerFile, document.getElementById('a_ss_ownerPhotoStatus'));
-    if (up) { ownerPhotoUrl = up; document.getElementById('a_ss_ownerPhoto').value = up; }
-  }
-  if (adminFile.files[0]) {
-    const up = await adminUploadPhoto(adminFile, document.getElementById('a_ss_adminPhotoStatus'));
-    if (up) { adminPhotoUrl = up; document.getElementById('a_ss_adminPhoto').value = up; }
-  }
-
-  const data = {
-    launchDate: document.getElementById('a_ss_launchDate').value,
-    ownerName: document.getElementById('a_ss_ownerName').value,
-    ownerPhoto: ownerPhotoUrl,
-    adminName: document.getElementById('a_ss_adminName').value,
-    adminPhoto: adminPhotoUrl,
-    aboutDesc: document.getElementById('a_ss_aboutDesc').value,
-    story1: document.getElementById('a_ss_story1').value,
-    story2: document.getElementById('a_ss_story2').value,
-    story3: document.getElementById('a_ss_story3').value,
-    contactEmail: document.getElementById('a_ss_contactEmail').value,
-    contactPhone: document.getElementById('a_ss_contactPhone').value,
-    address: document.getElementById('a_ss_address').value,
-    faq1q: document.getElementById('a_ss_faq1q').value,
-    faq1a: document.getElementById('a_ss_faq1a').value,
-    faq2q: document.getElementById('a_ss_faq2q').value,
-    faq2a: document.getElementById('a_ss_faq2a').value,
-    faq3q: document.getElementById('a_ss_faq3q').value,
-    faq3a: document.getElementById('a_ss_faq3a').value,
-    updatedAt: serverTimestamp()
-  };
-  try {
-    await setDoc(doc(db, 'siteContent', 'settings'), data, { merge: true });
-    msg.textContent = '✅ Site settings saved successfully!'; msg.className = 'alert alert-success show';
-    showToast('Site settings saved!');
-  } catch(e) {
-    msg.textContent = '❌ Failed to save: ' + e.message; msg.className = 'alert alert-danger show';
-  }
-};
 </script>
 </body>
 </html>

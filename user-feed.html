@@ -276,7 +276,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, collection, getDocs, addDoc, query, where, orderBy, serverTimestamp, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCuAuc9qhA7D_-Lqt-69pbG81KTIiDFVpg",
@@ -289,7 +288,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const storage = getStorage(app);
 
 let currentUser = null, allJobs = [], filteredJobs = [], currentPage = 1;
 const JOBS_PER_PAGE = 10;
@@ -442,32 +440,42 @@ window.goPage = function(p) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
-window.handleCvSelect = async function(input) {
+window.handleCvSelect = function(input) {
   const file = input.files[0];
-  if (!file || !currentUser) return;
+  if (!file) return;
   const statusEl = document.getElementById('cvUploadStatus');
   const submitBtn = document.getElementById('applySubmitBtn');
   statusEl.style.display = 'block';
-  statusEl.innerHTML = '<i class="fas fa-spinner fa-spin" style="color:#f59e0b"></i> <span style="color:#f59e0b">Uploading CV... please wait</span>';
-  submitBtn.disabled = true;
-  submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading CV...';
-  cvUploading = true;
   uploadedCvUrl = null;
-  try {
-    const cvRef = ref(storage, `cvs/${currentUser.uid}/${Date.now()}_${file.name}`);
-    const snap = await uploadBytes(cvRef, file);
-    uploadedCvUrl = await getDownloadURL(snap.ref);
-    statusEl.innerHTML = '<i class="fas fa-check-circle" style="color:#22c55e"></i> <span style="color:#22c55e">CV uploaded successfully! Ready to submit.</span>';
-    submitBtn.disabled = false;
-    submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Application';
-    cvUploading = false;
-  } catch(e) {
-    statusEl.innerHTML = '<i class="fas fa-exclamation-circle" style="color:#ef4444"></i> <span style="color:#ef4444">Upload failed. Please try again.</span>';
-    submitBtn.disabled = false;
-    submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Application';
-    cvUploading = false;
-    uploadedCvUrl = null;
+  cvUploading = false;
+
+  const MAX_BYTES = 600 * 1024; // 600 KB limit
+  if (file.size > MAX_BYTES) {
+    statusEl.innerHTML = '<i class="fas fa-exclamation-triangle" style="color:#f59e0b"></i> <span style="color:#f59e0b">File is too large (max 600KB). Please compress your CV or submit without CV — you can share it later.</span>';
+    input.value = '';
+    return;
   }
+
+  statusEl.innerHTML = '<i class="fas fa-spinner fa-spin" style="color:#f59e0b"></i> <span style="color:#f59e0b">Reading CV...</span>';
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Reading...';
+  cvUploading = true;
+
+  const reader = new FileReader();
+  reader.onerror = () => {
+    statusEl.innerHTML = '<i class="fas fa-exclamation-circle" style="color:#ef4444"></i> <span style="color:#ef4444">Could not read file. Please try another file or submit without CV.</span>';
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Application';
+    cvUploading = false;
+  };
+  reader.onload = (e) => {
+    uploadedCvUrl = e.target.result; // base64 data URL stored in Firestore
+    statusEl.innerHTML = '<i class="fas fa-check-circle" style="color:#22c55e"></i> <span style="color:#22c55e">CV ready! (' + (file.size/1024).toFixed(0) + ' KB) — Click Submit to apply.</span>';
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Application';
+    cvUploading = false;
+  };
+  reader.readAsDataURL(file);
 };
 
 window.openApply = function(jobId, jobTitle) {
