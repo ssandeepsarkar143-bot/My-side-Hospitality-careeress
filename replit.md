@@ -46,7 +46,15 @@ A full-featured hospitality job portal with role-based authentication (Owner, Ad
 - Discount/offer/upgrade system from Owner dashboard
 
 ## Logo
-Place your logo file as `jogo.png` in the project root.
+Place your logo file as `logo.png` in the project root (also stored in `public/logo.png`).
+
+## Recent Fixes
+- Logo fixed: `jogo.png` reference in `profile.html` corrected to `/logo.png`; `logo.png` copied to root
+- CV upload made optional in job apply form – users can submit without uploading a resume
+- UPI redirect fixed: uses `window.location.href` instead of programmatic anchor click
+- Site settings (owner-feed): Added Firebase Storage photo upload for owner & admin photos; added Admin Name field; fixed save using `{ merge: true }`
+- About page: Admin photo/name section added, shown dynamically when set in site settings
+- Admin dashboard: "Edit Site Content" section added with full site settings editing + photo upload capability
 
 ## UPI Payment
 UPI ID: `ssandeepsarkar143-2@okhdfcbank`

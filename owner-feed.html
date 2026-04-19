@@ -292,7 +292,19 @@
             <div class="card-title"><i class="fas fa-info-circle"></i> About Us Content</div>
             <div class="form-group"><label>Website Launch Date</label><input type="text" id="ss_launchDate" class="form-control" placeholder="e.g. January 2024"/></div>
             <div class="form-group"><label>Owner Name</label><input type="text" id="ss_ownerName" class="form-control" placeholder="Suman Sarkar"/></div>
-            <div class="form-group"><label>Owner Photo URL (or upload below)</label><input type="text" id="ss_ownerPhoto" class="form-control" placeholder="https://..."/></div>
+            <div class="form-group"><label>Owner Photo URL</label><input type="text" id="ss_ownerPhoto" class="form-control" placeholder="https://..."/></div>
+            <div class="form-group">
+              <label>Or Upload Owner Photo</label>
+              <input type="file" id="ss_ownerPhotoFile" class="form-control" accept="image/*"/>
+              <div id="ss_ownerPhotoStatus" style="font-size:12px;margin-top:4px;display:none"></div>
+            </div>
+            <div class="form-group"><label>Admin Name (shows on About page)</label><input type="text" id="ss_adminName" class="form-control" placeholder="Admin Name"/></div>
+            <div class="form-group"><label>Admin Photo URL</label><input type="text" id="ss_adminPhoto" class="form-control" placeholder="https://..."/></div>
+            <div class="form-group">
+              <label>Or Upload Admin Photo</label>
+              <input type="file" id="ss_adminPhotoFile" class="form-control" accept="image/*"/>
+              <div id="ss_adminPhotoStatus" style="font-size:12px;margin-top:4px;display:none"></div>
+            </div>
             <div class="form-group"><label>About Us Description</label><textarea id="ss_aboutDesc" class="form-control" rows="4" placeholder="Write about the company..."></textarea></div>
             <div class="form-group"><label>Success Story 1</label><input type="text" id="ss_story1" class="form-control" placeholder="Story title – Short description"/></div>
             <div class="form-group"><label>Success Story 2</label><input type="text" id="ss_story2" class="form-control" placeholder="Story title – Short description"/></div>
@@ -429,6 +441,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, getDocs, collection, query, where, updateDoc, deleteDoc, addDoc, serverTimestamp, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCuAuc9qhA7D_-Lqt-69pbG81KTIiDFVpg",
@@ -441,6 +454,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const storage = getStorage(app);
 
 const OWNER_EMAIL = 'ssandeepsarkar143@gmail.com';
 const MPIN_DOC = 'owner';
@@ -1316,6 +1330,8 @@ async function loadSiteSettings() {
       document.getElementById('ss_launchDate').value = s.launchDate||'';
       document.getElementById('ss_ownerName').value = s.ownerName||'Suman Sarkar';
       document.getElementById('ss_ownerPhoto').value = s.ownerPhoto||'';
+      document.getElementById('ss_adminName').value = s.adminName||'';
+      document.getElementById('ss_adminPhoto').value = s.adminPhoto||'';
       document.getElementById('ss_aboutDesc').value = s.aboutDesc||'';
       document.getElementById('ss_story1').value = s.story1||'';
       document.getElementById('ss_story2').value = s.story2||'';
@@ -1333,11 +1349,48 @@ async function loadSiteSettings() {
   } catch(e) {}
 }
 
+async function uploadSitePhoto(fileInput, statusEl) {
+  const file = fileInput.files[0];
+  if (!file) return null;
+  statusEl.style.display = 'block';
+  statusEl.innerHTML = '<i class="fas fa-spinner fa-spin" style="color:#f59e0b"></i> <span style="color:#f59e0b">Uploading photo...</span>';
+  try {
+    const photoRef = ref(storage, `sitePhotos/${Date.now()}_${file.name}`);
+    const snap = await uploadBytes(photoRef, file);
+    const url = await getDownloadURL(snap.ref);
+    statusEl.innerHTML = '<i class="fas fa-check-circle" style="color:#22c55e"></i> <span style="color:#22c55e">Photo uploaded!</span>';
+    return url;
+  } catch(e) {
+    statusEl.innerHTML = '<i class="fas fa-exclamation-circle" style="color:#ef4444"></i> <span style="color:#ef4444">Upload failed. Use URL instead.</span>';
+    return null;
+  }
+}
+
 window.saveSiteSettings = async function() {
+  const msg = document.getElementById('siteSettingsMsg');
+  msg.textContent = '⏳ Saving...'; msg.className = 'alert alert-info show';
+
+  let ownerPhotoUrl = document.getElementById('ss_ownerPhoto').value;
+  let adminPhotoUrl = document.getElementById('ss_adminPhoto').value;
+
+  const ownerFileInput = document.getElementById('ss_ownerPhotoFile');
+  const adminFileInput = document.getElementById('ss_adminPhotoFile');
+
+  if (ownerFileInput.files[0]) {
+    const uploaded = await uploadSitePhoto(ownerFileInput, document.getElementById('ss_ownerPhotoStatus'));
+    if (uploaded) { ownerPhotoUrl = uploaded; document.getElementById('ss_ownerPhoto').value = uploaded; }
+  }
+  if (adminFileInput.files[0]) {
+    const uploaded = await uploadSitePhoto(adminFileInput, document.getElementById('ss_adminPhotoStatus'));
+    if (uploaded) { adminPhotoUrl = uploaded; document.getElementById('ss_adminPhoto').value = uploaded; }
+  }
+
   const data = {
     launchDate: document.getElementById('ss_launchDate').value,
     ownerName: document.getElementById('ss_ownerName').value,
-    ownerPhoto: document.getElementById('ss_ownerPhoto').value,
+    ownerPhoto: ownerPhotoUrl,
+    adminName: document.getElementById('ss_adminName').value,
+    adminPhoto: adminPhotoUrl,
     aboutDesc: document.getElementById('ss_aboutDesc').value,
     story1: document.getElementById('ss_story1').value,
     story2: document.getElementById('ss_story2').value,
@@ -1354,13 +1407,11 @@ window.saveSiteSettings = async function() {
     updatedAt: serverTimestamp()
   };
   try {
-    await setDoc(doc(db, 'siteContent', 'settings'), data);
-    const msg = document.getElementById('siteSettingsMsg');
+    await setDoc(doc(db, 'siteContent', 'settings'), data, { merge: true });
     msg.textContent = '✅ Site settings saved successfully!'; msg.className = 'alert alert-success show';
     showToast('Site settings saved!');
   } catch(e) {
-    const msg = document.getElementById('siteSettingsMsg');
-    msg.textContent = '❌ Failed to save. Check Firestore permissions.'; msg.className = 'alert alert-danger show';
+    msg.textContent = '❌ Failed to save: ' + e.message; msg.className = 'alert alert-danger show';
   }
 };
 </script>

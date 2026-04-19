@@ -226,9 +226,7 @@ async function loadOffers(userId) {
 
 window.payWithUPI = function() {
   const upiUrl = `upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent(BUSINESS_NAME)}&am=${finalAmount}&cu=INR&tn=${encodeURIComponent('Hospitality Careers Prime Membership')}`;
-  const a = document.createElement('a');
-  a.href = upiUrl;
-  a.click();
+  window.location.href = upiUrl;
   showToast('Opening your UPI app...');
   setTimeout(() => { document.getElementById('utrSection').style.display = 'block'; document.getElementById('utrSection').scrollIntoView({behavior:'smooth'}); }, 2000);
 };

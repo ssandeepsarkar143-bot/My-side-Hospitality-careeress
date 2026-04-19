@@ -248,8 +248,8 @@
         </select>
       </div>
       <div class="form-group">
-        <label>Upload CV * (JPG, DOC, DOCX, PDF, PNG)</label>
-        <input type="file" id="applyCv" class="form-control" accept=".jpg,.jpeg,.png,.doc,.docx,.pdf" required onchange="handleCvSelect(this)"/>
+        <label>Upload CV (JPG, DOC, DOCX, PDF, PNG) – Optional</label>
+        <input type="file" id="applyCv" class="form-control" accept=".jpg,.jpeg,.png,.doc,.docx,.pdf" onchange="handleCvSelect(this)"/>
         <div id="cvUploadStatus" style="margin-top:6px;font-size:12px;display:none"></div>
       </div>
       <button type="submit" id="applySubmitBtn" class="btn btn-primary w-full"><i class="fas fa-paper-plane"></i> Submit Application</button>
@@ -501,10 +501,7 @@ window.toggleOrgField = function() {
 
 document.getElementById('applyForm').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const cvFile = document.getElementById('applyCv').files[0];
-  if (!cvFile) { showApplyAlert('Please upload your CV.'); return; }
   if (cvUploading) { showApplyAlert('CV is still uploading. Please wait...'); return; }
-  if (!uploadedCvUrl) { showApplyAlert('Please wait for CV upload to complete before submitting.'); return; }
   const btn = document.getElementById('applySubmitBtn');
   btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
   btn.disabled = true;
