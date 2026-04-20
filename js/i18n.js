@@ -268,7 +268,7 @@ function buildSwitcher() {
       lang = l.code;
       localStorage.setItem('hc_ui_lang', lang);
       applyTranslations();
-      // Update switcher active states
+      if (window.hcChat) window.hcChat.setLang(lang);
       sw.querySelectorAll('button').forEach((b, i) => {
         b.style.background = LANGS[i].code === lang ? 'rgba(212,175,55,.18)' : 'none';
         b.style.color = LANGS[i].code === lang ? '#d4af37' : 'rgba(255,255,255,.55)';

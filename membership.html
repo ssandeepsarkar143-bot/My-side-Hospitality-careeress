@@ -91,7 +91,7 @@ body { background: linear-gradient(135deg, #0d0d2b, #1a1a4e); }
     </div>
 
     <div style="margin-top:16px;font-size:12px;color:var(--gray);text-align:center">
-      <i class="fas fa-shield-alt" style="color:#a78bfa"></i> Secure payment via UPI · ssandeepsarkar143-2@okhdfcbank
+      <i class="fas fa-shield-alt" style="color:#a78bfa"></i> Secure payment via UPI · <span class="upi-id-display">ssandeepsarkar143-2@okhdfcbank</span>
     </div>
 
     <!-- UTR SUBMIT SECTION -->
@@ -140,7 +140,7 @@ body { background: linear-gradient(135deg, #0d0d2b, #1a1a4e); }
     <div style="margin-top:16px">
       <div style="font-size:22px;font-weight:800;color:#a78bfa" id="qrModalAmount">₹499</div>
       <div style="font-size:13px;color:var(--gray)">Hospitality Careers</div>
-      <div style="font-size:12px;color:var(--gray);margin-top:4px">UPI: ssandeepsarkar143-2@okhdfcbank</div>
+      <div style="font-size:12px;color:var(--gray);margin-top:4px">UPI: <span class="upi-id-display">ssandeepsarkar143-2@okhdfcbank</span></div>
     </div>
     <button class="btn mt-16" style="background:linear-gradient(135deg,#a78bfa,#6c63ff);color:#fff;width:100%" onclick="downloadQR()"><i class="fas fa-download"></i> Download QR</button>
     <div style="font-size:11px;color:var(--gray);margin-top:12px">After payment, contact us with your transaction ID for quick activation.</div>
@@ -172,8 +172,20 @@ let qrGenerated = false;
 let currentUserData = null;
 let currentUser = null;
 
-const UPI_ID = 'ssandeepsarkar143-2@okhdfcbank';
-const BUSINESS_NAME = 'Hospitality Careers';
+let UPI_ID = 'ssandeepsarkar143-2@okhdfcbank';
+let BUSINESS_NAME = 'Hospitality Careers';
+
+async function loadSiteUpiSettings() {
+  try {
+    const snap = await getDoc(doc(db, 'siteContent', 'settings'));
+    if (snap.exists()) {
+      const s = snap.data();
+      if (s.upiId) UPI_ID = s.upiId;
+      if (s.upiName) BUSINESS_NAME = s.upiName;
+      document.querySelectorAll('.upi-id-display').forEach(el => el.textContent = UPI_ID);
+    }
+  } catch(e) {}
+}
 
 function userMatchesOfferCategory(offer, userId, userEmail) {
   const cat = offer.category || 'all';
@@ -339,11 +351,14 @@ onAuthStateChanged(auth, async (user) => {
   try {
     const snap = await getDoc(doc(db, 'users', user.uid));
     if (snap.exists()) currentUserData = snap.data();
-    // Load base price from settings
+    // Load base price and UPI settings
     try {
       const settingsSnap = await getDoc(doc(db, 'siteContent', 'settings'));
-      if (settingsSnap.exists() && settingsSnap.data().baseMembershipPrice) {
-        finalAmount = parseInt(settingsSnap.data().baseMembershipPrice) || 499;
+      if (settingsSnap.exists()) {
+        const sd = settingsSnap.data();
+        if (sd.baseMembershipPrice) finalAmount = parseInt(sd.baseMembershipPrice) || 499;
+        if (sd.upiId) { UPI_ID = sd.upiId; document.querySelectorAll('.upi-id-display').forEach(el => el.textContent = UPI_ID); }
+        if (sd.upiName) BUSINESS_NAME = sd.upiName;
       }
     } catch(_) {}
     await loadOffers(user.uid);
@@ -354,5 +369,7 @@ document.querySelectorAll('.modal-overlay').forEach(el => {
   el.addEventListener('click', (e) => { if(e.target === el) el.classList.remove('active'); });
 });
 </script>
+<script src="js/i18n.js"></script>
+<script src="js/chatbot.js"></script>
 </body>
 </html>

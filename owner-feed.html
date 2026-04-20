@@ -370,9 +370,22 @@
           </div>
           <div class="card">
             <div class="card-title"><i class="fas fa-envelope"></i> Contact Us Settings</div>
-            <div class="form-group"><label>Contact Email</label><input type="email" id="ss_contactEmail" class="form-control" placeholder="contact@hospitalitycareers.in"/></div>
+            <div class="form-group"><label>Contact Email</label><input type="email" id="ss_contactEmail" class="form-control" placeholder="support@hospitalitycareers.in"/></div>
             <div class="form-group"><label>Contact Phone</label><input type="text" id="ss_contactPhone" class="form-control" placeholder="+91 XXXXXXXXXX"/></div>
             <div class="form-group"><label>Office Address</label><textarea id="ss_address" class="form-control" rows="3" placeholder="Office address..."></textarea></div>
+            <!-- UPI ID SETTINGS -->
+            <div style="padding:14px;background:rgba(34,197,94,0.06);border-radius:10px;border:1px solid rgba(34,197,94,0.2);margin-top:12px">
+              <div style="font-size:13px;font-weight:700;color:#22c55e;margin-bottom:10px"><i class="fas fa-rupee-sign"></i> Payment Settings (UPI)</div>
+              <div class="form-group">
+                <label>UPI ID <span style="font-size:11px;color:var(--gray)">(shown on Membership page)</span></label>
+                <input type="text" id="ss_upiId" class="form-control" placeholder="yourname@bank" style="border-color:rgba(34,197,94,0.3)"/>
+                <p style="font-size:11px;color:#888;margin-top:4px"><i class="fas fa-info-circle"></i> Change this if you switch UPI IDs. Members will see the updated ID on the payment page.</p>
+              </div>
+              <div class="form-group">
+                <label>Business Name for UPI QR <span style="font-size:11px;color:var(--gray)">(optional)</span></label>
+                <input type="text" id="ss_upiName" class="form-control" placeholder="Hospitality Careers"/>
+              </div>
+            </div>
             <div class="card-title" style="margin-top:16px"><i class="fas fa-question-circle"></i> Help / FAQ Settings</div>
             <div class="form-group"><label>FAQ 1 – Question</label><input type="text" id="ss_faq1q" class="form-control" placeholder="Question"/></div>
             <div class="form-group"><label>FAQ 1 – Answer</label><textarea id="ss_faq1a" class="form-control" rows="2" placeholder="Answer"></textarea></div>
@@ -1008,6 +1021,31 @@ window.approveJob = async function(id) {
   await updateDoc(doc(db, 'jobPosts', id), { status: 'live', approvedBy: currentUser.uid, approvedAt: serverTimestamp() });
   showToast('Job post approved and is now live!');
   loadJobRequests();
+  try {
+    const jobSnap = await getDoc(doc(db, 'jobPosts', id));
+    if (!jobSnap.exists()) return;
+    const job = jobSnap.data();
+    const alertsSnap = await getDocs(query(collection(db, 'jobAlerts'), where('active','==',true)));
+    const batch = [];
+    alertsSnap.docs.forEach(alertDoc => {
+      const a = alertDoc.data();
+      const deptMatch = !a.department || a.department === job.department;
+      const locMatch = !a.location || (job.location||'').toLowerCase().includes(a.location.toLowerCase()) || (job.state||'').toLowerCase().includes(a.location.toLowerCase());
+      const salMatch = !a.minSalary || parseInt(a.minSalary||0) <= parseInt(job.salary||0);
+      if (deptMatch && locMatch && salMatch) {
+        batch.push(addDoc(collection(db, 'notifications'), {
+          userId: a.userId,
+          type: 'jobAlert',
+          title: '🔔 New Job Match!',
+          message: `A new ${job.position||job.title} position (${job.location}) matches your Job Alert. Salary: ₹${(parseInt(job.salary||0)/1000).toFixed(0)}k/mo. Apply now!`,
+          jobId: id,
+          read: false,
+          createdAt: serverTimestamp()
+        }));
+      }
+    });
+    if (batch.length > 0) await Promise.allSettled(batch);
+  } catch(e) {}
 };
 window.rejectJob = async function(id) {
   await updateDoc(doc(db, 'jobPosts', id), { status: 'rejected' });
@@ -1540,6 +1578,8 @@ async function loadSiteSettings() {
       document.getElementById('ss_showIos').checked = !!s.showIos;
       document.getElementById('ss_androidLink').value = s.androidLink||'';
       document.getElementById('ss_iosLink').value = s.iosLink||'';
+      document.getElementById('ss_upiId').value = s.upiId||'';
+      document.getElementById('ss_upiName').value = s.upiName||'';
       // Load managers
       try { tempManagers = s.managers ? JSON.parse(s.managers) : []; } catch(_) { tempManagers = []; }
       renderManagersList();
@@ -1626,6 +1666,8 @@ window.saveSiteSettings = async function() {
     showIos: document.getElementById('ss_showIos').checked,
     androidLink: document.getElementById('ss_androidLink').value,
     iosLink: document.getElementById('ss_iosLink').value,
+    upiId: document.getElementById('ss_upiId').value.trim(),
+    upiName: document.getElementById('ss_upiName').value.trim(),
     managers: JSON.stringify(tempManagers),
     updatedAt: serverTimestamp()
   };
@@ -1638,5 +1680,7 @@ window.saveSiteSettings = async function() {
   }
 };
 </script>
+<script src="js/i18n.js"></script>
+<script src="js/chatbot.js"></script>
 </body>
 </html>
