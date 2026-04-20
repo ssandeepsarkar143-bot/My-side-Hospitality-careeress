@@ -67,6 +67,11 @@ Place your logo file as `logo.png` in the project root (also stored in `public/l
   - Installed Express dependency for Replit runtime
   - Kept existing static HTML/CSS/JS/Firebase architecture intact
   - Restricted Express static serving to public assets and known HTML pages so server/config files are not exposed
+- **Public language + assistant update (2026-04)**:
+  - Added full static text translation support for About, Feedback, Help, and Contact pages using English, Hindi, and Bangla selections
+  - Added query-language support for public pages (`?lang=en`, `?lang=hi`, `?lang=bn`) while retaining the existing language switcher
+  - Updated AI assistant with a professional animated floating bot logo
+  - Separated assistant language from website language; assistant can be changed from chat language chips or commands such as `set assistant language Bangla`, `set assistant language Hindi`, or `set assistant language English`
 
 ## UPI Payment
 UPI ID: `ssandeepsarkar143-2@okhdfcbank`
