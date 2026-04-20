@@ -63,6 +63,10 @@ Place your logo file as `logo.png` in the project root (also stored in `public/l
   - `membership.html`: Offer loading now filters by category based on user role and join date
   - `about.html`: Managers/team members grid added, shown when set by owner
   - `profile.html`: Profile photo upload with instant compress+preview added
+- **Replit migration (2026-04)**:
+  - Installed Express dependency for Replit runtime
+  - Kept existing static HTML/CSS/JS/Firebase architecture intact
+  - Restricted Express static serving to public assets and known HTML pages so server/config files are not exposed
 
 ## UPI Payment
 UPI ID: `ssandeepsarkar143-2@okhdfcbank`
