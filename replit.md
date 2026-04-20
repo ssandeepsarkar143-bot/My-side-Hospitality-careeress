@@ -72,6 +72,11 @@ Place your logo file as `logo.png` in the project root (also stored in `public/l
   - Added query-language support for public pages (`?lang=en`, `?lang=hi`, `?lang=bn`) while retaining the existing language switcher
   - Updated AI assistant with a professional animated floating bot logo
   - Separated assistant language from website language; assistant can be changed from chat language chips or commands such as `set assistant language Bangla`, `set assistant language Hindi`, or `set assistant language English`
+- **Google auth handling (2026-04)**:
+  - Added Google sign-in redirect fallback when popup sign-in is blocked or unsupported
+  - Added clearer Firebase Authorized Domain error messaging for Google login/signup
+  - Added autocomplete attributes to login/signup fields
+  - Firebase Google sign-in requires the active Replit preview/published domain to be added in Firebase Console → Authentication → Settings → Authorized domains
 
 ## UPI Payment
 UPI ID: `ssandeepsarkar143-2@okhdfcbank`
