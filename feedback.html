@@ -177,11 +177,12 @@ try {
     document.getElementById('totalReviews').textContent = `Based on ${reviews.length} verified reviews`;
     const starsCount = Math.round(totalRating/reviews.length);
     document.querySelector('#ratingSummary div:nth-child(2)').textContent = '★'.repeat(starsCount)+'☆'.repeat(5-starsCount);
-    document.getElementById('loadedReviews').innerHTML = reviews.slice(0,5).map(r => `
+    document.getElementById('publicReviews').style.display = 'none';
+    document.getElementById('loadedReviews').innerHTML = reviews.slice(0,10).map(r => `
       <div class="review-card">
         <div class="review-stars">${'★'.repeat(r.rating||0)}${'☆'.repeat(5-(r.rating||0))}</div>
         <div class="review-text">"${r.message}"</div>
-        <div class="review-author">${r.name} – ${r.fb_type||'User'}</div>
+        <div class="review-author">${r.name} – ${r.userType||'User'}</div>
       </div>`).join('');
   }
 } catch(e) {}

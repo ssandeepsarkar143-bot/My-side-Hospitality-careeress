@@ -250,6 +250,7 @@ async function redirectUser(user) {
     const role = data.role;
     if (role === 'Admin') { window.location.href = 'admin-feed.html'; return; }
     if (role === 'Prime') { window.location.href = 'prime-feed.html'; return; }
+    if (data.profileComplete === false) { window.location.href = 'profile.html'; return; }
     window.location.href = 'user-feed.html';
   } catch(e) {
     // Firestore permission error – redirect to user-feed as default

@@ -299,10 +299,11 @@
       <!-- FEEDBACK RECORDS -->
       <div id="sec-feedbackRecords" class="page-section">
         <div class="section-title"><i class="fas fa-star"></i> Feedback Records</div>
+        <p style="font-size:12px;color:var(--gray);margin-bottom:12px"><i class="fas fa-info-circle"></i> "Show" চেক করলে সেই feedback, Feedback পেজের "What People Say" section এ দেখাবে।</p>
         <div class="table-wrapper">
           <table>
-            <thead><tr><th>Name</th><th>Email</th><th>Rating</th><th>Message</th><th>Date</th></tr></thead>
-            <tbody id="feedbackBody"><tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
+            <thead><tr><th>Name</th><th>Email</th><th>Rating</th><th>Message</th><th>Date</th><th>Show Publicly</th></tr></thead>
+            <tbody id="feedbackBody"><tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -1429,20 +1430,37 @@ async function loadFeedbackRecords() {
   try {
     const snap = await getDocs(query(collection(db, 'feedback')));
     const tbody = document.getElementById('feedbackBody');
-    if (snap.empty) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">No feedback yet</td></tr>'; return; }
+    if (snap.empty) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">No feedback yet</td></tr>'; return; }
     const rows = snap.docs.sort((a,b) => (b.data().createdAt?.toDate?.()?.getTime()||0) - (a.data().createdAt?.toDate?.()?.getTime()||0));
     tbody.innerHTML = rows.map(d => {
       const f = d.data();
       const stars = '★'.repeat(f.rating||0)+'☆'.repeat(5-(f.rating||0));
+      const isPublic = f.isPublic === true;
       return `<tr>
         <td>${f.name||'N/A'}</td><td style="font-size:11px">${f.email||'N/A'}</td>
         <td style="color:#f59e0b;letter-spacing:2px">${stars}</td>
-        <td style="max-width:300px;font-size:12px">${f.message||''}</td>
+        <td style="max-width:260px;font-size:12px">${f.message||''}</td>
         <td style="font-size:11px">${f.createdAt?.toDate?.()?.toLocaleDateString()||'N/A'}</td>
+        <td style="text-align:center">
+          <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:12px">
+            <input type="checkbox" ${isPublic?'checked':''} onchange="toggleFeedbackPublic('${d.id}', this.checked)" style="width:16px;height:16px;accent-color:var(--gold);cursor:pointer"/>
+            <span style="color:${isPublic?'#22c55e':'var(--gray)'}">${isPublic?'Showing':'Hidden'}</span>
+          </label>
+        </td>
       </tr>`;
     }).join('');
   } catch(e) {}
 }
+
+window.toggleFeedbackPublic = async function(docId, show) {
+  try {
+    await updateDoc(doc(db, 'feedback', docId), { isPublic: show });
+    showToast(show ? '✅ Feedback now showing in "What People Say".' : '🙈 Feedback hidden from public view.');
+    loadFeedbackRecords();
+  } catch(e) {
+    showToast('Failed to update feedback visibility.', 'error');
+  }
+};
 
 // INSTANT PREVIEW FOR SITE PERSON PHOTOS (Co-Founder, Operation)
 window.previewSitePersonPhoto = async function(input, statusId, previewId, hiddenId) {
