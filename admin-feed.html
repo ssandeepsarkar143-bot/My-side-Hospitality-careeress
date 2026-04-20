@@ -205,7 +205,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, doc, getDoc, getDocs, collection, query, where, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, getDoc, getDocs, collection, query, where, updateDoc, deleteDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCuAuc9qhA7D_-Lqt-69pbG81KTIiDFVpg",
@@ -265,6 +265,7 @@ function unlockDashboard() {
   setupAuthority();
   loadDashboard();
   checkAdminNotifBadge();
+  loadAdminAppButtons();
 }
 
 function setupAuthority() {
@@ -476,7 +477,37 @@ async function loadJobRequests() {
 
 window.approveJob = async function(id) {
   await updateDoc(doc(db, 'jobPosts', id), { status: 'live', approvedBy: currentUser.uid, approvedAt: serverTimestamp() });
-  showToast('Job approved!'); loadJobRequests();
+  showToast('Job approved!');
+  loadJobRequests();
+  // Send Job Alert notifications to matching users
+  try {
+    const jobSnap = await getDoc(doc(db, 'jobPosts', id));
+    if (!jobSnap.exists()) return;
+    const job = jobSnap.data();
+    const alertsSnap = await getDocs(query(collection(db, 'jobAlerts'), where('active','==',true)));
+    const batch = [];
+    alertsSnap.docs.forEach(alertDoc => {
+      const a = alertDoc.data();
+      const deptMatch = !a.department || a.department === job.department;
+      const locMatch = !a.location || (job.location||'').toLowerCase().includes(a.location.toLowerCase()) || (job.state||'').toLowerCase().includes(a.location.toLowerCase());
+      const salMatch = !a.minSalary || parseInt(a.minSalary||0) <= parseInt(job.salary||0);
+      if (deptMatch && locMatch && salMatch) {
+        batch.push(addDoc(collection(db, 'notifications'), {
+          userId: a.userId,
+          type: 'jobAlert',
+          title: '🔔 New Job Match!',
+          message: `A new ${job.position||job.title} position (${job.location}) matches your Job Alert. Salary: ₹${(parseInt(job.salary||0)/1000).toFixed(0)}k/mo. Apply now!`,
+          jobId: id,
+          read: false,
+          createdAt: serverTimestamp()
+        }));
+      }
+    });
+    if (batch.length > 0) {
+      await Promise.allSettled(batch);
+      showToast(`✅ Notified ${batch.length} user(s) with matching Job Alert!`);
+    }
+  } catch(e) {}
 };
 window.rejectJob = async function(id) {
   await updateDoc(doc(db, 'jobPosts', id), { status: 'rejected' });
@@ -585,6 +616,39 @@ async function checkAdminNotifBadge() {
   } catch(e) {}
 }
 
+async function loadAdminAppButtons() {
+  try {
+    const snap = await getDoc(doc(db, 'siteContent', 'settings'));
+    if (snap.exists()) {
+      const s = snap.data();
+      const section = document.getElementById('adminAppDownloadSection');
+      const andBtn = document.getElementById('adminAppAndroidBtn');
+      const iosBtn = document.getElementById('adminAppIosBtn');
+      let show = false;
+      if (s.showAndroid && s.androidLink) { andBtn.href = s.androidLink; andBtn.style.display = 'flex'; show = true; }
+      if (s.showIos && s.iosLink) { iosBtn.href = s.iosLink; iosBtn.style.display = 'flex'; show = true; }
+      if (show) section.style.display = 'block';
+    }
+  } catch(e) {}
+}
+
 </script>
+
+<!-- APP DOWNLOAD SECTION -->
+<div id="adminAppDownloadSection" style="display:none;margin:8px 24px 16px;padding:12px 20px;background:rgba(233,69,96,0.05);border:1px solid rgba(233,69,96,0.15);border-radius:14px;text-align:center">
+  <p style="font-size:11px;color:#e94560;margin-bottom:10px;letter-spacing:0.5px">📱 DOWNLOAD OUR APP</p>
+  <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap">
+    <a id="adminAppAndroidBtn" href="#" target="_blank" style="display:none;align-items:center;gap:8px;background:linear-gradient(135deg,#1a1a2e,#2e1a1a);border:1px solid rgba(233,69,96,0.25);border-radius:10px;padding:8px 16px;text-decoration:none;color:#fff;font-size:13px">
+      <i class="fab fa-google-play" style="color:#34d058;font-size:18px"></i>
+      <span><span style="font-size:9px;display:block;opacity:0.7">GET IT ON</span>Google Play</span>
+    </a>
+    <a id="adminAppIosBtn" href="#" target="_blank" style="display:none;align-items:center;gap:8px;background:linear-gradient(135deg,#1a1a2e,#2e1a1a);border:1px solid rgba(233,69,96,0.25);border-radius:10px;padding:8px 16px;text-decoration:none;color:#fff;font-size:13px">
+      <i class="fab fa-apple" style="color:#ccc;font-size:20px"></i>
+      <span><span style="font-size:9px;display:block;opacity:0.7">DOWNLOAD ON THE</span>App Store</span>
+    </a>
+  </div>
+</div>
+<script src="js/i18n.js"></script>
+<script src="js/chatbot.js"></script>
 </body>
 </html>

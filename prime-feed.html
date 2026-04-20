@@ -36,8 +36,8 @@ body { background: linear-gradient(135deg, #0d0d2b, #1a1a4e); }
       <i class="fas fa-bell"></i>
       <span id="primeNotifBadge" class="notif-badge" style="display:none">0</span>
     </button>
-    <button class="btn btn-sm btn-outline" onclick="window.open('help.html','_blank')" style="font-size:11px"><i class="fas fa-question-circle"></i> Help</button>
-    <button class="btn btn-sm btn-danger" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+    <button class="btn btn-sm btn-outline" onclick="window.open('help.html','_blank')" style="font-size:11px"><i class="fas fa-question-circle"></i> <span data-i18n="nav.help">Help</span></button>
+    <button class="btn btn-sm btn-danger" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> <span data-i18n="nav.logout">Logout</span></button>
   </div>
 </nav>
 
@@ -57,8 +57,8 @@ body { background: linear-gradient(135deg, #0d0d2b, #1a1a4e); }
 <!-- MODE SLIDER -->
 <div style="padding:24px 24px 0">
   <div class="mode-slider" style="border-color:rgba(167,139,250,0.3)">
-    <button class="mode-btn prime-mode-btn active" id="primeFindBtn" onclick="switchMode('find')"><i class="fas fa-search"></i> Find Job</button>
-    <button class="mode-btn prime-mode-btn" id="primeHireBtn" onclick="switchMode('hire')"><i class="fas fa-users"></i> Hire Staff</button>
+    <button class="mode-btn prime-mode-btn active" id="primeFindBtn" onclick="switchMode('find')"><i class="fas fa-search"></i> <span data-i18n="mode.find">Find Job</span></button>
+    <button class="mode-btn prime-mode-btn" id="primeHireBtn" onclick="switchMode('hire')"><i class="fas fa-users"></i> <span data-i18n="mode.hire">Hire Staff</span></button>
   </div>
 </div>
 
@@ -284,6 +284,20 @@ const JOBS_PER_PAGE = 10;
 let selectedJobId = null;
 let primeUploadedCvUrl = null;
 let primeCvUploading = false;
+let myApprovedRequests = { resumeDownload: {}, contact: {}, employerConnect: {} };
+
+async function loadMyApprovedRequests() {
+  if (!currentUser) return;
+  try {
+    const snap = await getDocs(query(collection(db, 'requests'), where('requesterId', '==', currentUser.uid), where('status', '==', 'approved')));
+    snap.docs.forEach(d => {
+      const r = d.data();
+      if (r.type === 'resumeDownload' && r.candidateId) myApprovedRequests.resumeDownload[r.candidateId] = r;
+      if (r.type === 'contact' && r.candidateId) myApprovedRequests.contact[r.candidateId] = r;
+      if (r.type === 'employerConnect' && r.jobId) myApprovedRequests.employerConnect[r.jobId] = r;
+    });
+  } catch(e) {}
+}
 
 const predefinedJobs = [
   { id:'j1', title:'F&B Service Associate', department:'fnb', location:'Mumbai', state:'Maharashtra', salary:12000, vacancy:4, experience:'0–1 Years', description:'Responsible for food and beverage service in restaurant.' },
@@ -320,10 +334,10 @@ window.toggleActivity = function(id) {
   el.style.display = el.style.display === 'none' ? 'block' : 'none';
 };
 
-function showToast(msg) {
+function showToast(msg, type='success') {
   const t = document.getElementById('primeToast');
   document.getElementById('primeToastMsg').textContent = msg;
-  t.className = 'toast show success';
+  t.className = `toast show ${type}`;
   setTimeout(() => t.classList.remove('show'), 4000);
 }
 
@@ -505,45 +519,47 @@ function showPrimeApplyAlert(msg) {
   el.textContent = msg; el.className = 'alert alert-danger show';
 }
 
-async function requestResumeDownload(candidateId, candidateName) {
+window.requestResumeDownload = async function(candidateId, candidateName) {
   try {
     const existing = await getDocs(query(collection(db,'requests'), where('type','==','resumeDownload'), where('requesterId','==',currentUser.uid), where('candidateId','==',candidateId)));
-    if (!existing.empty) { showToast('You already sent a resume request for this candidate.', 'info'); return; }
+    if (!existing.empty) { showToast('ইতিমধ্যে এই candidate এর জন্য resume request পাঠানো হয়েছে।', 'info'); return; }
     await addDoc(collection(db, 'requests'), {
       type: 'resumeDownload', requesterId: currentUser.uid, requesterEmail: currentUser.email,
       candidateId, candidateName, status: 'pending', createdAt: serverTimestamp()
     });
-    showToast('✅ Resume request sent to Admin/Owner! You will be notified on approval.');
+    showToast('✅ Resume request পাঠানো হয়েছে! Approve হলে notification পাবেন।');
   } catch(e) {
-    showToast('❌ Failed to send request. Please try again.', 'error');
+    showToast('❌ Request পাঠানো যায়নি। আবার চেষ্টা করুন।', 'error');
   }
-}
+};
 
-async function requestContact(candidateId, candidateName) {
+window.requestContact = async function(candidateId, candidateName) {
   try {
     const existing = await getDocs(query(collection(db,'requests'), where('type','==','contact'), where('requesterId','==',currentUser.uid), where('candidateId','==',candidateId)));
-    if (!existing.empty) { showToast('You already sent a contact request for this candidate.', 'info'); return; }
+    if (!existing.empty) { showToast('ইতিমধ্যে এই candidate এর জন্য contact request পাঠানো হয়েছে।', 'info'); return; }
     await addDoc(collection(db, 'requests'), {
       type: 'contact', requesterId: currentUser.uid, requesterEmail: currentUser.email,
       candidateId, candidateName, status: 'pending', createdAt: serverTimestamp()
     });
-    showToast('✅ Contact request sent to Admin/Owner! You will be notified on approval.');
+    showToast('✅ Contact request পাঠানো হয়েছে! Approve হলে notification পাবেন।');
   } catch(e) {
-    showToast('❌ Failed to send request. Please try again.', 'error');
+    showToast('❌ Request পাঠানো যায়নি। আবার চেষ্টা করুন।', 'error');
   }
-}
+};
 
-async function requestEmployerConnect(jobId, jobTitle) {
+window.requestEmployerConnect = async function(jobId, jobTitle) {
   try {
+    const existing = await getDocs(query(collection(db,'requests'), where('type','==','employerConnect'), where('requesterId','==',currentUser.uid), where('jobId','==',jobId)));
+    if (!existing.empty) { showToast('ইতিমধ্যে এই job এর জন্য employer connect request পাঠানো হয়েছে।', 'info'); return; }
     await addDoc(collection(db, 'requests'), {
       type: 'employerConnect', requesterId: currentUser.uid, requesterEmail: currentUser.email,
       jobId, jobTitle, status: 'pending', createdAt: serverTimestamp()
     });
-    showToast('✅ Connect Employer request sent to Admin/Owner!');
+    showToast('✅ Connect Employer request পাঠানো হয়েছে!');
   } catch(e) {
-    showToast('❌ Failed to send request. Please try again.', 'error');
+    showToast('❌ Request পাঠানো যায়নি। আবার চেষ্টা করুন।', 'error');
   }
-}
+};
 
 window.viewApplicants = async function(jobId, jobTitle) {
   document.getElementById('applicantsJobTitle').textContent = jobTitle;
@@ -558,16 +574,24 @@ window.viewApplicants = async function(jobId, jobTitle) {
     }
     document.getElementById('applicantsListContent').innerHTML = `
       <table style="width:100%;font-size:13px">
-        <thead><tr><th>Name</th><th>Experience</th><th>CTC</th><th>Notice Period</th><th>Status</th><th>Resume</th><th>Contact</th></tr></thead>
+        <thead><tr><th>Name</th><th>Experience</th><th>CTC</th><th>Notice</th><th>Status</th><th>CV</th><th>Contact</th></tr></thead>
         <tbody>
           ${snap.docs.map(d => {
-            const data = d.data();
+            const data = d.data(); const appId = d.id;
+            const resumeApproved = myApprovedRequests.resumeDownload[appId];
+            const contactApproved = myApprovedRequests.contact[appId];
+            const resumeCell = resumeApproved
+              ? (data.cvUrl ? `<a href="${data.cvUrl}" target="_blank" class="btn btn-sm btn-info"><i class="fas fa-download"></i> Download</a>` : `<span style="color:#22c55e;font-size:11px">✅ Approved</span>`)
+              : `<button class="btn btn-sm btn-info" onclick="requestResumeDownload('${appId}','${data.userName}')"><i class="fas fa-file-alt"></i> Request</button>`;
+            const contactCell = contactApproved
+              ? `<div style="font-size:11px"><div><i class="fas fa-phone" style="color:#a78bfa"></i> <a href="tel:${data.phone||''}" style="color:#a78bfa">${data.phone||'N/A'}</a></div><div><i class="fas fa-envelope" style="color:#a78bfa"></i> ${data.email||data.userEmail||'N/A'}</div></div>`
+              : `<button class="btn btn-sm btn-outline" onclick="requestContact('${appId}','${data.userName}')"><i class="fas fa-phone"></i> Request</button>`;
             return `<tr>
               <td>${data.userName}</td><td>${data.experience}</td>
               <td>₹${data.currentCTC}</td><td>${data.noticePeriod}</td>
               <td><span class="badge badge-${data.status==='Hired'?'hired':'pending'}">${data.status}</span></td>
-              <td><button class="btn btn-sm btn-info" onclick="requestResumeDownload('${d.id}','${data.userName}')"><i class="fas fa-download"></i> Request</button></td>
-              <td><button class="btn btn-sm btn-outline" onclick="requestContact('${d.id}','${data.userName}')"><i class="fas fa-phone"></i> Request</button></td>
+              <td>${resumeCell}</td>
+              <td>${contactCell}</td>
             </tr>`;
           }).join('')}
         </tbody>
@@ -582,13 +606,35 @@ async function loadPrimeApplications() {
     const snap = await getDocs(q);
     const tbody = document.getElementById('primeApplicationsTbody');
     if (snap.empty) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--gray);padding:20px">No applications yet</td></tr>'; return; }
+    // Load job phone numbers for approved employer connect requests
+    const approvedConnects = Object.keys(myApprovedRequests.employerConnect);
+    const jobPhones = {};
+    for (const jobId of approvedConnects) {
+      try {
+        const jobSnap = await getDoc(doc(db, 'jobPosts', jobId));
+        if (jobSnap.exists()) jobPhones[jobId] = jobSnap.data().phone || null;
+      } catch(_) {}
+    }
     tbody.innerHTML = snap.docs.map(d => {
       const data = d.data();
+      const connectApproved = myApprovedRequests.employerConnect[data.jobId];
+      let connectCell;
+      if (connectApproved) {
+        const phone = jobPhones[data.jobId];
+        connectCell = phone
+          ? `<div style="font-size:11px;line-height:1.7">
+               <div style="color:#22c55e;font-size:10px;margin-bottom:2px"><i class="fas fa-check-circle"></i> Employer Contact Approved</div>
+               <a href="tel:${phone}" style="color:#a78bfa;font-weight:600"><i class="fas fa-phone" style="margin-right:3px"></i>${phone}</a>
+             </div>`
+          : `<span style="color:#22c55e;font-size:11px"><i class="fas fa-check-circle"></i> Approved – Contact Admin for number</span>`;
+      } else {
+        connectCell = `<button class="btn btn-sm" style="background:linear-gradient(135deg,#a78bfa,#6c63ff);color:#fff;font-size:10px" onclick="requestEmployerConnect('${data.jobId}','${data.jobTitle}')"><i class="fas fa-link"></i> Connect Employer</button>`;
+      }
       return `<tr>
         <td>${data.jobTitle || 'N/A'}</td>
         <td>${data.appliedAt?.toDate?.()?.toLocaleDateString() || 'N/A'}</td>
         <td><span class="badge badge-${data.status==='Hired'?'hired':data.status==='Rejected'?'rejected':'pending'}">${data.status}</span></td>
-        <td><button class="btn btn-sm" style="background:linear-gradient(135deg,#a78bfa,#6c63ff);color:#fff;font-size:10px" onclick="requestEmployerConnect('${data.jobId}','${data.jobTitle}')"><i class="fas fa-link"></i> Connect Employer</button></td>
+        <td>${connectCell}</td>
       </tr>`;
     }).join('');
   } catch(e) {}
@@ -621,13 +667,27 @@ async function loadPrimeCandidates() {
     if (snap.empty) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">No candidates yet</td></tr>'; return; }
     tbody.innerHTML = snap.docs.map(d => {
       const data = d.data();
+      const appId = d.id;
+      const resumeApproved = myApprovedRequests.resumeDownload[appId];
+      const contactApproved = myApprovedRequests.contact[appId];
+      const resumeCell = resumeApproved
+        ? (data.cvUrl
+            ? `<a href="${data.cvUrl}" target="_blank" class="btn btn-sm btn-info"><i class="fas fa-download"></i> Download CV</a>`
+            : `<span style="color:#22c55e;font-size:12px"><i class="fas fa-check-circle"></i> Approved</span>`)
+        : `<button class="btn btn-sm btn-info" onclick="requestResumeDownload('${appId}','${data.userName}')"><i class="fas fa-file-alt"></i> Request CV</button>`;
+      const contactCell = contactApproved
+        ? `<div style="font-size:11px;line-height:1.6">
+             <div><i class="fas fa-phone" style="color:#a78bfa;width:14px"></i> <a href="tel:${data.phone||''}" style="color:#a78bfa">${data.phone||'N/A'}</a></div>
+             <div><i class="fas fa-envelope" style="color:#a78bfa;width:14px"></i> <a href="mailto:${data.email||data.userEmail||''}" style="color:#a78bfa;word-break:break-all">${data.email||data.userEmail||'N/A'}</a></div>
+           </div>`
+        : `<button class="btn btn-sm btn-outline" style="color:#a78bfa;border-color:#a78bfa" onclick="requestContact('${appId}','${data.userName}')"><i class="fas fa-phone"></i> Request</button>`;
       return `<tr>
         <td>${data.userName}</td>
         <td>${data.jobTitle || 'N/A'}</td>
         <td>${data.experience}</td>
         <td><span class="badge badge-${data.status==='Hired'?'hired':'pending'}">${data.status}</span></td>
-        <td><button class="btn btn-sm btn-info" onclick="requestResumeDownload('${d.id}','${data.userName}')"><i class="fas fa-download"></i> Request</button></td>
-        <td><button class="btn btn-sm btn-outline" style="color:#a78bfa;border-color:#a78bfa" onclick="requestContact('${d.id}','${data.userName}')"><i class="fas fa-phone"></i> Request</button></td>
+        <td>${resumeCell}</td>
+        <td>${contactCell}</td>
       </tr>`;
     }).join('');
   } catch(e) {}
@@ -680,12 +740,14 @@ onAuthStateChanged(auth, async (user) => {
     if (role === 'User') { window.location.href = 'user-feed.html'; return; }
   }
   setTimeout(() => { document.getElementById('loader').style.display = 'none'; }, 600);
+  await loadMyApprovedRequests();
   loadJobs();
   loadPrimeApplications();
   loadPrimePosts();
   loadPrimeCandidates();
   loadMembershipDetails();
   checkPrimeNotifBadge();
+  loadPrimeAppButtons();
 });
 
 document.querySelectorAll('.modal-overlay').forEach(el => {
@@ -730,10 +792,43 @@ async function checkPrimeNotifBadge() {
     if (snap.size > 0) { badge.textContent = snap.size; badge.style.display = 'flex'; }
   } catch(e) {}
 }
+
+async function loadPrimeAppButtons() {
+  try {
+    const snap = await getDoc(doc(db, 'siteContent', 'settings'));
+    if (snap.exists()) {
+      const s = snap.data();
+      const section = document.getElementById('primeAppDownloadSection');
+      const andBtn = document.getElementById('primeAppAndroidBtn');
+      const iosBtn = document.getElementById('primeAppIosBtn');
+      let show = false;
+      if (s.showAndroid && s.androidLink) { andBtn.href = s.androidLink; andBtn.style.display = 'flex'; show = true; }
+      if (s.showIos && s.iosLink) { iosBtn.href = s.iosLink; iosBtn.style.display = 'flex'; show = true; }
+      if (show) section.style.display = 'block';
+    }
+  } catch(e) {}
+}
 </script>
 
+<script src="js/i18n.js"></script>
+<script src="js/chatbot.js"></script>
+<!-- APP DOWNLOAD SECTION -->
+<div id="primeAppDownloadSection" style="display:none;margin:0 24px 16px;padding:14px 20px;background:rgba(167,139,250,0.06);border:1px solid rgba(167,139,250,0.2);border-radius:14px;text-align:center">
+  <p style="font-size:11px;color:#a78bfa;margin-bottom:10px;letter-spacing:0.5px">📱 DOWNLOAD OUR APP</p>
+  <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap">
+    <a id="primeAppAndroidBtn" href="#" target="_blank" style="display:none;align-items:center;gap:8px;background:linear-gradient(135deg,#1a1a2e,#1a1a4e);border:1px solid rgba(167,139,250,0.3);border-radius:10px;padding:8px 16px;text-decoration:none;color:#fff;font-size:13px">
+      <i class="fab fa-google-play" style="color:#34d058;font-size:18px"></i>
+      <span><span style="font-size:9px;display:block;opacity:0.7">GET IT ON</span>Google Play</span>
+    </a>
+    <a id="primeAppIosBtn" href="#" target="_blank" style="display:none;align-items:center;gap:8px;background:linear-gradient(135deg,#1a1a2e,#1a1a4e);border:1px solid rgba(167,139,250,0.3);border-radius:10px;padding:8px 16px;text-decoration:none;color:#fff;font-size:13px">
+      <i class="fab fa-apple" style="color:#ccc;font-size:20px"></i>
+      <span><span style="font-size:9px;display:block;opacity:0.7">DOWNLOAD ON THE</span>App Store</span>
+    </a>
+  </div>
+</div>
+
 <!-- SITE FOOTER -->
-<footer style="margin-top:40px;padding:20px 24px;border-top:1px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+<footer style="margin-top:20px;padding:20px 24px;border-top:1px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
   <div style="font-size:12px;color:var(--gray)">© 2025 Hospitality Careers. All rights reserved.</div>
   <div style="display:flex;gap:16px;flex-wrap:wrap">
     <a href="about.html" target="_blank" style="color:var(--gray);font-size:12px;text-decoration:none" onmouseover="this.style.color='#a78bfa'" onmouseout="this.style.color='var(--gray)'"><i class="fas fa-info-circle"></i> About</a>
