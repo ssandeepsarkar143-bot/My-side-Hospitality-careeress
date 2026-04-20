@@ -2,12 +2,12 @@
 'use strict';
 
 const LANGS = {
-  en: { name: 'EN', flag: '🇬🇧' },
-  hi: { name: 'HI', flag: '🇮🇳' },
-  bn: { name: 'BN', flag: '🟢' }
+  en: { name: 'English', short: 'EN', flag: '🇬🇧' },
+  hi: { name: 'हिन्दी', short: 'HI', flag: '🇮🇳' },
+  bn: { name: 'বাংলা', short: 'BN', flag: '🟢' }
 };
 
-let currentLang = localStorage.getItem('hc_ui_lang') || 'en';
+let currentLang = localStorage.getItem('hc_assistant_lang') || 'en';
 
 const KB = [
   {
@@ -118,7 +118,18 @@ const GREET = {
   bn: "হ্যালো! 👋 আমি **HC Assistant**!\n\nচাকরি, Prime membership, payment, resume tips সহ যেকোনো বিষয়ে জিজ্ঞেস করুন!"
 };
 
+const LANG_CONFIRM = {
+  en: "Assistant language is now set to **English**. You can also type: _set assistant language Bangla_ or _set assistant language Hindi_.",
+  hi: "Assistant language अब **हिन्दी** में set हो गई है। आप लिख सकते हैं: _set assistant language English_ या _set assistant language Bangla_।",
+  bn: "Assistant language এখন **বাংলা** set করা হয়েছে। আপনি লিখতে পারেন: _set assistant language English_ বা _set assistant language Hindi_।"
+};
+
 function getResponse(msg) {
+  const chosenLang = detectLangCommand(msg);
+  if (chosenLang) {
+    setAssistantLang(chosenLang);
+    return LANG_CONFIRM[chosenLang] || LANG_CONFIRM.en;
+  }
   const m = msg.toLowerCase();
   for (const item of KB) {
     if (item.keys && item.keys.test(msg)) {
@@ -127,6 +138,15 @@ function getResponse(msg) {
     }
   }
   return DEFAULT[currentLang] || DEFAULT.en;
+}
+
+function detectLangCommand(msg) {
+  const m = msg.toLowerCase().trim();
+  if (!/(language|lang|ভাষা|ভাষাটা|भाषा|set|change|assistant)/i.test(m)) return null;
+  if (/(bangla|bengali|বাংলা|বাঙ্গলা|bangali)/i.test(m)) return 'bn';
+  if (/(hindi|हिन्दी|हिंदी)/i.test(m)) return 'hi';
+  if (/(english|ইংরেজি|अंग्रेज़ी|angrezi)/i.test(m)) return 'en';
+  return null;
 }
 
 function formatMsg(text) {
@@ -138,16 +158,23 @@ function formatMsg(text) {
 
 const style = document.createElement('style');
 style.textContent = `
-#hc-btn{position:fixed;bottom:22px;right:22px;z-index:9999;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#d4af37,#f5d060);border:none;cursor:pointer;box-shadow:0 4px 22px rgba(212,175,55,0.55);display:flex;align-items:center;justify-content:center;transition:transform .2s,box-shadow .2s;user-select:none}
-#hc-btn:hover{transform:scale(1.12);box-shadow:0 8px 32px rgba(212,175,55,.8)}
-#hc-btn svg{width:26px;height:26px;fill:#1a1a2e;flex-shrink:0}
+#hc-btn{position:fixed;bottom:22px;right:22px;z-index:9999;width:62px;height:62px;border-radius:50%;background:radial-gradient(circle at 35% 25%,#fff8cc 0,#f5d060 30%,#d4af37 64%,#8a6a12 100%);border:1px solid rgba(255,255,255,.32);cursor:pointer;box-shadow:0 10px 34px rgba(212,175,55,0.5),inset 0 2px 12px rgba(255,255,255,.38);display:flex;align-items:center;justify-content:center;transition:transform .2s,box-shadow .2s;user-select:none;animation:hcFloat 3.2s ease-in-out infinite}
+#hc-btn::before{content:'';position:absolute;inset:-8px;border-radius:50%;border:1px solid rgba(245,208,96,.45);border-top-color:rgba(255,255,255,.85);animation:hcOrbit 4s linear infinite}
+#hc-btn::after{content:'';position:absolute;inset:-14px;border-radius:50%;background:radial-gradient(circle,rgba(212,175,55,.22),transparent 66%);animation:hcAura 2.4s ease-in-out infinite;z-index:-1}
+#hc-btn:hover{transform:translateY(-3px) scale(1.08);box-shadow:0 14px 42px rgba(212,175,55,.75),inset 0 2px 12px rgba(255,255,255,.42)}
+#hc-btn svg{width:31px;height:31px;fill:#151827;flex-shrink:0;filter:drop-shadow(0 1px 1px rgba(255,255,255,.45));animation:hcBotNod 2.8s ease-in-out infinite;position:relative;z-index:1}
 #hc-badge{position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;font-size:10px;font-weight:700;width:18px;height:18px;border-radius:50%;display:none;align-items:center;justify-content:center;animation:hcPulse 1.5s infinite}
 @keyframes hcPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
 #hc-win{position:fixed;bottom:90px;right:22px;z-index:9998;width:350px;max-width:calc(100vw - 28px);background:#0d1117;border:1px solid rgba(212,175,55,.25);border-radius:18px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.8);display:none;flex-direction:column;max-height:540px;animation:hcSlide .22s ease}
 @keyframes hcSlide{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes hcFloat{0%,100%{translate:0 0}50%{translate:0 -6px}}
+@keyframes hcOrbit{to{transform:rotate(360deg)}}
+@keyframes hcAura{0%,100%{opacity:.45;transform:scale(.9)}50%{opacity:.85;transform:scale(1.08)}}
+@keyframes hcBotNod{0%,100%{transform:rotate(0)}35%{transform:rotate(-7deg)}70%{transform:rotate(6deg)}}
 #hc-header{background:linear-gradient(135deg,rgba(212,175,55,.16),rgba(212,175,55,.05));border-bottom:1px solid rgba(212,175,55,.2);padding:12px 14px;display:flex;align-items:center;gap:9px;cursor:grab;user-select:none}
 #hc-header:active{cursor:grabbing}
-#hc-av{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#d4af37,#f5d060);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;box-shadow:0 0 12px rgba(212,175,55,.4)}
+#hc-av{width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 35% 20%,#fff5c2,#d4af37 58%,#8a6a12);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;box-shadow:0 0 16px rgba(212,175,55,.55);animation:hcAvatarGlow 2.4s ease-in-out infinite}
+@keyframes hcAvatarGlow{0%,100%{box-shadow:0 0 12px rgba(212,175,55,.35)}50%{box-shadow:0 0 24px rgba(212,175,55,.8)}}
 #hc-info{flex:1;min-width:0}
 #hc-name{font-size:13px;font-weight:700;color:#d4af37}
 #hc-status{font-size:10px;color:#22c55e;display:flex;align-items:center;gap:4px}
@@ -169,6 +196,9 @@ style.textContent = `
 #hc-quick{padding:0 10px 8px;display:flex;gap:5px;flex-wrap:wrap}
 .hc-qb{background:rgba(212,175,55,.08);border:1px solid rgba(212,175,55,.22);color:#d4af37;font-size:11px;padding:4px 10px;border-radius:18px;cursor:pointer;white-space:nowrap;transition:background .15s}
 .hc-qb:hover{background:rgba(212,175,55,.22)}
+#hc-lang-row{display:flex;gap:5px;align-items:center;padding:8px 10px 0;flex-wrap:wrap}
+.hc-lang-chip{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.62);font-size:10px;font-weight:700;padding:4px 8px;border-radius:14px;cursor:pointer}
+.hc-lang-chip.active{background:rgba(212,175,55,.18);border-color:rgba(212,175,55,.42);color:#d4af37}
 #hc-input-row{display:flex;gap:7px;padding:8px 12px 13px;border-top:1px solid rgba(255,255,255,.06)}
 #hc-input{flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:8px 13px;color:#fff;font-size:12.5px;outline:none;font-family:'Poppins',sans-serif}
 #hc-input:focus{border-color:rgba(212,175,55,.5)}
@@ -176,14 +206,14 @@ style.textContent = `
 #hc-send{width:36px;height:36px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,#d4af37,#f5d060);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s}
 #hc-send:hover{transform:scale(1.12)}
 #hc-send svg{width:14px;height:14px;fill:#1a1a2e}
-@media(max-width:400px){#hc-win{width:calc(100vw - 16px);right:8px;bottom:82px}}
+@media(max-width:400px){#hc-win{width:calc(100vw - 16px);right:8px;bottom:88px}#hc-btn{width:56px;height:56px}}
 `;
 document.head.appendChild(style);
 
 const btn = document.createElement('button');
 btn.id = 'hc-btn';
 btn.title = 'HC AI Assistant';
-btn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg><span id="hc-badge"></span>`;
+btn.innerHTML = `<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M21 9h22a5 5 0 0 1 5 5v4h2.5A5.5 5.5 0 0 1 56 23.5v17A5.5 5.5 0 0 1 50.5 46H48v4a5 5 0 0 1-5 5H21a5 5 0 0 1-5-5v-4h-2.5A5.5 5.5 0 0 1 8 40.5v-17A5.5 5.5 0 0 1 13.5 18H16v-4a5 5 0 0 1 5-5Zm3 14a6 6 0 1 0 0 12 6 6 0 0 0 0-12Zm16 0a6 6 0 1 0 0 12 6 6 0 0 0 0-12ZM23 42c2.5 4 15.5 4 18 0a2 2 0 0 0-3.4-2.1c-1.1 1.8-10.1 1.8-11.2 0A2 2 0 1 0 23 42Z"/><path d="M30 4h4v6h-4z"/></svg><span id="hc-badge"></span>`;
 
 const win = document.createElement('div');
 win.id = 'hc-win';
@@ -197,6 +227,7 @@ win.innerHTML = `
   <button id="hc-close" title="Close">✕</button>
 </div>
 <div id="hc-msgs"></div>
+<div id="hc-lang-row"></div>
 <div id="hc-quick"></div>
 <div id="hc-input-row">
   <input id="hc-input" type="text" maxlength="300"/>
@@ -209,8 +240,28 @@ document.body.appendChild(win);
 const msgsEl = document.getElementById('hc-msgs');
 const inputEl = document.getElementById('hc-input');
 const quickEl = document.getElementById('hc-quick');
+const langRowEl = document.getElementById('hc-lang-row');
 const badgeEl = document.getElementById('hc-badge');
 let opened = false;
+
+function setAssistantLang(code) {
+  if (!LANGS[code]) return;
+  currentLang = code;
+  localStorage.setItem('hc_assistant_lang', code);
+  renderQuick();
+  renderLangChips();
+  updatePlaceholder();
+}
+
+function renderLangChips() {
+  langRowEl.innerHTML = Object.entries(LANGS).map(([code, l]) => `<button class="hc-lang-chip ${code === currentLang ? 'active' : ''}" data-lang="${code}" title="${l.name}">${l.flag} ${l.short}</button>`).join('');
+  langRowEl.querySelectorAll('.hc-lang-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      setAssistantLang(chip.dataset.lang);
+      addMsg(LANG_CONFIRM[currentLang] || LANG_CONFIRM.en, 'bot');
+    });
+  });
+}
 
 function renderQuick() {
   const qs = QUICK[currentLang] || QUICK.en;
@@ -315,6 +366,7 @@ document.getElementById('hc-close').addEventListener('click', (e) => {
 document.getElementById('hc-send').addEventListener('click', () => sendMsg());
 inputEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendMsg(); });
 
+renderLangChips();
 renderQuick();
 updatePlaceholder();
 
@@ -324,11 +376,7 @@ setTimeout(() => {
 
 window.hcChat = {
   setLang: function(code) {
-    if (LANGS[code]) {
-      currentLang = code;
-      renderQuick();
-      updatePlaceholder();
-    }
+    setAssistantLang(code);
   },
   open: function() { if (win.style.display !== 'flex') btn.click(); },
   isOpen: function() { return win.style.display === 'flex'; }
