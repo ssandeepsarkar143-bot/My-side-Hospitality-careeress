@@ -31,7 +31,7 @@ A full-featured hospitality job portal with role-based authentication (Owner, Ad
 ## Firebase Config
 - Project: `hospitality-careers-e662f`
 - Auth: Email/Password + Google enabled
-- Firestore collections: `users`, `jobPosts`, `applications`, `requests`, `offers`, `upgrades`, `mpins`
+- Firestore collections: `users`, `jobPosts`, `applications`, `requests`, `offers`, `upgrades`, `mpins`, `notifications`, `feedback`
 
 ## Key Features
 - Dynamic background slideshow with hospitality images
@@ -72,6 +72,11 @@ Place your logo file as `logo.png` in the project root (also stored in `public/l
   - Added query-language support for public pages (`?lang=en`, `?lang=hi`, `?lang=bn`) while retaining the existing language switcher
   - Updated AI assistant with a professional animated floating bot logo
   - Separated assistant language from website language; assistant can be changed from chat language chips or commands such as `set assistant language Bangla`, `set assistant language Hindi`, or `set assistant language English`
+- **Profile & Feedback fixes (2026-04)**:
+  - `index.html`: New users with `profileComplete: false` now correctly redirected to `profile.html` on login
+  - `owner-feed.html`: Feedback Records panel now has "Show Publicly" toggle per feedback entry; toggling updates `isPublic` in Firestore instantly
+  - `feedback.html`: Static placeholder reviews hidden when real owner-approved public reviews exist in Firestore; up to 10 real reviews shown
+  - `owner-feed.html`: Broadcast Notification now supports "Job Seekers Only" and "Employers Only" targets (filters by `userType` field)
 - **Google auth handling (2026-04)**:
   - Added Google sign-in redirect fallback when popup sign-in is blocked or unsupported
   - Added clearer Firebase Authorized Domain error messaging for Google login/signup
