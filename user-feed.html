@@ -29,8 +29,8 @@
       <i class="fas fa-bell"></i>
       <span id="userNotifBadge" class="notif-badge" style="display:none">0</span>
     </button>
-    <button class="btn btn-sm btn-outline" onclick="window.open('help.html','_blank')" style="font-size:11px"><i class="fas fa-question-circle"></i> Help</button>
-    <button class="btn btn-sm btn-danger" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+    <button class="btn btn-sm btn-outline" onclick="window.open('help.html','_blank')" style="font-size:11px"><i class="fas fa-question-circle"></i> <span data-i18n="nav.help">Help</span></button>
+    <button class="btn btn-sm btn-danger" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> <span data-i18n="nav.logout">Logout</span></button>
   </div>
 </nav>
 
@@ -50,8 +50,8 @@
 <!-- MODE SLIDER -->
 <div style="padding:24px 24px 0">
   <div class="mode-slider">
-    <button class="mode-btn active" id="findJobBtn" onclick="switchMode('find')"><i class="fas fa-search"></i> Find Job</button>
-    <button class="mode-btn" id="hireStaffBtn" onclick="switchMode('hire')"><i class="fas fa-users"></i> Hire Staff</button>
+    <button class="mode-btn active" id="findJobBtn" onclick="switchMode('find')"><i class="fas fa-search"></i> <span data-i18n="mode.find">Find Job</span></button>
+    <button class="mode-btn" id="hireStaffBtn" onclick="switchMode('hire')"><i class="fas fa-users"></i> <span data-i18n="mode.hire">Hire Staff</span></button>
   </div>
 </div>
 
@@ -553,6 +553,31 @@ function showApplyAlert(msg) {
   el.className = 'alert alert-danger show';
 }
 
+let myUserApprovedConnects = {};
+
+async function loadMyApprovedConnects() {
+  if (!currentUser) return;
+  try {
+    const snap = await getDocs(query(collection(db, 'requests'), where('requesterId','==',currentUser.uid), where('type','==','employerConnect'), where('status','==','approved')));
+    snap.docs.forEach(d => { const r = d.data(); if (r.jobId) myUserApprovedConnects[r.jobId] = r; });
+  } catch(e) {}
+}
+
+window.requestEmployerConnect = async function(jobId, jobTitle) {
+  if (!currentUser) return;
+  try {
+    const existing = await getDocs(query(collection(db,'requests'), where('type','==','employerConnect'), where('requesterId','==',currentUser.uid), where('jobId','==',jobId)));
+    if (!existing.empty) { showApplyAlert('ইতিমধ্যে এই job এর জন্য request পাঠানো হয়েছে।'); return; }
+    await addDoc(collection(db, 'requests'), {
+      type: 'employerConnect', requesterId: currentUser.uid, requesterEmail: currentUser.email,
+      jobId, jobTitle, status: 'pending', createdAt: serverTimestamp()
+    });
+    showToast('✅ Employer Connect request পাঠানো হয়েছে! Approve হলে phone number দেখতে পাবেন।');
+  } catch(e) {
+    showApplyAlert('❌ Request পাঠানো যায়নি।');
+  }
+};
+
 async function loadMyApplications() {
   if (!currentUser) return;
   try {
@@ -560,13 +585,31 @@ async function loadMyApplications() {
     const snap = await getDocs(q);
     const tbody = document.getElementById('myApplicationsTbody');
     if (snap.empty) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--gray);padding:20px">No applications yet</td></tr>'; return; }
+    // Fetch job phones for approved connects
+    const jobPhones = {};
+    for (const jobId of Object.keys(myUserApprovedConnects)) {
+      try {
+        const js = await getDoc(doc(db, 'jobPosts', jobId));
+        if (js.exists()) jobPhones[jobId] = js.data().phone || null;
+      } catch(_) {}
+    }
     tbody.innerHTML = snap.docs.map(d => {
       const data = d.data();
+      const connectApproved = myUserApprovedConnects[data.jobId];
+      let actionCell;
+      if (connectApproved) {
+        const phone = jobPhones[data.jobId];
+        actionCell = phone
+          ? `<div style="font-size:11px;line-height:1.7"><div style="color:#22c55e;font-size:10px"><i class="fas fa-check-circle"></i> Employer Contact Approved</div><a href="tel:${phone}" style="color:var(--gold);font-weight:600"><i class="fas fa-phone" style="margin-right:3px"></i>${phone}</a></div>`
+          : `<span style="color:#22c55e;font-size:11px"><i class="fas fa-check-circle"></i> Approved</span>`;
+      } else {
+        actionCell = `<button class="btn btn-sm" style="background:rgba(212,175,55,0.15);border:1px solid rgba(212,175,55,0.3);color:var(--gold);font-size:10px" onclick="window.requestEmployerConnect('${data.jobId}','${data.jobTitle||''}')"><i class="fas fa-link"></i> Connect Employer</button>`;
+      }
       return `<tr>
         <td>${data.jobTitle || 'N/A'}</td>
         <td>${data.appliedAt?.toDate?.()?.toLocaleDateString() || 'N/A'}</td>
         <td><span class="badge badge-${data.status==='Hired'?'hired':data.status==='Rejected'?'rejected':'pending'}">${data.status}</span></td>
-        <td><span style="filter:blur(3px);color:var(--gray);font-size:11px">Upgrade to Prime</span></td>
+        <td>${actionCell}</td>
       </tr>`;
     }).join('');
   } catch(e) {}
@@ -654,6 +697,7 @@ onAuthStateChanged(auth, async (user) => {
     tagEl.textContent = data.tag || 'User';
   }
   setTimeout(() => { document.getElementById('loader').style.display = 'none'; }, 600);
+  await loadMyApprovedConnects();
   loadJobs();
   loadMyApplications();
   loadMyPosts();
@@ -725,6 +769,7 @@ async function loadAppDownloadButtons() {
 }
 </script>
 
+<script src="js/i18n.js"></script>
 <script src="js/chatbot.js"></script>
 <!-- APP DOWNLOAD SECTION -->
 <div id="appDownloadSection" style="display:none;margin:0 24px 16px;padding:14px 20px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:14px;text-align:center">

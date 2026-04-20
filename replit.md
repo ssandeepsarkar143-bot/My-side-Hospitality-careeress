@@ -1,7 +1,7 @@
 # Hospitality Careers – Job Portal
 
 ## Project Overview
-A full-featured hospitality job portal with role-based authentication (Owner, Admin, Prime, User), Firebase backend, and multi-page dashboard system.
+A full-featured hospitality job portal with role-based authentication (Owner, Admin, Prime, User), Firebase backend, multi-page dashboard, trilingual support (EN/HI/BN), AI chatbot, and smart request approval display system.
 
 ## Tech Stack
 - **Frontend**: Pure HTML5, CSS3, Vanilla JavaScript (ES Modules)
