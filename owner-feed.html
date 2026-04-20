@@ -282,6 +282,8 @@
               <option value="prime">Prime Members Only</option>
               <option value="user">Free Users Only</option>
               <option value="admin">Admins Only</option>
+              <option value="jobseeker">Job Seekers Only</option>
+              <option value="employer">Employers Only</option>
             </select>
           </div>
           <div class="form-group"><label>Message</label><textarea id="notifMessage" class="form-control" rows="3" placeholder="Enter notification message..."></textarea></div>
@@ -1414,10 +1416,14 @@ window.broadcastNotification = async function() {
     const snap = await getDocs(collection(db, 'users'));
     snap.docs.forEach(d => {
       const u = d.data();
-      if (target === 'all' || (target === 'prime' && u.role === 'Prime') || (target === 'user' && u.role === 'User') || (target === 'admin' && u.role === 'Admin')) {
-        users.push(d.id);
-      }
+      if (target === 'all') { users.push(d.id); return; }
+      if (target === 'prime' && u.role === 'Prime') { users.push(d.id); return; }
+      if (target === 'user' && u.role === 'User') { users.push(d.id); return; }
+      if (target === 'admin' && u.role === 'Admin') { users.push(d.id); return; }
+      if (target === 'jobseeker' && u.userType === 'jobseeker') { users.push(d.id); return; }
+      if (target === 'employer' && u.userType === 'employer') { users.push(d.id); return; }
     });
+    if (users.length === 0) { showToast('No matching users found for this target.', 'error'); return; }
     await Promise.all(users.map(uid => sendNotification(uid, message, 'info', true, target)));
     document.getElementById('notifMessage').value = '';
     showToast(`Notification sent to ${users.length} users!`);
