@@ -262,11 +262,20 @@ async function loadOffers(userId) {
       if (upg.newPrice) { finalAmount = upg.newPrice; }
     });
 
+    // Auto-apply claimed discount coupon (overrides offer if larger)
+    const ac = currentUserData?.activeCoupon;
+    if (ac && ac.type === 'discount' && ac.value > 0) {
+      if (ac.value > bestDiscount) {
+        bestDiscount = ac.value;
+        offerDesc = `🎟️ Coupon "${ac.code}" applied — ₹${ac.value} OFF`;
+      }
+    }
+
     if (bestDiscount > 0) {
       finalAmount = Math.max(1, 499 - bestDiscount);
       document.getElementById('originalPrice').style.display = 'block';
       document.getElementById('offerBanner').style.display = 'block';
-      document.getElementById('offerTitle').textContent = 'Special Offer Applied!';
+      document.getElementById('offerTitle').textContent = (ac && ac.type==='discount' && ac.value===bestDiscount) ? 'Coupon Applied!' : 'Special Offer Applied!';
       document.getElementById('offerDesc').textContent = offerDesc;
     }
 

@@ -23,13 +23,16 @@ A full-featured hospitality job portal with role-based authentication (Owner, Ad
 | `membership.html` | Prime membership purchase page (UPI + HC Wallet payment) |
 | `help.html` | FAQs (incl. HC Wallet & Refer & Earn) |
 
-## HC Wallet & Refer & Earn (NEW)
-- **HC Wallet**: 1 point = ₹1. Users top-up via UPI → submit UTR → owner approves in `walletTopups` section → balance auto-credited.
-- **Pay from Wallet**: On membership.html, users can pay Prime instantly from wallet (no UTR/owner approval).
-- **Refer & Earn**: Each user gets a unique `referralCode` + share link. When a referred user becomes Prime (owner approves), both parties auto-credited 10 points (₹10) and recorded in `referralRewards`.
-- **Owner Dashboard sections**: HC Wallet Top-ups (approve/reject), Wallet Records (full ledger), Refer & Earn Records (all successful referrals + stats).
-- **Firestore collections**: `walletTopups`, `walletTransactions`, `referralRewards`. User doc fields: `walletBalance`, `referralCode`, `referredBy`, `referredByCode`, `primeReferralCredited`, `referralPrimeCount`.
-- **Shared module**: `js/wallet-ui.js` (attachWallet UI, payMembershipFromWallet, maybeCreditReferral).
+## HC Wallet, Refer & Earn, Withdraw, Coupons (NEW)
+- **HC Wallet**: 1 point = ₹1. Top-up via UPI → submit UTR → owner approves in `walletTopups` → balance auto-credited.
+- **Pay from Wallet**: On membership.html, users pay Prime instantly from wallet.
+- **Withdraw to UPI**: Users withdraw ₹200+ to their UPI; wallet debited immediately. Owner sees in `walletWithdrawals` section → Mark Paid (notify) or Reject (auto-refund). Collection: `walletWithdrawals`.
+- **Refer & Earn**: Unique `referralCode` per user; on referee Prime approval, both get 10 pts. Logged in `referralRewards`.
+- **Coupons**: Owner creates coupons (discount ₹X / trial X days / 1 month free) and targets specific user, all users, normal users, all Prime, or specific Prime tier (Prime, Prime2, Prime3, … dynamically). Users get notification + see "My Coupons" card on dashboard. Discount auto-applies on Membership page; trial/freeMonth instantly upgrades to Prime. Collection: `coupons` (one doc per target user). User doc field: `activeCoupon`.
+- **Owner Dashboard sections**: HC Wallet Top-ups, Wallet Withdrawals, Wallet Records (ledger), Refer & Earn Records, Create & Send Coupons (with stats + table).
+- **Firestore collections**: `walletTopups`, `walletTransactions` (types: topup/spend/referral/withdraw/refund/adjust), `walletWithdrawals`, `referralRewards`, `coupons`.
+- **User doc fields**: `walletBalance`, `referralCode`, `referredBy`, `referredByCode`, `primeReferralCredited`, `referralPrimeCount`, `activeCoupon`.
+- **Shared module**: `js/wallet-ui.js` (attachWallet UI: balance/topup/withdraw/history + My Coupons + referral; payMembershipFromWallet, maybeCreditReferral).
 
 ## Firebase Deployment (from VS Code)
 1. `npm install -g firebase-tools`

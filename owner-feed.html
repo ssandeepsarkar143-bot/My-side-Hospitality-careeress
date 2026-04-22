@@ -79,8 +79,10 @@
       <div class="sidebar-item" onclick="showSection('resumeReqs')"><i class="fas fa-file-download"></i> Resume Requests</div>
       <div class="sidebar-item" onclick="showSection('membershipReqs')"><i class="fas fa-crown"></i> Membership Requests</div>
       <div class="sidebar-item" onclick="showSection('walletTopups')"><i class="fas fa-wallet"></i> HC Wallet Top-ups</div>
+      <div class="sidebar-item" onclick="showSection('walletWithdrawals')"><i class="fas fa-money-bill-transfer"></i> Wallet Withdrawals</div>
       <div class="sidebar-item" onclick="showSection('walletRecords')"><i class="fas fa-coins"></i> Wallet Records</div>
       <div class="sidebar-item" onclick="showSection('referralRecords')"><i class="fas fa-gift"></i> Refer & Earn Records</div>
+      <div class="sidebar-item" onclick="showSection('coupons')"><i class="fas fa-ticket"></i> Create & Send Coupons</div>
       <div class="sidebar-section">Finance</div>
       <div class="sidebar-item" onclick="showSection('discounts')"><i class="fas fa-tag"></i> Discounts & Offers</div>
       <div class="sidebar-section">Engagement</div>
@@ -236,6 +238,21 @@
         </div>
       </div>
 
+      <!-- WALLET WITHDRAWALS -->
+      <div id="sec-walletWithdrawals" class="page-section">
+        <div class="section-title"><i class="fas fa-money-bill-transfer"></i> HC Wallet Withdrawals</div>
+        <div class="stats-grid" id="walletWdStats" style="margin-bottom:16px"></div>
+        <div class="card mb-16">
+          <p style="font-size:12px;color:var(--gray);margin-bottom:0">Users withdraw HC Wallet balance (min ₹200) to their UPI. Amount is auto-deducted on request. After paying them via UPI, click <b>Mark Paid</b>. <b>Reject</b> auto-refunds points back to their wallet.</p>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>User</th><th>Email</th><th>Amount</th><th>UPI ID</th><th>Account Name</th><th>Submitted</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="walletWdBody"><tr><td colspan="8" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
       <!-- WALLET RECORDS -->
       <div id="sec-walletRecords" class="page-section">
         <div class="section-title"><i class="fas fa-coins"></i> Wallet Transaction Records</div>
@@ -247,6 +264,73 @@
           <table>
             <thead><tr><th>User UID</th><th>Type</th><th>Amount</th><th>Note</th><th>When</th></tr></thead>
             <tbody id="walletRecBody"><tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- COUPONS: CREATE & SEND -->
+      <div id="sec-coupons" class="page-section">
+        <div class="section-title"><i class="fas fa-ticket"></i> Create & Send Coupons</div>
+        <div class="stats-grid" id="couponStats" style="margin-bottom:16px"></div>
+
+        <div class="card mb-16">
+          <div class="card-title"><i class="fas fa-plus-circle"></i> Create New Coupon</div>
+          <p style="font-size:12px;color:var(--gray);margin-bottom:12px">Create a coupon and send it to one or many users. Discount coupons auto-apply on the Membership page when claimed; trial / free-month coupons instantly upgrade the user to Prime on claim. Users get a notification immediately.</p>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Coupon Type</label>
+              <select id="cpnType" class="form-control" onchange="onCpnTypeChange()">
+                <option value="discount">💸 Discount (₹ OFF on Prime Membership)</option>
+                <option value="trial">⏰ Free Prime Trial (X days)</option>
+                <option value="freeMonth">🎁 1 Month Free Prime Membership</option>
+              </select>
+            </div>
+            <div class="form-group" id="cpnValueWrap">
+              <label id="cpnValueLabel">Discount Amount (₹)</label>
+              <input type="number" id="cpnValue" class="form-control" placeholder="e.g. 100" min="1"/>
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Coupon Title (visible to user)</label>
+              <input type="text" id="cpnTitle" class="form-control" placeholder="e.g. Diwali Special — ₹100 OFF"/>
+            </div>
+            <div class="form-group">
+              <label>Expires in (days)</label>
+              <input type="number" id="cpnExpDays" class="form-control" placeholder="30" min="1" value="30"/>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Message to user (optional)</label>
+            <input type="text" id="cpnMsg" class="form-control" placeholder="A short note shown with the coupon"/>
+          </div>
+
+          <div class="form-group">
+            <label>Send To</label>
+            <select id="cpnTarget" class="form-control" onchange="onCpnTargetChange()">
+              <option value="">-- Select target --</option>
+              <option value="all_users">📢 All Users (everyone)</option>
+              <option value="normal">👤 Normal Users only (role = User)</option>
+              <option value="all_prime">👑 All Prime Members (any tier)</option>
+              <optgroup id="cpnTagGroup" label="By Prime Tier"></optgroup>
+              <option value="single_email">✉️ Specific User (by email)</option>
+            </select>
+          </div>
+          <div class="form-group" id="cpnEmailWrap" style="display:none">
+            <label>Target User Email</label>
+            <input type="email" id="cpnEmail" class="form-control" placeholder="user@example.com"/>
+          </div>
+
+          <button class="btn btn-primary" onclick="createCouponBatch()"><i class="fas fa-paper-plane"></i> Create & Send Coupon</button>
+          <div id="cpnMsgBox" class="alert mt-8"></div>
+        </div>
+
+        <div class="card-title"><i class="fas fa-list"></i> All Coupons</div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Code</th><th>Title</th><th>Type</th><th>Value</th><th>Target Email</th><th>Status</th><th>Created</th><th>Expires</th><th>Action</th></tr></thead>
+            <tbody id="couponsBody"><tr><td colspan="9" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -653,8 +737,10 @@ function loadSectionData(name) {
     case 'resumeReqs': loadRequests('resumeDownload','resumeReqsBody'); break;
     case 'membershipReqs': loadMembershipReqs(); break;
     case 'walletTopups': loadWalletTopups(); break;
+    case 'walletWithdrawals': loadWalletWithdrawals(); break;
     case 'walletRecords': loadWalletRecords(); break;
     case 'referralRecords': loadReferralRecords(); break;
+    case 'coupons': loadCouponsSection(); break;
     case 'discounts': loadOffers(); break;
     case 'manageMpin': loadAdminMpinList(); break;
     case 'notifications': loadNotifications(); break;
@@ -1408,7 +1494,8 @@ window.approveMembership = async function(reqId, userId) {
     updateDoc(doc(db, 'users', userId), {
       role: 'Prime', tag,
       membershipCount: count, membershipPurchasedAt: serverTimestamp(),
-      membershipExpiryAt: expiry
+      membershipExpiryAt: expiry,
+      ...(userData.activeCoupon ? { activeCoupon: null } : {})
     })
   ]);
   await sendNotification(userId, `🎉 Congratulations! Your Prime Membership has been approved. Your tag is "${tag}". Validity: 30 days.`, 'success');
@@ -1503,6 +1590,214 @@ window.rejectTopup = async function(id, uid) {
     loadWalletTopups();
   } catch(e) { showToast('Failed: '+e.message, 'error'); }
 };
+
+// ---------- WALLET WITHDRAWALS ----------
+async function loadWalletWithdrawals() {
+  try {
+    const snap = await getDocs(collection(db, 'walletWithdrawals'));
+    const items = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0));
+    let pendingCnt=0, pendingAmt=0, paidAmt=0, rejCnt=0;
+    items.forEach(r => {
+      if (r.status==='pending') { pendingCnt++; pendingAmt += r.amount||0; }
+      else if (r.status==='approved') paidAmt += r.amount||0;
+      else if (r.status==='rejected') rejCnt++;
+    });
+    document.getElementById('walletWdStats').innerHTML = `
+      <div class="stat-card"><div class="stat-label">Pending Withdrawals</div><div class="stat-value">${pendingCnt}</div></div>
+      <div class="stat-card"><div class="stat-label">Pending Amount</div><div class="stat-value">₹${pendingAmt}</div></div>
+      <div class="stat-card"><div class="stat-label">Total Paid Out</div><div class="stat-value">₹${paidAmt}</div></div>
+      <div class="stat-card"><div class="stat-label">Rejected</div><div class="stat-value">${rejCnt}</div></div>`;
+    const tbody = document.getElementById('walletWdBody');
+    if (!items.length) { tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--gray);padding:20px">No withdrawal requests yet</td></tr>'; return; }
+    tbody.innerHTML = items.map(r => `<tr>
+      <td>${r.name||'—'}</td>
+      <td>${r.email||'—'}</td>
+      <td><b>₹${r.amount||0}</b></td>
+      <td style="font-size:11px;color:var(--gold);font-weight:600">${r.upi||'—'}</td>
+      <td>${r.name||'—'}</td>
+      <td>${r.createdAt?.toDate?.()?.toLocaleString()||'—'}</td>
+      <td><span class="badge badge-${r.status==='approved'?'approved':r.status==='rejected'?'rejected':'pending'}">${r.status}</span></td>
+      <td>${r.status==='pending'?`
+        <button class="btn btn-sm btn-success" onclick="approveWithdrawal('${r.id}','${r.uid}',${r.amount||0},'${(r.upi||'').replace(/'/g,'')}')">Mark Paid</button>
+        <button class="btn btn-sm btn-danger" onclick="rejectWithdrawal('${r.id}','${r.uid}',${r.amount||0})">Reject (Refund)</button>
+      `:'Done'}</td>
+    </tr>`).join('');
+  } catch(e) { console.warn(e); }
+}
+
+window.approveWithdrawal = async function(id, uid, amount, upi) {
+  if (!confirm(`Confirm: You have paid ₹${amount} to ${upi}?\n\nThis marks the withdrawal as Paid. The user's wallet was already debited at request time.`)) return;
+  try {
+    await updateDoc(doc(db, 'walletWithdrawals', id), { status: 'approved', approvedBy: currentUser.uid, approvedAt: serverTimestamp() });
+    await sendNotification(uid, `✅ Your withdrawal of ₹${amount} has been paid to ${upi}. Please check your bank/UPI app.`, 'success');
+    showToast('Withdrawal marked paid');
+    loadWalletWithdrawals();
+  } catch(e) { showToast('Failed: '+e.message,'error'); }
+};
+
+window.rejectWithdrawal = async function(id, uid, amount) {
+  if (!confirm(`Reject and refund ₹${amount} back to user's wallet?`)) return;
+  try {
+    await updateDoc(doc(db, 'walletWithdrawals', id), { status: 'rejected', approvedBy: currentUser.uid, approvedAt: serverTimestamp() });
+    await updateDoc(doc(db, 'users', uid), { walletBalance: increment(amount) });
+    await addDoc(collection(db, 'walletTransactions'), {
+      uid, type: 'refund', amount,
+      note: `Withdrawal rejected — ₹${amount} refunded`, ref: id,
+      createdAt: serverTimestamp()
+    });
+    await sendNotification(uid, `❌ Your withdrawal request was rejected. ${amount} points (₹${amount}) have been refunded to your HC Wallet.`, 'danger');
+    showToast('Rejected & refunded', 'error');
+    loadWalletWithdrawals();
+  } catch(e) { showToast('Failed: '+e.message,'error'); }
+};
+
+// ---------- COUPONS ----------
+window.onCpnTypeChange = function() {
+  const t = document.getElementById('cpnType').value;
+  const lbl = document.getElementById('cpnValueLabel');
+  const wrap = document.getElementById('cpnValueWrap');
+  const val = document.getElementById('cpnValue');
+  if (t === 'discount')   { lbl.textContent = 'Discount Amount (₹)'; val.placeholder = 'e.g. 100'; wrap.style.display='block'; }
+  else if (t === 'trial') { lbl.textContent = 'Trial Duration (days)'; val.placeholder = 'e.g. 7'; wrap.style.display='block'; }
+  else                    { wrap.style.display='none'; }
+};
+window.onCpnTargetChange = function() {
+  document.getElementById('cpnEmailWrap').style.display = document.getElementById('cpnTarget').value === 'single_email' ? 'block' : 'none';
+};
+
+function genCouponCode() {
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  let s = 'HC-'; for (let i=0;i<6;i++) s += chars[Math.floor(Math.random()*chars.length)];
+  return s;
+}
+
+async function loadCouponsSection() {
+  // Populate dynamic Prime tag dropdown
+  try {
+    const usersSnap = await getDocs(collection(db, 'users'));
+    const tagSet = new Set();
+    usersSnap.forEach(d => { const t = d.data().tag; if (t && /^Prime/.test(t)) tagSet.add(t); });
+    const group = document.getElementById('cpnTagGroup');
+    const tags = Array.from(tagSet).sort((a,b) => {
+      const na = parseInt(a.replace('Prime','')) || 1;
+      const nb = parseInt(b.replace('Prime','')) || 1;
+      return na - nb;
+    });
+    group.innerHTML = tags.map(t => `<option value="tag:${t}">⭐ Only ${t} members</option>`).join('');
+  } catch {}
+
+  // Stats + table
+  try {
+    const snap = await getDocs(collection(db, 'coupons'));
+    const items = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0));
+    const total = items.length;
+    const claimed = items.filter(c => c.status==='claimed').length;
+    const available = items.filter(c => c.status==='available').length;
+    const expired = items.filter(c => c.status==='expired').length;
+    document.getElementById('couponStats').innerHTML = `
+      <div class="stat-card"><div class="stat-label">Total Coupons Sent</div><div class="stat-value">${total}</div></div>
+      <div class="stat-card"><div class="stat-label">Available</div><div class="stat-value">${available}</div></div>
+      <div class="stat-card"><div class="stat-label">Claimed</div><div class="stat-value">${claimed}</div></div>
+      <div class="stat-card"><div class="stat-label">Expired</div><div class="stat-value">${expired}</div></div>`;
+    const tbody = document.getElementById('couponsBody');
+    if (!items.length) { tbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--gray);padding:20px">No coupons created yet</td></tr>'; return; }
+    tbody.innerHTML = items.slice(0,300).map(c => {
+      const valTxt = c.type==='discount' ? `₹${c.value} OFF` : c.type==='trial' ? `${c.value} days` : '1 month';
+      const exp = c.expiresAt?.toDate?.()?.toLocaleDateString() || '—';
+      return `<tr>
+        <td style="font-family:monospace;font-weight:700;color:var(--gold)">${c.code}</td>
+        <td style="font-size:11px">${c.title||'—'}</td>
+        <td><span class="badge">${c.type}</span></td>
+        <td>${valTxt}</td>
+        <td style="font-size:11px">${c.targetEmail||'—'}</td>
+        <td><span class="badge badge-${c.status==='claimed'?'approved':c.status==='expired'?'rejected':'pending'}">${c.status}</span></td>
+        <td style="font-size:11px">${c.createdAt?.toDate?.()?.toLocaleDateString()||'—'}</td>
+        <td style="font-size:11px">${exp}</td>
+        <td>${c.status==='available'?`<button class="btn btn-sm btn-danger" onclick="deleteCoupon('${c.id}')">Cancel</button>`:'—'}</td>
+      </tr>`;
+    }).join('');
+  } catch(e) { console.warn(e); }
+}
+
+window.deleteCoupon = async function(id) {
+  if (!confirm('Cancel this coupon? User will no longer be able to claim it.')) return;
+  try { await deleteDoc(doc(db,'coupons',id)); showToast('Coupon cancelled'); loadCouponsSection(); }
+  catch(e) { showToast('Failed: '+e.message,'error'); }
+};
+
+window.createCouponBatch = async function() {
+  const type = document.getElementById('cpnType').value;
+  const valueRaw = parseInt(document.getElementById('cpnValue').value) || 0;
+  const title = (document.getElementById('cpnTitle').value || '').trim();
+  const message = (document.getElementById('cpnMsg').value || '').trim();
+  const target = document.getElementById('cpnTarget').value;
+  const expDays = parseInt(document.getElementById('cpnExpDays').value) || 30;
+  const msgBox = document.getElementById('cpnMsgBox');
+  msgBox.className = 'alert mt-8';
+
+  if (!type) return showCpnMsg('Select coupon type', 'error');
+  if (!title) return showCpnMsg('Enter a title', 'error');
+  if (!target) return showCpnMsg('Select a target audience', 'error');
+  if (type === 'discount' && valueRaw < 1) return showCpnMsg('Discount amount must be ≥ 1', 'error');
+  if (type === 'trial' && valueRaw < 1) return showCpnMsg('Trial days must be ≥ 1', 'error');
+
+  // Resolve target users
+  let users = [];
+  try {
+    const allSnap = await getDocs(collection(db, 'users'));
+    const all = allSnap.docs.map(d => ({ uid: d.id, ...d.data() }));
+    if (target === 'single_email') {
+      const email = (document.getElementById('cpnEmail').value || '').trim().toLowerCase();
+      if (!email) return showCpnMsg('Enter target email', 'error');
+      users = all.filter(u => (u.email||'').toLowerCase() === email);
+      if (!users.length) return showCpnMsg('No user found with that email', 'error');
+    } else if (target === 'all_users') {
+      users = all.filter(u => (u.email||'').toLowerCase() !== OWNER_EMAIL);
+    } else if (target === 'normal') {
+      users = all.filter(u => u.role === 'User' || (!u.role && (u.email||'').toLowerCase() !== OWNER_EMAIL));
+    } else if (target === 'all_prime') {
+      users = all.filter(u => u.role === 'Prime');
+    } else if (target.startsWith('tag:')) {
+      const tg = target.slice(4);
+      users = all.filter(u => u.tag === tg);
+    }
+  } catch(e) { return showCpnMsg('Failed to load users: '+e.message, 'error'); }
+
+  if (!users.length) return showCpnMsg('No users matched this target', 'error');
+  if (!confirm(`Send this coupon to ${users.length} user(s)?`)) return;
+
+  const expiresAt = new Date(); expiresAt.setDate(expiresAt.getDate() + expDays);
+  const value = type === 'freeMonth' ? 30 : valueRaw;
+  let ok=0, fail=0;
+  for (const u of users) {
+    try {
+      const code = genCouponCode();
+      await addDoc(collection(db, 'coupons'), {
+        code, type, value, title, message,
+        targetUid: u.uid, targetEmail: u.email || '',
+        targetGroup: target, status: 'available',
+        createdBy: currentUser.uid, createdAt: serverTimestamp(),
+        expiresAt
+      });
+      const noteText = type==='discount'
+        ? `🎟️ You received a coupon: ₹${value} OFF on Prime Membership! Title: "${title}". Open your dashboard → My Coupons → Claim.`
+        : type==='trial'
+        ? `🎁 You received a FREE ${value}-day Prime Trial coupon! Title: "${title}". Open your dashboard → My Coupons → Claim to activate instantly.`
+        : `🎁 You received a 1 Month FREE Prime Membership coupon! Title: "${title}". Open your dashboard → My Coupons → Claim to activate instantly.`;
+      await sendNotification(u.uid, noteText, 'success');
+      ok++;
+    } catch(e) { fail++; console.warn('coupon fail for',u.email,e.message); }
+  }
+  showCpnMsg(`✅ Coupon sent to ${ok} user(s)${fail?`, ${fail} failed`:''}.`, 'success');
+  document.getElementById('cpnTitle').value=''; document.getElementById('cpnMsg').value=''; document.getElementById('cpnValue').value='';
+  loadCouponsSection();
+};
+
+function showCpnMsg(text, type) {
+  const el = document.getElementById('cpnMsgBox');
+  el.textContent = text;
+  el.className = 'alert mt-8 alert-' + (type === 'success' ? 'success' : 'danger');
+}
 
 // ---------- WALLET RECORDS ----------
 async function loadWalletRecords() {
