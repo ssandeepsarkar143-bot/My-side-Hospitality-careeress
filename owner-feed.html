@@ -78,6 +78,9 @@
       <div class="sidebar-item" onclick="showSection('contactReqs')"><i class="fas fa-phone"></i> Contact Requests</div>
       <div class="sidebar-item" onclick="showSection('resumeReqs')"><i class="fas fa-file-download"></i> Resume Requests</div>
       <div class="sidebar-item" onclick="showSection('membershipReqs')"><i class="fas fa-crown"></i> Membership Requests</div>
+      <div class="sidebar-item" onclick="showSection('walletTopups')"><i class="fas fa-wallet"></i> HC Wallet Top-ups</div>
+      <div class="sidebar-item" onclick="showSection('walletRecords')"><i class="fas fa-coins"></i> Wallet Records</div>
+      <div class="sidebar-item" onclick="showSection('referralRecords')"><i class="fas fa-gift"></i> Refer & Earn Records</div>
       <div class="sidebar-section">Finance</div>
       <div class="sidebar-item" onclick="showSection('discounts')"><i class="fas fa-tag"></i> Discounts & Offers</div>
       <div class="sidebar-section">Engagement</div>
@@ -214,6 +217,51 @@
           <table>
             <thead><tr><th>User</th><th>Email</th><th>Requested On</th><th>Amount</th><th>UTR / TxnID</th><th>Status</th><th>Action</th></tr></thead>
             <tbody id="membershipReqsBody"><tr><td colspan="7" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- HC WALLET TOP-UP REQUESTS -->
+      <div id="sec-walletTopups" class="page-section">
+        <div class="section-title"><i class="fas fa-wallet"></i> HC Wallet Top-up Requests</div>
+        <div class="stats-grid" id="walletTopupStats" style="margin-bottom:16px"></div>
+        <div class="card mb-16">
+          <p style="font-size:12px;color:var(--gray);margin-bottom:0">Users add money to their HC Wallet by paying any amount via UPI to your UPI ID, then submitting the UTR. Approve here to instantly credit their wallet (1 point = ₹1).</p>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>User</th><th>Email</th><th>Amount</th><th>UTR</th><th>Submitted</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="walletTopupsBody"><tr><td colspan="7" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- WALLET RECORDS -->
+      <div id="sec-walletRecords" class="page-section">
+        <div class="section-title"><i class="fas fa-coins"></i> Wallet Transaction Records</div>
+        <div class="stats-grid" id="walletRecStats" style="margin-bottom:16px"></div>
+        <div class="card mb-16">
+          <p style="font-size:12px;color:var(--gray);margin-bottom:0">Full ledger of every wallet transaction across all users — top-ups, referral bonuses, and Prime payments made from wallet.</p>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>User UID</th><th>Type</th><th>Amount</th><th>Note</th><th>When</th></tr></thead>
+            <tbody id="walletRecBody"><tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- REFER & EARN RECORDS -->
+      <div id="sec-referralRecords" class="page-section">
+        <div class="section-title"><i class="fas fa-gift"></i> Refer & Earn Records</div>
+        <div class="stats-grid" id="referralStats" style="margin-bottom:16px"></div>
+        <div class="card mb-16">
+          <p style="font-size:12px;color:var(--gray);margin-bottom:0">Tracks every successful referral. Both the referrer and the new Prime user receive 10 HC Wallet points (₹10) automatically when the referral becomes Prime.</p>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Referrer UID</th><th>Referred Email</th><th>Points</th><th>When</th></tr></thead>
+            <tbody id="referralRecBody"><tr><td colspan="4" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -547,7 +595,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, doc, getDoc, getDocs, collection, query, where, updateDoc, deleteDoc, addDoc, serverTimestamp, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, getDoc, getDocs, collection, query, where, updateDoc, deleteDoc, addDoc, serverTimestamp, setDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCuAuc9qhA7D_-Lqt-69pbG81KTIiDFVpg",
@@ -604,6 +652,9 @@ function loadSectionData(name) {
     case 'contactReqs': loadRequests('contact','contactReqsBody'); break;
     case 'resumeReqs': loadRequests('resumeDownload','resumeReqsBody'); break;
     case 'membershipReqs': loadMembershipReqs(); break;
+    case 'walletTopups': loadWalletTopups(); break;
+    case 'walletRecords': loadWalletRecords(); break;
+    case 'referralRecords': loadReferralRecords(); break;
     case 'discounts': loadOffers(); break;
     case 'manageMpin': loadAdminMpinList(); break;
     case 'notifications': loadNotifications(); break;
@@ -1349,7 +1400,8 @@ async function loadMembershipReqs() {
 window.approveMembership = async function(reqId, userId) {
   const expiry = new Date(); expiry.setDate(expiry.getDate() + 30);
   const userSnap = await getDoc(doc(db, 'users', userId));
-  const count = (userSnap.data()?.membershipCount || 0) + 1;
+  const userData = userSnap.data() || {};
+  const count = (userData.membershipCount || 0) + 1;
   const tag = `Prime${count > 1 ? count : ''}`;
   await Promise.all([
     updateDoc(doc(db, 'requests', reqId), { status: 'approved', approvedBy: currentUser.uid, approvedAt: serverTimestamp() }),
@@ -1360,9 +1412,146 @@ window.approveMembership = async function(reqId, userId) {
     })
   ]);
   await sendNotification(userId, `🎉 Congratulations! Your Prime Membership has been approved. Your tag is "${tag}". Validity: 30 days.`, 'success');
+
+  // Credit referral reward (10 pts to referrer + 10 pts to new prime user)
+  await maybeCreditReferralOwner(userId, userData);
+
   showToast('Membership approved! User upgraded to Prime.');
   loadMembershipReqs();
 };
+
+async function maybeCreditReferralOwner(userId, userData) {
+  if (!userData?.referredBy || userData?.primeReferralCredited) return;
+  const referrerUid = userData.referredBy;
+  if (referrerUid === userId) return;
+  try {
+    await updateDoc(doc(db, 'users', userId), {
+      walletBalance: increment(10),
+      primeReferralCredited: true
+    });
+    await addDoc(collection(db, 'walletTransactions'), {
+      uid: userId, type: 'referral', amount: 10,
+      note: 'Welcome bonus for joining via referral', createdAt: serverTimestamp()
+    });
+    await updateDoc(doc(db, 'users', referrerUid), {
+      walletBalance: increment(10), referralPrimeCount: increment(1)
+    });
+    await addDoc(collection(db, 'walletTransactions'), {
+      uid: referrerUid, type: 'referral', amount: 10,
+      note: `Your referral ${userData.email||userId} bought Prime`,
+      ref: userId, createdAt: serverTimestamp()
+    });
+    await addDoc(collection(db, 'referralRewards'), {
+      referrerUid, referredUid: userId,
+      referredEmail: userData.email || '',
+      points: 10, createdAt: serverTimestamp()
+    });
+    await sendNotification(referrerUid, `🎁 You earned 10 HC Wallet points (₹10)! Your referral became a Prime member.`, 'success');
+  } catch(e) { console.warn('Referral credit failed', e.message); }
+}
+
+// ---------- HC WALLET TOP-UPS ----------
+async function loadWalletTopups() {
+  try {
+    const snap = await getDocs(collection(db, 'walletTopups'));
+    const tbody = document.getElementById('walletTopupsBody');
+    const items = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0));
+    let pendingCount=0, totalApproved=0, pendingAmt=0;
+    items.forEach(r => { if (r.status==='pending'){pendingCount++; pendingAmt+=r.amount||0;} if (r.status==='approved') totalApproved+=r.amount||0; });
+    document.getElementById('walletTopupStats').innerHTML = `
+      <div class="stat-card"><div class="stat-label">Pending Requests</div><div class="stat-value">${pendingCount}</div></div>
+      <div class="stat-card"><div class="stat-label">Pending Amount</div><div class="stat-value">₹${pendingAmt}</div></div>
+      <div class="stat-card"><div class="stat-label">Total Approved (₹)</div><div class="stat-value">₹${totalApproved}</div></div>
+      <div class="stat-card"><div class="stat-label">Total Records</div><div class="stat-value">${items.length}</div></div>`;
+    if (!items.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--gray);padding:20px">No top-up requests yet</td></tr>'; return; }
+    tbody.innerHTML = items.map(r => `<tr>
+      <td>${r.name||'—'}</td>
+      <td>${r.email||'—'}</td>
+      <td><b>₹${r.amount||0}</b></td>
+      <td style="font-size:11px;color:var(--gold);font-weight:600">${r.utr||'—'}</td>
+      <td>${r.createdAt?.toDate?.()?.toLocaleString()||'—'}</td>
+      <td><span class="badge badge-${r.status==='approved'?'approved':r.status==='rejected'?'rejected':'pending'}">${r.status}</span></td>
+      <td>${r.status==='pending'?`
+        <button class="btn btn-sm btn-success" onclick="approveTopup('${r.id}','${r.uid}',${r.amount||0})">Approve & Credit</button>
+        <button class="btn btn-sm btn-danger" onclick="rejectTopup('${r.id}','${r.uid}')">Reject</button>
+      `:'Done'}</td>
+    </tr>`).join('');
+  } catch(e) { console.warn(e); }
+}
+
+window.approveTopup = async function(id, uid, amount) {
+  if (!uid || !amount) return showToast('Invalid top-up data', 'error');
+  try {
+    await updateDoc(doc(db, 'walletTopups', id), { status: 'approved', approvedBy: currentUser.uid, approvedAt: serverTimestamp() });
+    await updateDoc(doc(db, 'users', uid), { walletBalance: increment(amount) });
+    await addDoc(collection(db, 'walletTransactions'), {
+      uid, type: 'topup', amount,
+      note: `Wallet top-up approved (₹${amount})`,
+      ref: id, createdAt: serverTimestamp()
+    });
+    await sendNotification(uid, `💰 Your HC Wallet has been credited with ${amount} points (₹${amount}).`, 'success');
+    showToast('Top-up approved & wallet credited!');
+    loadWalletTopups();
+  } catch(e) { showToast('Failed: '+e.message, 'error'); }
+};
+
+window.rejectTopup = async function(id, uid) {
+  try {
+    await updateDoc(doc(db, 'walletTopups', id), { status: 'rejected', approvedBy: currentUser.uid, approvedAt: serverTimestamp() });
+    if (uid) await sendNotification(uid, `❌ Your wallet top-up request was rejected. Please contact support if this is a mistake.`, 'danger');
+    showToast('Top-up rejected', 'error');
+    loadWalletTopups();
+  } catch(e) { showToast('Failed: '+e.message, 'error'); }
+};
+
+// ---------- WALLET RECORDS ----------
+async function loadWalletRecords() {
+  try {
+    const snap = await getDocs(collection(db, 'walletTransactions'));
+    const items = snap.docs.map(d => d.data()).sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0));
+    let totalIn=0, totalOut=0, refTotal=0, topupTotal=0;
+    items.forEach(t => { if (t.amount>0) totalIn+=t.amount; else totalOut += Math.abs(t.amount); if (t.type==='referral'&&t.amount>0) refTotal+=t.amount; if (t.type==='topup') topupTotal+=t.amount; });
+    document.getElementById('walletRecStats').innerHTML = `
+      <div class="stat-card"><div class="stat-label">Total Credit (pts)</div><div class="stat-value">${totalIn}</div></div>
+      <div class="stat-card"><div class="stat-label">Total Spent (pts)</div><div class="stat-value">${totalOut}</div></div>
+      <div class="stat-card"><div class="stat-label">Top-ups (pts)</div><div class="stat-value">${topupTotal}</div></div>
+      <div class="stat-card"><div class="stat-label">Referral Bonuses</div><div class="stat-value">${refTotal}</div></div>`;
+    const tbody = document.getElementById('walletRecBody');
+    if (!items.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">No wallet transactions yet</td></tr>'; return; }
+    tbody.innerHTML = items.slice(0, 200).map(t => `<tr>
+      <td style="font-size:10px;font-family:monospace">${t.uid||'—'}</td>
+      <td><span class="badge">${t.type||'—'}</span></td>
+      <td style="color:${t.amount>0?'#22c55e':'#ef4444'};font-weight:700">${t.amount>0?'+':''}${t.amount} pts</td>
+      <td style="font-size:11px">${t.note||''}</td>
+      <td style="font-size:11px">${t.createdAt?.toDate?.()?.toLocaleString()||'—'}</td>
+    </tr>`).join('');
+  } catch(e) { console.warn(e); }
+}
+
+// ---------- REFERRAL RECORDS ----------
+async function loadReferralRecords() {
+  try {
+    const snap = await getDocs(collection(db, 'referralRewards'));
+    const items = snap.docs.map(d => d.data()).sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0));
+    const totalRewards = items.length;
+    const totalPoints = items.reduce((s,r) => s + (r.points||0)*2, 0); // both sides
+    // Count unique referrers
+    const uniqRef = new Set(items.map(r => r.referrerUid)).size;
+    document.getElementById('referralStats').innerHTML = `
+      <div class="stat-card"><div class="stat-label">Total Successful Referrals</div><div class="stat-value">${totalRewards}</div></div>
+      <div class="stat-card"><div class="stat-label">Unique Referrers</div><div class="stat-value">${uniqRef}</div></div>
+      <div class="stat-card"><div class="stat-label">Points Distributed</div><div class="stat-value">${totalPoints}</div></div>
+      <div class="stat-card"><div class="stat-label">₹ Equivalent</div><div class="stat-value">₹${totalPoints}</div></div>`;
+    const tbody = document.getElementById('referralRecBody');
+    if (!items.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--gray);padding:20px">No referrals yet</td></tr>'; return; }
+    tbody.innerHTML = items.map(r => `<tr>
+      <td style="font-size:10px;font-family:monospace">${r.referrerUid||'—'}</td>
+      <td>${r.referredEmail||r.referredUid||'—'}</td>
+      <td><b style="color:var(--gold)">${(r.points||0)*2} pts (10 each)</b></td>
+      <td style="font-size:11px">${r.createdAt?.toDate?.()?.toLocaleString()||'—'}</td>
+    </tr>`).join('');
+  } catch(e) { console.warn(e); }
+}
 
 // DISCOUNTS
 window.toggleDiscountFields = function() {

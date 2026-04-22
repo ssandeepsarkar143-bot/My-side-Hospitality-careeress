@@ -1,0 +1,81 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() { return request.auth != null; }
+    function isOwner() { return isSignedIn() && request.auth.token.email == 'ssandeepsarkar143@gmail.com'; }
+    function isSelf(uid) { return isSignedIn() && request.auth.uid == uid; }
+
+    // USERS — read self + minimal public list, write self (owner full)
+    match /users/{uid} {
+      allow read: if isSignedIn();
+      allow create: if isSelf(uid);
+      allow update: if isSelf(uid) || isOwner();
+      allow delete: if isOwner();
+    }
+
+    // SITE SETTINGS — public read, owner write
+    match /siteContent/{doc} {
+      allow read: if true;
+      allow write: if isOwner();
+    }
+
+    // JOBS — public read, signed-in create, owner full
+    match /jobPosts/{id} {
+      allow read: if true;
+      allow create, update: if isSignedIn();
+      allow delete: if isOwner();
+    }
+
+    // APPLICATIONS — owner full, user manage own
+    match /applications/{id} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update, delete: if isOwner() || (isSignedIn() && resource.data.userId == request.auth.uid);
+    }
+
+    // REQUESTS (membership / connect / contact / resume / wallet-pay)
+    match /requests/{id} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isOwner() || isSignedIn();
+      allow delete: if isOwner();
+    }
+
+    // WALLET TOP-UPS — user creates own, owner approves
+    match /walletTopups/{id} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if isOwner();
+    }
+
+    // WALLET TRANSACTIONS — append-only ledger
+    match /walletTransactions/{id} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update, delete: if isOwner();
+    }
+
+    // REFERRAL REWARDS log
+    match /referralRewards/{id} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update, delete: if isOwner();
+    }
+
+    // OFFERS / UPGRADES / MPINS / NOTIFICATIONS / FEEDBACK
+    match /offers/{id}     { allow read: if true; allow write: if isOwner(); }
+    match /upgrades/{id}   { allow read: if isSignedIn(); allow write: if isOwner(); }
+    match /mpins/{id}      { allow read, write: if isOwner(); }
+    match /notifications/{id} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update, delete: if isOwner() || (isSignedIn() && resource.data.userId == request.auth.uid);
+    }
+    match /feedback/{id} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if isOwner();
+    }
+  }
+}

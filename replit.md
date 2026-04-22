@@ -20,7 +20,23 @@ A full-featured hospitality job portal with role-based authentication (Owner, Ad
 | `owner-feed.html` | Owner full-control dashboard (MPIN protected) |
 | `admin-feed.html` | Admin dashboard (MPIN protected, authority-based) |
 | `job-post-from.html` | Job posting form |
-| `membership.html` | Prime membership purchase page |
+| `membership.html` | Prime membership purchase page (UPI + HC Wallet payment) |
+| `help.html` | FAQs (incl. HC Wallet & Refer & Earn) |
+
+## HC Wallet & Refer & Earn (NEW)
+- **HC Wallet**: 1 point = ₹1. Users top-up via UPI → submit UTR → owner approves in `walletTopups` section → balance auto-credited.
+- **Pay from Wallet**: On membership.html, users can pay Prime instantly from wallet (no UTR/owner approval).
+- **Refer & Earn**: Each user gets a unique `referralCode` + share link. When a referred user becomes Prime (owner approves), both parties auto-credited 10 points (₹10) and recorded in `referralRewards`.
+- **Owner Dashboard sections**: HC Wallet Top-ups (approve/reject), Wallet Records (full ledger), Refer & Earn Records (all successful referrals + stats).
+- **Firestore collections**: `walletTopups`, `walletTransactions`, `referralRewards`. User doc fields: `walletBalance`, `referralCode`, `referredBy`, `referredByCode`, `primeReferralCredited`, `referralPrimeCount`.
+- **Shared module**: `js/wallet-ui.js` (attachWallet UI, payMembershipFromWallet, maybeCreditReferral).
+
+## Firebase Deployment (from VS Code)
+1. `npm install -g firebase-tools`
+2. `firebase login`
+3. `firebase functions:secrets:set GEMINI_API_KEY` (paste key)
+4. `firebase deploy` — deploys hosting + functions + rules.
+5. Gemini AI calls (`/api/chat`, `/api/resume`) auto-route to Cloud Functions in production via `firebase.json` rewrites.
 
 ## User Roles & Redirects
 - **Owner** (ssandeepsarkar143@gmail.com) → `owner-feed.html`

@@ -93,6 +93,21 @@ body { background: linear-gradient(135deg, #0d0d2b, #1a1a4e); }
       </div>
     </div>
 
+    <!-- HC WALLET PAY -->
+    <div class="payment-card" id="walletPayCard" onclick="payFromWallet()" style="margin-top:16px;cursor:pointer">
+      <div style="display:flex;align-items:center;gap:14px;justify-content:space-between;flex-wrap:wrap">
+        <div style="text-align:left">
+          <div style="font-weight:800;color:#a78bfa"><i class="fas fa-wallet"></i> Pay from HC Wallet</div>
+          <div style="font-size:12px;color:var(--gray);margin-top:4px">Use your wallet balance — instant Prime activation, no UTR needed.</div>
+          <div style="font-size:12px;color:#a78bfa;margin-top:6px">Wallet Balance: <b id="walletBalanceText">— pts</b></div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:18px;font-weight:800;color:#fff" id="walletAmount">₹499</div>
+          <div style="font-size:11px;color:var(--gray);margin-top:4px" id="walletPayHint">Click to pay</div>
+        </div>
+      </div>
+    </div>
+
     <div style="margin-top:16px;font-size:12px;color:var(--gray);text-align:center">
       <i class="fas fa-shield-alt" style="color:#a78bfa"></i> Secure payment via UPI · <span class="upi-id-display">ssandeepsarkar143-2@okhdfcbank</span>
     </div>
@@ -155,7 +170,8 @@ body { background: linear-gradient(135deg, #0d0d2b, #1a1a4e); }
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, doc, getDoc, collection, getDocs, addDoc, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, getDoc, collection, getDocs, addDoc, query, where, serverTimestamp, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { payMembershipFromWallet } from './js/wallet-ui.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyCuAuc9qhA7D_-Lqt-69pbG81KTIiDFVpg",
@@ -260,6 +276,7 @@ async function loadOffers(userId) {
     document.getElementById('upiAmount').textContent = `₹${finalAmount}`;
     document.getElementById('qrAmount').textContent = `₹${finalAmount}`;
     document.getElementById('qrModalAmount').textContent = `₹${finalAmount}`;
+    const wAmtEl = document.getElementById('walletAmount'); if (wAmtEl) wAmtEl.textContent = `₹${finalAmount}`;
     if (extraDays > 0) document.getElementById('validityNote').textContent = `Valid for ${validityDays} days (Offer Extended!)`;
     if (currentUserData) document.getElementById('memberCount').textContent = (currentUserData.membershipCount || 0) + 1;
   } catch(e) {}
@@ -331,6 +348,29 @@ document.getElementById('qrBlurOverlay').addEventListener('click', function() {
   this.style.display = 'none';
 });
 
+window.payFromWallet = async function() {
+  if (!currentUser) { alert('Please login first.'); return; }
+  if (!currentUserData) { alert('Loading user data, please retry in a second.'); return; }
+  const bal = currentUserData.walletBalance || 0;
+  if (bal < finalAmount) {
+    showToast(`Insufficient wallet balance. You have ${bal} pts, need ${finalAmount}. Please add money first.`, 'error');
+    return;
+  }
+  if (!confirm(`Pay ₹${finalAmount} from your HC Wallet for ${validityDays}-day Prime Membership?\n\nBalance after payment: ${bal - finalAmount} pts`)) return;
+  const card = document.getElementById('walletPayCard');
+  card.style.opacity = '0.6'; card.style.pointerEvents = 'none';
+  document.getElementById('walletPayHint').textContent = 'Processing…';
+  try {
+    const result = await payMembershipFromWallet({ db, user: currentUser, userData: currentUserData, amount: finalAmount, validityDays });
+    showToast(`🎉 Prime activated! Tag: ${result.tag}. Redirecting…`);
+    setTimeout(() => { window.location.href = 'prime-feed.html'; }, 2000);
+  } catch (e) {
+    card.style.opacity = '1'; card.style.pointerEvents = 'auto';
+    document.getElementById('walletPayHint').textContent = 'Click to pay';
+    showToast('Failed: ' + e.message, 'error');
+  }
+};
+
 window.downloadQR = function() {
   const canvas = document.querySelector('#qrCode canvas');
   if (!canvas) return;
@@ -354,6 +394,10 @@ onAuthStateChanged(auth, async (user) => {
   try {
     const snap = await getDoc(doc(db, 'users', user.uid));
     if (snap.exists()) currentUserData = snap.data();
+    // Update wallet balance UI
+    const wb = currentUserData?.walletBalance || 0;
+    const wbEl = document.getElementById('walletBalanceText');
+    if (wbEl) wbEl.textContent = `${wb} pts (₹${wb})`;
     // Load base price and UPI settings
     try {
       const settingsSnap = await getDoc(doc(db, 'siteContent', 'settings'));

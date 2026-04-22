@@ -70,6 +70,8 @@ body { background: var(--dark); color: #fff; font-family: 'Poppins', sans-serif;
     <div class="help-cat-btn" onclick="filterByCategory('ai')"><i class="fas fa-robot"></i><span>AI Assistant</span></div>
     <div class="help-cat-btn" onclick="filterByCategory('resume')"><i class="fas fa-file-alt"></i><span>Resume Builder</span></div>
     <div class="help-cat-btn" onclick="filterByCategory('app')"><i class="fas fa-mobile-alt"></i><span>Install App</span></div>
+    <div class="help-cat-btn" onclick="filterByCategory('wallet')"><i class="fas fa-wallet"></i><span>HC Wallet</span></div>
+    <div class="help-cat-btn" onclick="filterByCategory('referral')"><i class="fas fa-gift"></i><span>Refer & Earn</span></div>
   </div>
 
   <!-- STATIC FAQs -->
@@ -275,6 +277,88 @@ body { background: var(--dark); color: #fff; font-family: 'Poppins', sans-serif;
       </div>
       <div class="faq-answer">
         Updates are automatic. Whenever we publish a new version, your installed app picks it up the next time you open it (refresh once to see changes). No need to visit any store.
+      </div>
+    </div>
+
+    <!-- HC WALLET FAQs -->
+    <div class="faq-item" data-category="wallet">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span><i class="fas fa-wallet" style="color:var(--gold);margin-right:8px"></i> What is HC Wallet?</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        HC Wallet is your personal in-app balance on Hospitality Careers. <b>1 point = ₹1.</b> You can use the balance to pay for Prime Membership instantly without going through UPI again. Your wallet appears on your User / Prime dashboard.
+      </div>
+    </div>
+
+    <div class="faq-item" data-category="wallet">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span><i class="fas fa-plus-circle" style="color:var(--gold);margin-right:8px"></i> How do I add money to my HC Wallet?</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        On your dashboard, click <b>"Add Money"</b> in the HC Wallet card. Enter the amount, click <b>"Open UPI App"</b> and pay to our UPI ID. After payment, paste the UTR / Transaction ID and click <b>"Submit for Approval"</b>. Owner will verify and credit your wallet (usually within 24 hours). You'll get a notification when approved.
+      </div>
+    </div>
+
+    <div class="faq-item" data-category="wallet">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span><i class="fas fa-crown" style="color:var(--gold);margin-right:8px"></i> How do I pay for Prime using HC Wallet?</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        On the Membership page, you'll see a <b>"Pay from HC Wallet"</b> option below the regular UPI / QR options. If your wallet balance is enough, click it — your account will be upgraded to Prime <b>instantly</b>, no UTR or waiting needed. The amount is deducted from your wallet and shown in your transaction history.
+      </div>
+    </div>
+
+    <div class="faq-item" data-category="wallet">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span><i class="fas fa-list" style="color:var(--gold);margin-right:8px"></i> Where can I see my wallet transactions?</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        On your dashboard, in the HC Wallet card, click the <b>"History"</b> button. You'll see every credit (top-up, referral bonus) and debit (Prime payment) with the date and note.
+      </div>
+    </div>
+
+    <!-- REFER & EARN FAQs -->
+    <div class="faq-item" data-category="referral">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span><i class="fas fa-gift" style="color:var(--gold);margin-right:8px"></i> How does Refer & Earn work?</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        Share your unique referral link from the <b>Refer & Earn</b> card on your dashboard. When someone signs up using your link <b>and</b> becomes a Prime member, both of you automatically get <b>10 HC Wallet points (₹10)</b>. The reward is credited the moment the referred user's Prime payment is approved.
+      </div>
+    </div>
+
+    <div class="faq-item" data-category="referral">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span><i class="fas fa-share-alt" style="color:var(--gold);margin-right:8px"></i> How do I share my referral link?</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        Open your dashboard → <b>Refer & Earn</b> card → click the link to copy, or use <b>Share</b> to send through WhatsApp, SMS, email, or any social app. Anyone who signs up using that link is permanently linked to your referral.
+      </div>
+    </div>
+
+    <div class="faq-item" data-category="referral">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span><i class="fas fa-chart-bar" style="color:var(--gold);margin-right:8px"></i> Where can I see how many people I referred?</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        On your dashboard, the <b>Refer & Earn</b> card shows <b>Total Referred</b> (everyone who signed up via your link) and <b>Prime Conversions</b> (those who became paying Prime members and triggered your bonus).
+      </div>
+    </div>
+
+    <div class="faq-item" data-category="referral">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span><i class="fas fa-clock" style="color:var(--gold);margin-right:8px"></i> When do I get my referral reward?</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        The 10-point reward is credited <b>automatically</b> as soon as your referred user's Prime payment is approved by the owner — no claim or request needed. You'll get a notification, and the points will reflect in your wallet immediately.
       </div>
     </div>
 
