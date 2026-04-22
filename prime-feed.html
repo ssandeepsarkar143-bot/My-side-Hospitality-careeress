@@ -76,7 +76,17 @@ body { background: linear-gradient(135deg, #0d0d2b, #1a1a4e); }
     </div>
   </div>
 
-  <!-- AI RESUME BUILDER CTA (Prime exclusive look) -->
+  <!-- MY RESUMES (Prime members) -->
+  <div id="myResumesSection" style="display:none;margin-bottom:18px;padding:16px 18px;background:rgba(255,255,255,0.03);border:1px solid rgba(167,139,250,0.3);border-radius:14px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <i class="fas fa-folder-open" style="color:#a78bfa"></i>
+      <div style="font-weight:800;font-size:14px;flex:1">My Resumes <span id="myResumesCount" style="font-size:11px;color:var(--gray);font-weight:500"></span></div>
+      <a href="resume-builder.html" target="_blank" style="color:#a78bfa;font-size:11px;text-decoration:none;font-weight:700">+ New</a>
+    </div>
+    <div id="myResumesList"></div>
+  </div>
+
+  <!-- HOSPITALITY CAREERS RESUME STUDIO CTA (Prime exclusive look) -->
   <a href="resume-builder.html" target="_blank" style="display:flex;align-items:center;gap:14px;margin-bottom:20px;padding:18px 22px;background:linear-gradient(135deg,rgba(167,139,250,0.18),rgba(108,99,255,0.06));border:1px solid rgba(167,139,250,0.45);border-radius:16px;text-decoration:none;color:#fff;box-shadow:0 8px 28px rgba(108,99,255,0.18)">
     <div style="width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#a78bfa,#6c63ff);display:flex;align-items:center;justify-content:center;flex-shrink:0">
       <i class="fas fa-file-alt" style="font-size:26px;color:#fff"></i>
@@ -764,6 +774,11 @@ onAuthStateChanged(auth, async (user) => {
   loadMembershipDetails();
   checkPrimeNotifBadge();
   loadPrimeAppButtons();
+  document.body.classList.add('prime');
+  window.__FIREBASE_CFG__ = firebaseConfig;
+  if (window.loadMyResumes) {
+    try { await window.loadMyResumes(user.uid, db, { collection, query, where, getDocs }); } catch(_) {}
+  }
 });
 
 document.querySelectorAll('.modal-overlay').forEach(el => {
@@ -826,6 +841,7 @@ async function loadPrimeAppButtons() {
 }
 </script>
 
+<script src="js/my-resumes.js"></script>
 <script src="js/i18n.js"></script>
 <script src="js/chatbot.js"></script>
 <!-- APP DOWNLOAD SECTION -->
