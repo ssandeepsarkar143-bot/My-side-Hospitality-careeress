@@ -1,4 +1,4 @@
-const CACHE = 'hc-shell-v4';
+const CACHE = 'hc-shell-v5';
 const SHELL = ['/', '/logo.png', '/css/styles.css', '/offline.html', '/manifest.webmanifest'];
 
 self.addEventListener('install', (e) => {

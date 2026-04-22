@@ -55,7 +55,7 @@ body { background: var(--dark); color: #fff; font-family: 'Poppins', sans-serif;
           <div class="contact-icon"><i class="fas fa-envelope"></i></div>
           <div>
             <div style="font-size:12px;color:var(--gray);margin-bottom:4px">Email Address</div>
-            <div id="contactEmail" style="font-weight:600;font-size:14px;color:var(--gray);font-style:italic">Email not set yet</div>
+            <a id="contactEmail" href="mailto:help.hospitalitycareers@outlook.com" style="font-weight:600;font-size:14px;color:var(--gold);text-decoration:none;word-break:break-all">help.hospitalitycareers@outlook.com</a>
             <div style="font-size:11px;color:var(--gray);margin-top:2px">Response within 24 hours</div>
           </div>
         </div>
@@ -63,7 +63,7 @@ body { background: var(--dark); color: #fff; font-family: 'Poppins', sans-serif;
           <div class="contact-icon"><i class="fas fa-phone"></i></div>
           <div>
             <div style="font-size:12px;color:var(--gray);margin-bottom:4px">Phone / WhatsApp</div>
-            <div id="contactPhone" style="font-weight:600;font-size:14px;color:var(--gray);font-style:italic">Phone not set yet</div>
+            <a id="contactPhone" href="tel:+918972829764" style="font-weight:600;font-size:14px;color:var(--gold);text-decoration:none">+91 8972829764</a>
             <div style="font-size:11px;color:var(--gray);margin-top:2px">Mon–Sat, 9 AM – 7 PM</div>
           </div>
         </div>
@@ -71,7 +71,7 @@ body { background: var(--dark); color: #fff; font-family: 'Poppins', sans-serif;
           <div class="contact-icon"><i class="fas fa-map-marker-alt"></i></div>
           <div>
             <div style="font-size:12px;color:var(--gray);margin-bottom:4px">Office Address</div>
-            <div id="contactAddress" style="font-weight:600;font-size:14px;line-height:1.6;color:var(--gray);font-style:italic">Address not set yet</div>
+            <div id="contactAddress" style="font-weight:600;font-size:14px;line-height:1.6">West Bengal, India</div>
           </div>
         </div>
         <div class="contact-info-item">
@@ -174,19 +174,19 @@ try {
     const phoneEl = document.getElementById('contactPhone');
     const addrEl = document.getElementById('contactAddress');
     if (s.contactEmail && s.contactEmail.trim()) {
-      emailEl.textContent = s.contactEmail;
-      emailEl.style.cssText = 'font-weight:600;font-size:14px';
+      emailEl.textContent = s.contactEmail.trim();
+      emailEl.setAttribute('href', 'mailto:' + s.contactEmail.trim());
     }
     if (s.contactPhone && s.contactPhone.trim()) {
-      phoneEl.textContent = s.contactPhone;
-      phoneEl.style.cssText = 'font-weight:600;font-size:14px';
+      const ph = s.contactPhone.trim();
+      phoneEl.textContent = ph;
+      phoneEl.setAttribute('href', 'tel:' + ph.replace(/[^\d+]/g,''));
     }
     if (s.address && s.address.trim()) {
-      addrEl.innerHTML = s.address.replace(/\n/g,'<br/>');
-      addrEl.style.cssText = 'font-weight:600;font-size:14px;line-height:1.6';
+      addrEl.innerHTML = s.address.trim().replace(/\n/g,'<br/>');
     }
   }
-} catch(e) {}
+} catch(e) { console.error('Contact load:', e); }
 
 document.getElementById('contactForm').addEventListener('submit', async (e) => {
   e.preventDefault();
