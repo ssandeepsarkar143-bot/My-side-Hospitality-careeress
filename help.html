@@ -72,6 +72,7 @@ body { background: var(--dark); color: #fff; font-family: 'Poppins', sans-serif;
     <div class="help-cat-btn" onclick="filterByCategory('app')"><i class="fas fa-mobile-alt"></i><span>Install App</span></div>
     <div class="help-cat-btn" onclick="filterByCategory('wallet')"><i class="fas fa-wallet"></i><span>HC Wallet</span></div>
     <div class="help-cat-btn" onclick="filterByCategory('referral')"><i class="fas fa-gift"></i><span>Refer & Earn</span></div>
+    <div class="help-cat-btn" onclick="filterByCategory('coupon')"><i class="fas fa-ticket"></i><span>Coupons</span></div>
   </div>
 
   <!-- STATIC FAQs -->
@@ -317,7 +318,63 @@ body { background: var(--dark); color: #fff; font-family: 'Poppins', sans-serif;
         <i class="fas fa-chevron-down"></i>
       </div>
       <div class="faq-answer">
-        On your dashboard, in the HC Wallet card, click the <b>"History"</b> button. You'll see every credit (top-up, referral bonus) and debit (Prime payment) with the date and note.
+        On your dashboard, in the HC Wallet card, click the <b>"History"</b> button. You'll see every credit (top-up, referral bonus) and debit (Prime payment, withdrawal) with the date and note.
+      </div>
+    </div>
+
+    <div class="faq-item" data-category="wallet">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span><i class="fas fa-money-bill-transfer" style="color:var(--gold);margin-right:8px"></i> How do I withdraw my HC Wallet balance to UPI?</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        On your dashboard, click <b>"Withdraw"</b> in the HC Wallet card. Enter the amount (<b>minimum ₹200</b>), your UPI ID, and account holder name. Submit. Your wallet is debited immediately and the owner pays you via UPI within 24 hours. You'll get a notification once paid. <b>If your request is rejected for any reason, the points are auto-refunded back to your wallet.</b>
+      </div>
+    </div>
+
+    <!-- COUPON FAQs -->
+    <div class="faq-item" data-category="coupon">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span><i class="fas fa-ticket" style="color:var(--gold);margin-right:8px"></i> What are HC Coupons?</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        Coupons are special rewards sent by the owner. There are three types:
+        <ul style="margin:8px 0 0 18px">
+          <li><b>Discount Coupon</b> — gives ₹X off your next Prime Membership purchase.</li>
+          <li><b>Free Trial Coupon</b> — gives free Prime Membership for X days.</li>
+          <li><b>1 Month Free Coupon</b> — gives a full free month of Prime Membership.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="faq-item" data-category="coupon">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span><i class="fas fa-bell" style="color:var(--gold);margin-right:8px"></i> How do I know I received a coupon?</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        You'll receive a <b>notification</b> the moment a coupon is sent to you. Open your dashboard — you'll see a new <b>"My Coupons"</b> card with the coupon details and a <b>Claim</b> button.
+      </div>
+    </div>
+
+    <div class="faq-item" data-category="coupon">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span><i class="fas fa-check" style="color:var(--gold);margin-right:8px"></i> How do I claim and use a coupon?</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        Click <b>"Claim"</b> on the coupon. <br>• <b>Discount coupons</b> are saved to your account and <b>auto-applied</b> the next time you open the Membership page — you'll see the discounted price ready to pay.<br>• <b>Trial / Free Month coupons</b> activate Prime Membership <b>instantly</b> for the given days, no payment needed.
+      </div>
+    </div>
+
+    <div class="faq-item" data-category="coupon">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span><i class="fas fa-clock" style="color:var(--gold);margin-right:8px"></i> Do coupons expire?</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        Yes, every coupon shows its expiry date on the card. After expiry, the coupon is auto-disabled and cannot be claimed. Claim early to avoid losing it.
       </div>
     </div>
 
