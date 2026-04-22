@@ -70,6 +70,13 @@ service cloud.firestore {
       allow update, delete: if isOwner();
     }
 
+    // ENQUIRIES — user creates own, owner reads/replies/resolves
+    match /enquiries/{id} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if isOwner();
+    }
+
     // COUPONS — owner creates per-user, user claims own
     match /coupons/{id} {
       allow read: if isSignedIn();
