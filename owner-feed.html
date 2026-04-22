@@ -83,6 +83,7 @@
       <div class="sidebar-section">Engagement</div>
       <div class="sidebar-item" onclick="showSection('notifications')"><i class="fas fa-bell"></i> Notifications</div>
       <div class="sidebar-item" onclick="showSection('feedbackRecords')"><i class="fas fa-star"></i> Feedback Records</div>
+      <div class="sidebar-item" onclick="showSection('resumeRecords')"><i class="fas fa-file-alt"></i> AI Resume Records</div>
       <div class="sidebar-section">Site Content</div>
       <div class="sidebar-item" onclick="showSection('siteSettings')"><i class="fas fa-cog"></i> Edit Site Content</div>
       <div class="sidebar-section">Settings</div>
@@ -309,6 +310,18 @@
           <table>
             <thead><tr><th>Name</th><th>Email</th><th>Rating</th><th>Message</th><th>Date</th><th>Show Publicly</th></tr></thead>
             <tbody id="feedbackBody"><tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- AI RESUME RECORDS -->
+      <div id="sec-resumeRecords" class="page-section">
+        <div class="section-title"><i class="fas fa-file-alt"></i> AI Resume Builder Records</div>
+        <p style="font-size:12px;color:var(--gray);margin-bottom:12px"><i class="fas fa-info-circle"></i> AI Resume Builder ব্যবহার করে যারা resume তৈরি করেছে তাদের সম্পূর্ণ তথ্য এখানে আছে।</p>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Name</th><th>Job Title</th><th>Email</th><th>Phone</th><th>Experience</th><th>Skills</th><th>Date</th><th>Action</th></tr></thead>
+            <tbody id="resumeRecordsBody"><tr><td colspan="8" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -595,6 +608,7 @@ function loadSectionData(name) {
     case 'manageMpin': loadAdminMpinList(); break;
     case 'notifications': loadNotifications(); break;
     case 'feedbackRecords': loadFeedbackRecords(); break;
+    case 'resumeRecords': loadResumeRecords(); break;
     case 'siteSettings': loadSiteSettings(); break;
   }
 }
@@ -1460,6 +1474,46 @@ async function loadFeedbackRecords() {
     }).join('');
   } catch(e) {}
 }
+
+// AI RESUME RECORDS
+async function loadResumeRecords() {
+  try {
+    const snap = await getDocs(query(collection(db, 'aiResumes')));
+    const tbody = document.getElementById('resumeRecordsBody');
+    if (snap.empty) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--gray);padding:20px">এখনো কেউ AI Resume তৈরি করেনি।</td></tr>'; return; }
+    const rows = snap.docs.sort((a,b) => (b.data().createdAt?.toDate?.()?.getTime()||0) - (a.data().createdAt?.toDate?.()?.getTime()||0));
+    tbody.innerHTML = rows.map(d => {
+      const r = d.data();
+      const exp = (r.experience||'').slice(0,80) + ((r.experience||'').length>80?'...':'');
+      const skl = (r.skills||'').slice(0,60) + ((r.skills||'').length>60?'...':'');
+      return `<tr>
+        <td><strong>${r.name||'N/A'}</strong></td>
+        <td>${r.jobTitle||'N/A'}</td>
+        <td style="font-size:11px"><a href="mailto:${r.email||''}" style="color:#a78bfa">${r.email||'-'}</a></td>
+        <td style="font-size:11px"><a href="tel:${r.phone||''}" style="color:#a78bfa">${r.phone||'-'}</a></td>
+        <td style="font-size:11px;max-width:200px">${exp||'-'}</td>
+        <td style="font-size:11px;max-width:160px">${skl||'-'}</td>
+        <td style="font-size:11px">${r.createdAt?.toDate?.()?.toLocaleString()||'N/A'}</td>
+        <td><button class="btn btn-sm btn-info" onclick='viewResumeDetails(${JSON.stringify(JSON.stringify(r))})'><i class="fas fa-eye"></i></button></td>
+      </tr>`;
+    }).join('');
+  } catch(e) { console.error('loadResumeRecords:', e); }
+}
+
+window.viewResumeDetails = function(jsonStr) {
+  const r = JSON.parse(jsonStr);
+  const html = `
+    <div style="font-family:inherit;line-height:1.7">
+      <h3 style="color:var(--gold);margin-bottom:8px">${r.name||''} — ${r.jobTitle||''}</h3>
+      <div style="color:var(--gray);font-size:12px;margin-bottom:14px">${r.email||''} · ${r.phone||''} · ${r.location||''}</div>
+      <div style="margin-bottom:10px"><strong>Experience:</strong><br/>${(r.experience||'-').replace(/\n/g,'<br/>')}</div>
+      <div style="margin-bottom:10px"><strong>Skills:</strong><br/>${r.skills||'-'}</div>
+      <div style="margin-bottom:10px"><strong>Education:</strong><br/>${r.education||'-'}</div>
+      <div style="margin-top:14px;padding:12px;background:rgba(212,175,55,0.06);border-radius:8px;white-space:pre-wrap;font-size:12px">${r.aiResume||'(AI text not stored)'}</div>
+    </div>`;
+  const w = window.open('', '_blank', 'width=720,height=820');
+  w.document.write(`<title>${r.name||''} — Resume Details</title><body style="font-family:Arial;background:#0e0e1a;color:#fff;padding:24px">${html}</body>`);
+};
 
 window.toggleFeedbackPublic = async function(docId, show) {
   try {

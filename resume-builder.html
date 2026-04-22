@@ -227,6 +227,10 @@ async function generateResume() {
     lastProfile = data.profile;
     renderPreview();
     document.getElementById('rb-download-row').style.display = 'flex';
+    // Save record to Firestore for owner dashboard tracking
+    if (window.saveResumeRecord) {
+      try { await window.saveResumeRecord(profile, data.resume); } catch(_) {}
+    }
   } catch (e) {
     errBox.textContent = '❌ ' + (e.message || 'Failed to generate. Try again.');
     errBox.style.display = 'block';
@@ -329,6 +333,33 @@ function downloadPDF() {
   const safe = (p.fullName || 'resume').replace(/[^a-z0-9]+/gi, '_');
   doc.save(`${safe}_Resume.pdf`);
 }
+</script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+const app = initializeApp({ apiKey:"AIzaSyCuAuc9qhA7D_-Lqt-69pbG81KTIiDFVpg", authDomain:"hospitality-careers-e662f.firebaseapp.com", projectId:"hospitality-careers-e662f", storageBucket:"hospitality-careers-e662f.firebasestorage.app", messagingSenderId:"45029895717", appId:"1:45029895717:web:f54f86f608b98751cad9cc" });
+const db = getFirestore(app);
+try { await signInAnonymously(getAuth(app)); } catch(_) {}
+window.saveResumeRecord = async function(profile, ai) {
+  try {
+    const expText = (profile.experience||[]).map(j => `${j.title||''} @ ${j.company||''} (${j.period||''}): ${j.description||''}`).join('\n');
+    const eduText = (profile.education||[]).map(e => `${e.degree||''} — ${e.institution||''} (${e.period||''})`).join('\n');
+    const aiText = `SUMMARY:\n${ai.summary||''}\n\nSKILLS:\n${(ai.skills||[]).join(', ')}\n\nEXPERIENCE:\n${(ai.experience||[]).map(j=>`${j.title} @ ${j.company} (${j.period})\n - ${(j.bullets||[]).join('\n - ')}`).join('\n\n')}`;
+    await addDoc(collection(db, 'aiResumes'), {
+      name: profile.fullName || '',
+      jobTitle: profile.jobTitle || '',
+      email: profile.email || '',
+      phone: profile.phone || '',
+      location: profile.city || '',
+      experience: expText,
+      skills: (profile.skills||[]).join(', '),
+      education: eduText,
+      aiResume: aiText,
+      createdAt: serverTimestamp()
+    });
+  } catch(e) { console.error('saveResumeRecord:', e); }
+};
 </script>
 <script src="js/pwa-install.js"></script>
 <script src="js/chatbot.js"></script>
