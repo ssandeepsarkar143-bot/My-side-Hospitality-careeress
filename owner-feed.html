@@ -723,10 +723,24 @@ async function loadRevenue() {
     const approvedResume = reqs.filter(r => r.type === 'resumeDownload' && r.status === 'approved').length;
     const approvedContact = reqs.filter(r => r.type === 'contact' && r.status === 'approved').length;
 
+    // Resumes built via Resume Studio
+    let resumesBuilt = [];
+    try { const rs = await getDocs(collection(db, 'aiResumes')); resumesBuilt = rs.docs.map(d => ({ id:d.id, ...d.data() })); } catch(_) {}
+    const totalResumes = resumesBuilt.length;
+    const resumesWithPhoto = resumesBuilt.filter(r => r.photo && r.photo.length > 50).length;
+
+    // Feedback / ratings
+    let feedbacks = [];
+    try { const fb = await getDocs(collection(db, 'feedback')); feedbacks = fb.docs.map(d => ({ id:d.id, ...d.data() })); } catch(_) {}
+    const totalFeedback = feedbacks.length;
+    const ratedFeedback = feedbacks.filter(f => typeof f.rating === 'number' && f.rating > 0);
+    const avgRating = ratedFeedback.length ? (ratedFeedback.reduce((s,f) => s + f.rating, 0) / ratedFeedback.length) : 0;
+    const ratingPct = Math.round((avgRating / 5) * 100);
+
     const totalRevenue = primeUsers * 499;
 
     // Store raw data for detail modals
-    revenueRawData = { users, apps, jobs, reqs };
+    revenueRawData = { users, apps, jobs, reqs, resumesBuilt, feedbacks, avgRating };
 
     document.getElementById('revenueStats').innerHTML = `
       ${statCard('fa-users','Total Users', totalUsers,'All registered users','totalUsers')}
@@ -741,7 +755,9 @@ async function loadRevenue() {
       ${statCard('fa-clock','Pending Candidates', pendingCount,'Awaiting review','pendingCount')}
       ${statCard('fa-link','Connect Approved', approvedConnect,'Employer connections','approvedConnect')}
       ${statCard('fa-file-download','Resume Approved', approvedResume,'Resume downloads','approvedResume')}
-      ${statCard('fa-phone','Contact Approved', approvedContact,'Contact reveals','approvedContact')}`;
+      ${statCard('fa-phone','Contact Approved', approvedContact,'Contact reveals','approvedContact')}
+      ${statCard('fa-file-alt','Resumes Built', totalResumes, `${resumesWithPhoto} with photo · click for list`,'resumesBuilt')}
+      ${statCard('fa-star','Total Feedback', totalFeedback, ratedFeedback.length?`${ratingPct}% avg rating (${avgRating.toFixed(1)}/5)`:'No ratings yet','feedbacks')}`;
 
     // Average stats
     const days = 30;
@@ -773,7 +789,8 @@ window.showRevenueDetail = async function(key) {
     totalUsers:'All Registered Users', normalUsers:'Normal (Free) Users', primeUsers:'Prime Members',
     admins:'Admins', revenue:'Revenue Breakdown', totalApps:'All Applications',
     liveJobs:'Live Job Posts', hiredCount:'Hired Candidates', pendingCount:'Pending Candidates',
-    approvedConnect:'Approved Employer Connections', approvedResume:'Approved Resume Downloads', approvedContact:'Approved Contacts'
+    approvedConnect:'Approved Employer Connections', approvedResume:'Approved Resume Downloads', approvedContact:'Approved Contacts',
+    resumesBuilt:'Resumes Built (Resume Studio)', feedbacks:'User Feedback & Ratings'
   };
   document.getElementById('revenueDetailTitle').innerHTML = `<i class="fas fa-chart-bar"></i> ${titles[key]||key}`;
   const d = revenueRawData;
@@ -833,6 +850,58 @@ window.showRevenueDetail = async function(key) {
         <td>${r.candidateName||r.jobTitle||'N/A'}</td>
         <td>${r.approvedAt?.toDate?.()?.toLocaleDateString()||'N/A'}</td>
       </tr>`).join('')||'<tr><td colspan="3" style="text-align:center;color:var(--gray)">No records</td></tr>'}</tbody></table></div>`;
+  } else if (key === 'resumesBuilt') {
+    const list = (d.resumesBuilt||[]).slice().sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0));
+    const withPhoto = list.filter(r => r.photo && r.photo.length > 50).length;
+    html = `<div style="margin-bottom:14px;display:flex;gap:14px;flex-wrap:wrap">
+        <div style="background:rgba(212,175,55,0.1);border:1px solid rgba(212,175,55,0.3);padding:10px 14px;border-radius:10px"><div style="font-size:11px;color:var(--gray)">Total</div><div style="font-size:20px;font-weight:800;color:var(--gold)">${list.length}</div></div>
+        <div style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);padding:10px 14px;border-radius:10px"><div style="font-size:11px;color:var(--gray)">With Photo</div><div style="font-size:20px;font-weight:800;color:#22c55e">${withPhoto}</div></div>
+        <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);padding:10px 14px;border-radius:10px"><div style="font-size:11px;color:var(--gray)">Without Photo</div><div style="font-size:20px;font-weight:800">${list.length - withPhoto}</div></div>
+      </div>
+      <div class="table-wrapper" style="margin:0"><table>
+      <thead><tr><th>Photo</th><th>Name</th><th>Job Title</th><th>Email / Phone</th><th>Location</th><th>Date</th></tr></thead>
+      <tbody>${list.map(r=>`<tr>
+        <td>${r.photo ? `<img src="${r.photo}" style="width:36px;height:36px;border-radius:6px;object-fit:cover">` : '<i class="fas fa-user-circle" style="color:var(--gray);font-size:32px"></i>'}</td>
+        <td>${(r.name||'N/A').replace(/[<>]/g,'')}</td>
+        <td>${(r.jobTitle||'N/A').replace(/[<>]/g,'')}</td>
+        <td>${(r.email||'').replace(/[<>]/g,'')}<br/><span style="font-size:11px;color:var(--gray)">${(r.phone||'').replace(/[<>]/g,'')}</span></td>
+        <td>${(r.location||'N/A').replace(/[<>]/g,'')}</td>
+        <td>${r.createdAt?.toDate?.()?.toLocaleDateString()||'N/A'}</td>
+      </tr>`).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--gray)">No resumes built yet</td></tr>'}</tbody></table></div>`;
+  } else if (key === 'feedbacks') {
+    const list = (d.feedbacks||[]).slice().sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0));
+    const rated = list.filter(f => typeof f.rating === 'number' && f.rating > 0);
+    const avg = rated.length ? (rated.reduce((s,f)=>s+f.rating,0)/rated.length) : 0;
+    const pct = Math.round((avg/5)*100);
+    const dist = [5,4,3,2,1].map(star => ({ star, count: rated.filter(f => f.rating === star).length }));
+    html = `<div style="margin-bottom:14px;display:flex;gap:14px;flex-wrap:wrap;align-items:center">
+        <div style="background:rgba(212,175,55,0.1);border:1px solid rgba(212,175,55,0.3);padding:12px 18px;border-radius:10px;text-align:center">
+          <div style="font-size:11px;color:var(--gray)">Avg Rating</div>
+          <div style="font-size:24px;font-weight:800;color:var(--gold)">${avg.toFixed(1)}/5</div>
+          <div style="color:var(--gold);font-size:14px">${'★'.repeat(Math.round(avg))}${'☆'.repeat(5-Math.round(avg))}</div>
+          <div style="font-size:11px;color:var(--gold-dark);font-weight:700">${pct}%</div>
+        </div>
+        <div style="flex:1;min-width:200px">
+          ${dist.map(r => `<div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:4px">
+            <span style="width:30px">${r.star}★</span>
+            <div style="flex:1;height:8px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden"><div style="width:${rated.length?Math.round((r.count/rated.length)*100):0}%;height:100%;background:var(--gold)"></div></div>
+            <span style="width:30px;text-align:right;color:var(--gray)">${r.count}</span>
+          </div>`).join('')}
+        </div>
+        <div style="background:rgba(255,255,255,0.04);padding:10px 14px;border-radius:10px;text-align:center">
+          <div style="font-size:11px;color:var(--gray)">Total Feedback</div>
+          <div style="font-size:22px;font-weight:800">${list.length}</div>
+        </div>
+      </div>
+      <div class="table-wrapper" style="margin:0"><table>
+        <thead><tr><th>Name</th><th>Rating</th><th>Message</th><th>Public</th><th>Date</th></tr></thead>
+        <tbody>${list.map(f=>`<tr>
+          <td>${(f.name||f.userName||'Anonymous').replace(/[<>]/g,'')}</td>
+          <td><span style="color:var(--gold)">${'★'.repeat(f.rating||0)}${'☆'.repeat(5-(f.rating||0))}</span></td>
+          <td style="max-width:240px;white-space:normal">${(f.message||f.feedback||'').replace(/[<>]/g,'').slice(0,180)}</td>
+          <td>${f.isPublic ? '<span class="badge badge-approved">Public</span>' : '<span class="badge badge-pending">Private</span>'}</td>
+          <td>${f.createdAt?.toDate?.()?.toLocaleDateString()||'N/A'}</td>
+        </tr>`).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--gray)">No feedback yet</td></tr>'}</tbody></table></div>`;
   } else {
     html = '<div style="text-align:center;color:var(--gray);padding:30px">No detailed data available.</div>';
   }
@@ -1734,9 +1803,9 @@ window.saveSiteSettings = async function() {
     story1: document.getElementById('ss_story1').value,
     story2: document.getElementById('ss_story2').value,
     story3: document.getElementById('ss_story3').value,
-    contactEmail: document.getElementById('ss_contactEmail').value,
-    contactPhone: document.getElementById('ss_contactPhone').value,
-    address: document.getElementById('ss_address').value,
+    contactEmail: document.getElementById('ss_contactEmail').value.trim(),
+    contactPhone: document.getElementById('ss_contactPhone').value.trim(),
+    address: document.getElementById('ss_address').value.trim(),
     faq1q: document.getElementById('ss_faq1q').value,
     faq1a: document.getElementById('ss_faq1a').value,
     faq2q: document.getElementById('ss_faq2q').value,
@@ -1754,8 +1823,10 @@ window.saveSiteSettings = async function() {
   };
   try {
     await setDoc(doc(db, 'siteContent', 'settings'), data, { merge: true });
-    msg.textContent = '✅ Site settings saved successfully!'; msg.className = 'alert alert-success show';
-    showToast('Site settings সফলভাবে save হয়েছে!');
+    const summary = `✅ Saved! Contact = ${data.contactEmail || '(default)'} · ${data.contactPhone || '(default)'} · ${data.address ? data.address.split('\n')[0] : '(default)'}`;
+    msg.innerHTML = summary + ' &nbsp; <a href="contact.html" target="_blank" style="color:var(--gold);text-decoration:underline;font-weight:700">Open Contact Page →</a> <span style="font-size:11px;color:var(--gray);margin-left:8px">(if old value still shows, hard-refresh: Ctrl+Shift+R)</span>';
+    msg.className = 'alert alert-success show';
+    showToast('সফলভাবে save হয়েছে! Contact page open করে দেখুন।');
   } catch(e) {
     msg.textContent = '❌ Failed to save: ' + e.message; msg.className = 'alert alert-danger show';
   }

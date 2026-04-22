@@ -51,7 +51,7 @@ app.get('/sw.js', (req, res) => {
 });
 app.get('/offline.html', (req, res) => res.sendFile(path.join(rootDir, 'offline.html')));
 
-function callGemini(contents, systemInstruction, opts = {}) {
+function callGeminiModel(model, contents, systemInstruction, opts = {}) {
   return new Promise((resolve, reject) => {
     if (!GEMINI_API_KEY) return reject(new Error('GEMINI_API_KEY missing'));
     const generationConfig = {
@@ -66,7 +66,7 @@ function callGemini(contents, systemInstruction, opts = {}) {
     });
     const req = https.request({
       hostname: 'generativelanguage.googleapis.com',
-      path: `/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+      path: `/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) }
     }, (r) => {
@@ -75,7 +75,11 @@ function callGemini(contents, systemInstruction, opts = {}) {
       r.on('end', () => {
         try {
           const j = JSON.parse(data);
-          if (j.error) return reject(new Error(j.error.message || 'Gemini error'));
+          if (j.error) {
+            const err = new Error(j.error.message || 'Gemini error');
+            err.code = j.error.code || r.statusCode;
+            return reject(err);
+          }
           const text = j.candidates?.[0]?.content?.parts?.[0]?.text || '';
           resolve(text);
         } catch (e) { reject(e); }
@@ -84,6 +88,64 @@ function callGemini(contents, systemInstruction, opts = {}) {
     req.on('error', reject);
     req.write(body); req.end();
   });
+}
+
+async function callGemini(contents, systemInstruction, opts = {}) {
+  const fallbacks = [GEMINI_MODEL, 'gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.0-flash'];
+  const tried = new Set();
+  let lastErr = null;
+  for (const m of fallbacks) {
+    if (!m || tried.has(m)) continue;
+    tried.add(m);
+    try {
+      return await callGeminiModel(m, contents, systemInstruction, opts);
+    } catch (e) {
+      lastErr = e;
+      const msg = String(e.message || '');
+      const isQuota = e.code === 429 || /quota|rate.?limit|exceeded/i.test(msg);
+      const isNotFound = e.code === 404 || /not.?found|unsupported|invalid/i.test(msg);
+      if (!isQuota && !isNotFound) throw e;
+      console.warn(`Model ${m} failed (${isQuota ? 'quota' : 'unavailable'}), trying next…`);
+    }
+  }
+  throw lastErr || new Error('All Gemini models unavailable');
+}
+
+// Local fallback resume builder — used when AI quota is exhausted.
+function buildFallbackResume(d) {
+  const role = d.jobTitle || 'Hospitality Professional';
+  const yrs = d.yearsExperience || '2+';
+  const city = d.city ? ` based in ${d.city}` : '';
+  const summary = `Dedicated ${role}${city} with ${yrs} years of hands-on hospitality experience. Known for warm guest interaction, attention to detail, and reliable team collaboration. Proven ability to maintain service standards in fast-paced hotel and F&B environments while consistently exceeding guest expectations.`;
+  const baseSkills = ['Guest Relations', 'Customer Service', 'Communication', 'Teamwork', 'Hospitality Standards', 'Problem Solving', 'Time Management', 'Attention to Detail', 'Multitasking', 'Hygiene & Safety'];
+  const userSkills = (d.skills || '').split(/[,\n;]+/).map(s => s.trim()).filter(Boolean);
+  const skills = Array.from(new Set([...userSkills, ...baseSkills])).slice(0, 12);
+  const expRaw = (d.experience || '').split(/\n{2,}|\n/).map(s => s.trim()).filter(Boolean);
+  const experience = expRaw.length ? expRaw.slice(0, 4).map(line => ({
+    title: role, company: line.split(/[@,–-]/)[1]?.trim() || 'Hospitality Establishment',
+    period: 'Recent', bullets: [
+      `Delivered consistent, high-quality service while handling guest queries and requests promptly.`,
+      `Coordinated with team members to maintain smooth daily operations and uphold service standards.`,
+      `Adhered to hygiene, safety, and brand-quality protocols at all times.`
+    ]
+  })) : [{
+    title: role, company: 'Hospitality Establishment', period: `${yrs} years`,
+    bullets: [
+      `Delivered warm, attentive service to guests, maintaining high satisfaction scores.`,
+      `Collaborated with cross-functional teams to ensure smooth daily operations.`,
+      `Followed all hygiene, safety, and brand-quality standards consistently.`
+    ]
+  }];
+  const eduRaw = (d.education || '').split(/\n+/).map(s => s.trim()).filter(Boolean);
+  const education = eduRaw.length ? eduRaw.map(line => ({
+    degree: line.split(/[—–-]/)[0]?.trim() || 'Diploma',
+    institution: line.split(/[—–-]/)[1]?.trim() || 'Hospitality Institute',
+    period: 'Completed'
+  })) : [{ degree: 'Diploma in Hospitality / Hotel Management', institution: 'Hospitality Institute', period: 'Completed' }];
+  const certifications = (d.certifications || '').split(/[,\n;]+/).map(s => s.trim()).filter(Boolean);
+  const languages = (d.languages || 'English, Hindi').split(/[,\n;]+/).map(s => s.trim()).filter(Boolean);
+  const hobbies = (d.hobbies || '').split(/[,\n;]+/).map(s => s.trim()).filter(Boolean);
+  return { summary, skills, experience, education, certifications, languages, hobbies };
 }
 
 const ASSISTANT_SYSTEM = `You are "HC Assistant", the official AI helper for Hospitality Careers — an Indian hospitality job portal (hotels, resorts, restaurants, F&B, kitchen, front office, housekeeping, spa).
@@ -137,6 +199,8 @@ app.post('/api/resume', async (req, res) => {
       hobbies: safe(profile.hobbies, 200)
     };
     if (!data.fullName || !data.jobTitle) return res.status(400).json({ error: 'fullName and jobTitle required' });
+    // Echo photo back to client (kept out of `data` for size safety)
+    const photo = typeof profile.photo === 'string' && profile.photo.startsWith('data:image/') ? profile.photo : '';
     const prompt = `Build a polished, ATS-friendly hospitality-industry resume in JSON for the candidate below.
 Return ONLY valid JSON (no markdown fences) with this exact shape:
 {
@@ -151,19 +215,35 @@ Return ONLY valid JSON (no markdown fences) with this exact shape:
 Candidate raw data:
 ${JSON.stringify(data, null, 2)}
 Rules: keep bullets action-oriented & quantified where possible; reflect hospitality (hotels, F&B, front office, housekeeping, etc.); if a field is empty, infer reasonable defaults from job title; max 4 experience entries.`;
-    const text = await callGemini([{ role: 'user', parts: [{ text: prompt }] }],
-      'You are a professional CV writer for the hospitality industry. Output ONLY raw JSON. No markdown, no commentary, no code fences.',
-      { temperature: 0.6, maxOutputTokens: 2500, responseMimeType: 'application/json' });
-    let cleaned = text.replace(/^[\s\S]*?(\{)/, '$1').replace(/```/g, '').trim();
-    const lastBrace = cleaned.lastIndexOf('}');
-    if (lastBrace > 0) cleaned = cleaned.slice(0, lastBrace + 1);
-    let parsed;
-    try { parsed = JSON.parse(cleaned); }
-    catch (err) {
-      console.error('JSON parse failed, raw:', text.slice(0, 300));
-      throw new Error('AI returned malformed JSON, please retry');
+    let parsed = null;
+    let usedFallback = false;
+    try {
+      const text = await callGemini([{ role: 'user', parts: [{ text: prompt }] }],
+        'You are a professional CV writer for the hospitality industry. Output ONLY raw JSON. No markdown, no commentary, no code fences.',
+        { temperature: 0.6, maxOutputTokens: 2500, responseMimeType: 'application/json' });
+      let cleaned = text.replace(/^[\s\S]*?(\{)/, '$1').replace(/```/g, '').trim();
+      const lastBrace = cleaned.lastIndexOf('}');
+      if (lastBrace > 0) cleaned = cleaned.slice(0, lastBrace + 1);
+      try { parsed = JSON.parse(cleaned); }
+      catch (err) {
+        console.error('JSON parse failed, using fallback. Raw:', text.slice(0, 200));
+        parsed = buildFallbackResume(data);
+        usedFallback = true;
+      }
+    } catch (genErr) {
+      const msg = String(genErr.message || '');
+      const isQuota = /quota|rate.?limit|exceeded|429/i.test(msg);
+      console.warn('Gemini failed, building local resume:', msg.slice(0, 120));
+      parsed = buildFallbackResume(data);
+      usedFallback = true;
+      // Surface a friendly notice but still return a usable resume
+      return res.json({ profile: { ...data, photo }, resume: parsed, fallback: true,
+        notice: isQuota
+          ? 'Our smart writer is busy right now (daily limit reached). We built your resume with our built-in template — fully editable & downloadable.'
+          : 'Built using our built-in template. You can still download and edit it freely.'
+      });
     }
-    res.json({ profile: data, resume: parsed });
+    res.json({ profile: { ...data, photo }, resume: parsed, fallback: usedFallback });
   } catch (e) {
     console.error('resume error', e.message);
     res.status(500).json({ error: 'Resume generation failed', detail: e.message });
