@@ -73,22 +73,25 @@
       <div class="sidebar-item" onclick="window.open('job-post-from.html','_self')"><i class="fas fa-plus-circle"></i> Add Job (Live)</div>
       <div class="sidebar-section">Candidate</div>
       <div class="sidebar-item" onclick="showSection('candidates')"><i class="fas fa-user-graduate"></i> Candidate List</div>
-      <div class="sidebar-section">Requests</div>
+      <div class="sidebar-section">Requests & Approvals</div>
       <div class="sidebar-item" onclick="showSection('connectReqs')"><i class="fas fa-link"></i> Connect Employer</div>
       <div class="sidebar-item" onclick="showSection('contactReqs')"><i class="fas fa-phone"></i> Contact Requests</div>
       <div class="sidebar-item" onclick="showSection('resumeReqs')"><i class="fas fa-file-download"></i> Resume Requests</div>
       <div class="sidebar-item" onclick="showSection('membershipReqs')"><i class="fas fa-crown"></i> Membership Requests</div>
+      <div class="sidebar-section">Wallet & Payments</div>
       <div class="sidebar-item" onclick="showSection('walletTopups')"><i class="fas fa-wallet"></i> HC Wallet Top-ups</div>
       <div class="sidebar-item" onclick="showSection('walletWithdrawals')"><i class="fas fa-money-bill-transfer"></i> Wallet Withdrawals</div>
       <div class="sidebar-item" onclick="showSection('walletRecords')"><i class="fas fa-coins"></i> Wallet Records</div>
+      <div class="sidebar-section">Marketing & Promotions</div>
       <div class="sidebar-item" onclick="showSection('referralRecords')"><i class="fas fa-gift"></i> Refer & Earn Records</div>
       <div class="sidebar-item" onclick="showSection('coupons')"><i class="fas fa-ticket"></i> Create & Send Coupons</div>
-      <div class="sidebar-section">Finance</div>
       <div class="sidebar-item" onclick="showSection('discounts')"><i class="fas fa-tag"></i> Discounts & Offers</div>
-      <div class="sidebar-section">Engagement</div>
-      <div class="sidebar-item" onclick="showSection('notifications')"><i class="fas fa-bell"></i> Notifications</div>
+      <div class="sidebar-section">Support & Records</div>
+      <div class="sidebar-item" onclick="showSection('enquiries')"><i class="fas fa-comments"></i> Enquiries</div>
       <div class="sidebar-item" onclick="showSection('feedbackRecords')"><i class="fas fa-star"></i> Feedback Records</div>
       <div class="sidebar-item" onclick="showSection('resumeRecords')"><i class="fas fa-file-alt"></i> AI Resume Records</div>
+      <div class="sidebar-section">Engagement</div>
+      <div class="sidebar-item" onclick="showSection('notifications')"><i class="fas fa-bell"></i> Notifications</div>
       <div class="sidebar-section">Site Content</div>
       <div class="sidebar-item" onclick="showSection('siteSettings')"><i class="fas fa-cog"></i> Edit Site Content</div>
       <div class="sidebar-section">Settings</div>
@@ -372,9 +375,9 @@
             <div class="form-group"><label>কাদের জন্য Offer?</label>
               <select id="discountCategory" class="form-control" onchange="toggleDiscountUserField()">
                 <option value="all">সবার জন্য (All Users)</option>
-                <option value="prime">Prime Members</option>
-                <option value="prime2">Prime2 Members</option>
-                <option value="prime3">Prime3 Members</option>
+                <option value="normal">👤 Normal Users only (role = User)</option>
+                <option value="all_prime">👑 All Prime Members (any tier)</option>
+                <optgroup id="discountTagGroup" label="By Prime Tier"></optgroup>
                 <option value="newUsers1Week">নতুন Users (১ সপ্তাহের মধ্যে যোগ দিয়েছেন)</option>
                 <option value="specificUser">Specific User (নির্দিষ্ট ব্যক্তি)</option>
               </select>
@@ -442,6 +445,26 @@
           <table>
             <thead><tr><th>Name</th><th>Email</th><th>Rating</th><th>Message</th><th>Date</th><th>Show Publicly</th></tr></thead>
             <tbody id="feedbackBody"><tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ENQUIRIES -->
+      <div id="sec-enquiries" class="page-section">
+        <div class="section-title"><i class="fas fa-comments"></i> User Enquiries</div>
+        <p style="font-size:12px;color:var(--gray);margin-bottom:12px"><i class="fas fa-info-circle"></i> Pending Top-up / Withdrawal / Coupon redemption এ user-রা যে enquiry পাঠিয়েছে সব এখানে।</p>
+        <div class="stats-grid" id="enquiryStats" style="margin-bottom:14px"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+          <button class="btn btn-sm enq-tab-btn active" data-enq="all" onclick="setEnqTab('all')">All</button>
+          <button class="btn btn-sm enq-tab-btn" data-enq="deposit" onclick="setEnqTab('deposit')"><i class="fas fa-wallet"></i> Deposit</button>
+          <button class="btn btn-sm enq-tab-btn" data-enq="withdraw" onclick="setEnqTab('withdraw')"><i class="fas fa-money-bill-transfer"></i> Withdraw</button>
+          <button class="btn btn-sm enq-tab-btn" data-enq="redemption" onclick="setEnqTab('redemption')"><i class="fas fa-ticket"></i> Coupon Redemption</button>
+          <button class="btn btn-sm enq-tab-btn" data-enq="other" onclick="setEnqTab('other')"><i class="fas fa-question-circle"></i> Other</button>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>User</th><th>Type</th><th>Ref</th><th>Message</th><th>Date</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="enquiriesBody"><tr><td colspan="7" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -645,8 +668,28 @@
       <label class="authority-item"><input type="checkbox" id="auth_membership"/><div class="authority-label"><strong>Approve Membership Requests</strong>Can approve membership upgrades</div></label>
       <label class="authority-item"><input type="checkbox" id="auth_jobPost"/><div class="authority-label"><strong>Approve Job Post Requests</strong>Can publish pending job posts</div></label>
       <label class="authority-item"><input type="checkbox" id="auth_jobList"/><div class="authority-label"><strong>Manage Job List</strong>Can edit and delete job listings</div></label>
+      <label class="authority-item"><input type="checkbox" id="auth_walletTopups"/><div class="authority-label"><strong>Approve HC Wallet Top-ups</strong>Verify UTR & credit user wallets</div></label>
+      <label class="authority-item"><input type="checkbox" id="auth_walletWithdrawals"/><div class="authority-label"><strong>Approve Wallet Withdrawals</strong>Pay & mark withdrawals, or refund on reject</div></label>
+      <label class="authority-item"><input type="checkbox" id="auth_coupons"/><div class="authority-label"><strong>Create & Send Coupons</strong>Send discount / trial / free-month coupons</div></label>
+      <label class="authority-item"><input type="checkbox" id="auth_enquiries"/><div class="authority-label"><strong>Handle Enquiries</strong>Respond to user deposit/withdraw/coupon enquiries</div></label>
     </div>
     <button class="btn btn-success w-full mt-16" onclick="confirmPromote()"><i class="fas fa-check"></i> Promote to Admin</button>
+  </div>
+</div>
+
+<!-- AI RESUME DETAIL MODAL -->
+<div class="modal-overlay" id="resumeDetailModal">
+  <div class="modal-box" style="max-width:760px;max-height:88vh;overflow-y:auto;background:#fff;color:#1a1a2e">
+    <div class="modal-header" style="border-bottom:1px solid #e5e5e5">
+      <div class="modal-title" style="color:#1a1a2e"><i class="fas fa-file-alt" style="color:#d4af37"></i> Resume Details</div>
+      <button class="modal-close" onclick="closeModal('resumeDetailModal')" style="color:#1a1a2e">&times;</button>
+    </div>
+    <input type="hidden" id="resumeDetailDocId"/>
+    <div id="resumeDetailContent" style="margin-top:16px"></div>
+    <div style="display:flex;gap:10px;margin-top:18px;padding-top:14px;border-top:1px solid #e5e5e5">
+      <button class="btn btn-success" onclick="downloadResumeFromOwner(this)" style="flex:1"><i class="fas fa-download"></i> Download PDF</button>
+      <button class="btn" onclick="closeModal('resumeDetailModal')" style="background:#e5e5e5;color:#1a1a2e">Close</button>
+    </div>
   </div>
 </div>
 
@@ -692,6 +735,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+window.__FIREBASE_CFG__ = firebaseConfig;
 
 const OWNER_EMAIL = 'ssandeepsarkar143@gmail.com';
 const MPIN_DOC = 'owner';
@@ -746,6 +790,7 @@ function loadSectionData(name) {
     case 'notifications': loadNotifications(); break;
     case 'feedbackRecords': loadFeedbackRecords(); break;
     case 'resumeRecords': loadResumeRecords(); break;
+    case 'enquiries': loadEnquiries(); break;
     case 'siteSettings': loadSiteSettings(); break;
   }
 }
@@ -1172,7 +1217,11 @@ window.confirmPromote = async function() {
     contact: document.getElementById('auth_contact').checked,
     membership: document.getElementById('auth_membership').checked,
     jobPost: document.getElementById('auth_jobPost').checked,
-    jobList: document.getElementById('auth_jobList').checked
+    jobList: document.getElementById('auth_jobList').checked,
+    walletTopups: document.getElementById('auth_walletTopups').checked,
+    walletWithdrawals: document.getElementById('auth_walletWithdrawals').checked,
+    coupons: document.getElementById('auth_coupons').checked,
+    enquiries: document.getElementById('auth_enquiries').checked
   };
   await updateDoc(doc(db, 'users', promoteUserId), {
     role: 'Admin', tag: 'Admin', authorities, promotedAt: serverTimestamp()
@@ -1860,7 +1909,20 @@ window.toggleDiscountUserField = function() {
 };
 const CATEGORY_LABELS = { all:'সবার জন্য', prime:'Prime Members', prime2:'Prime2 Members', prime3:'Prime3 Members', newUsers1Week:'নতুন Users (১ সপ্তাহ)', specificUser:'Specific User' };
 
+async function loadDiscountTagOptions() {
+  try {
+    const usersSnap = await getDocs(collection(db, 'users'));
+    const tagSet = new Set();
+    usersSnap.forEach(d => { const t = d.data().tag; if (t && /^Prime/.test(t)) tagSet.add(t); });
+    const group = document.getElementById('discountTagGroup');
+    if (!group) return;
+    const tags = Array.from(tagSet).sort((a,b) => (parseInt(a.replace('Prime',''))||1) - (parseInt(b.replace('Prime',''))||1));
+    group.innerHTML = tags.map(t => `<option value="tag:${t}">⭐ Only ${t} members</option>`).join('');
+  } catch {}
+}
+
 async function loadOffers() {
+  await loadDiscountTagOptions();
   try {
     const snap = await getDocs(collection(db, 'offers'));
     const tbody = document.getElementById('offersTableBody');
@@ -2047,25 +2109,138 @@ async function loadResumeRecords() {
         <td style="font-size:11px;max-width:200px">${exp||'-'}</td>
         <td style="font-size:11px;max-width:160px">${skl||'-'}</td>
         <td style="font-size:11px">${r.createdAt?.toDate?.()?.toLocaleString()||'N/A'}</td>
-        <td><button class="btn btn-sm btn-info" onclick='viewResumeDetails(${JSON.stringify(JSON.stringify(r))})'><i class="fas fa-eye"></i></button></td>
+        <td><button class="btn btn-sm btn-info" onclick='viewResumeDetails(${JSON.stringify(JSON.stringify(r))}, "${d.id}")'><i class="fas fa-eye"></i> View</button></td>
       </tr>`;
     }).join('');
   } catch(e) { console.error('loadResumeRecords:', e); }
 }
 
-window.viewResumeDetails = function(jsonStr) {
-  const r = JSON.parse(jsonStr);
+window.viewResumeDetails = function(jsonStr, docId) {
+  let r = {};
+  try { r = JSON.parse(jsonStr); } catch(_) { r = {}; }
+  // Try to expand profile/resume JSON if present (richer data)
+  let prof = {}, res = {};
+  try { prof = r.profileJson ? JSON.parse(r.profileJson) : {}; } catch(_){}
+  try { res = r.resumeJson ? JSON.parse(r.resumeJson) : {}; } catch(_){}
+  const photo = prof.photo || r.photo || '';
+  const fullName = prof.fullName || r.name || 'N/A';
+  const jobTitle = prof.jobTitle || r.jobTitle || '';
+  const email = prof.email || r.email || '';
+  const phone = prof.phone || r.phone || '';
+  const city = prof.city || r.location || '';
+  const expArr = res.experience || [];
+  const eduArr = res.education || [];
+  const skillArr = res.skills || (r.skills ? r.skills.split(',').map(s=>s.trim()) : []);
   const html = `
-    <div style="font-family:inherit;line-height:1.7">
-      <h3 style="color:var(--gold);margin-bottom:8px">${r.name||''} — ${r.jobTitle||''}</h3>
-      <div style="color:var(--gray);font-size:12px;margin-bottom:14px">${r.email||''} · ${r.phone||''} · ${r.location||''}</div>
-      <div style="margin-bottom:10px"><strong>Experience:</strong><br/>${(r.experience||'-').replace(/\n/g,'<br/>')}</div>
-      <div style="margin-bottom:10px"><strong>Skills:</strong><br/>${r.skills||'-'}</div>
-      <div style="margin-bottom:10px"><strong>Education:</strong><br/>${r.education||'-'}</div>
-      <div style="margin-top:14px;padding:12px;background:rgba(212,175,55,0.06);border-radius:8px;white-space:pre-wrap;font-size:12px">${r.aiResume||'(AI text not stored)'}</div>
+    <div style="font-family:inherit;line-height:1.7;color:#1a1a2e">
+      <div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:14px;border-bottom:2px solid #d4af37;padding-bottom:12px">
+        ${photo?`<img src="${photo}" style="width:80px;height:80px;border-radius:10px;object-fit:cover">`:''}
+        <div style="flex:1">
+          <h2 style="color:#1a1a2e;margin:0 0 4px;font-size:20px">${fullName}</h2>
+          <div style="color:#d4af37;font-weight:700;font-size:14px">${jobTitle}</div>
+          <div style="color:#666;font-size:11px;margin-top:4px">${[email,phone,city].filter(Boolean).join(' · ')}</div>
+        </div>
+      </div>
+      ${res.summary?`<div style="margin-bottom:12px"><strong style="color:#d4af37">Summary</strong><br/>${res.summary}</div>`:''}
+      ${skillArr.length?`<div style="margin-bottom:12px"><strong style="color:#d4af37">Skills</strong><br/>${skillArr.join(' • ')}</div>`:''}
+      ${expArr.length?`<div style="margin-bottom:12px"><strong style="color:#d4af37">Experience</strong>${expArr.map(j=>`<div style="margin-top:6px"><b>${j.title||''}</b> – ${j.company||''} <span style="color:#666;font-size:11px">(${j.period||''})</span>${(j.bullets||[]).map(b=>`<div style="font-size:12px;margin-left:14px">• ${b}</div>`).join('')}</div>`).join('')}</div>`:''}
+      ${eduArr.length?`<div style="margin-bottom:12px"><strong style="color:#d4af37">Education</strong>${eduArr.map(e=>`<div style="margin-top:4px">${e.degree||''} – ${e.institution||''} <span style="color:#666;font-size:11px">(${e.period||''})</span></div>`).join('')}</div>`:''}
+      ${(r.experience && !expArr.length)?`<div style="margin-bottom:10px"><strong>Experience (raw):</strong><br/>${(r.experience).replace(/\n/g,'<br/>')}</div>`:''}
+      ${(r.education && !eduArr.length)?`<div style="margin-bottom:10px"><strong>Education (raw):</strong><br/>${r.education}</div>`:''}
+      ${r.aiResume?`<div style="margin-top:14px;padding:12px;background:rgba(212,175,55,0.08);border-radius:8px;white-space:pre-wrap;font-size:11px;color:#333">${r.aiResume}</div>`:''}
     </div>`;
-  const w = window.open('', '_blank', 'width=720,height=820');
-  w.document.write(`<title>${r.name||''} — Resume Details</title><body style="font-family:Arial;background:#0e0e1a;color:#fff;padding:24px">${html}</body>`);
+  document.getElementById('resumeDetailContent').innerHTML = html;
+  document.getElementById('resumeDetailDocId').value = docId || '';
+  document.getElementById('resumeDetailModal').classList.add('active');
+};
+
+// ========== ENQUIRIES ==========
+let __enquiriesCache = [];
+let __enquiryTab = 'all';
+
+window.setEnqTab = function(tab) {
+  __enquiryTab = tab;
+  document.querySelectorAll('.enq-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.enq === tab));
+  renderEnquiries();
+};
+
+async function loadEnquiries() {
+  try {
+    const snap = await getDocs(collection(db, 'enquiries'));
+    __enquiriesCache = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0));
+    renderEnquiries();
+  } catch(e) {
+    document.getElementById('enquiriesBody').innerHTML = '<tr><td colspan="7" style="text-align:center;color:#ef4444;padding:20px">Failed: '+e.message+'</td></tr>';
+  }
+}
+
+function renderEnquiries() {
+  const items = __enquiryTab === 'all' ? __enquiriesCache : __enquiriesCache.filter(e => (e.type||'other') === __enquiryTab);
+  const stats = document.getElementById('enquiryStats');
+  const counts = { all: __enquiriesCache.length, open: __enquiriesCache.filter(e=>e.status!=='resolved').length, deposit:0, withdraw:0, redemption:0, other:0 };
+  __enquiriesCache.forEach(e => { counts[e.type||'other'] = (counts[e.type||'other']||0)+1; });
+  stats.innerHTML = `
+    <div class="stat-card"><div class="stat-value">${counts.all}</div><div class="stat-label">Total</div></div>
+    <div class="stat-card" style="border-color:#f59e0b"><div class="stat-value" style="color:#f59e0b">${counts.open}</div><div class="stat-label">Open / Pending</div></div>
+    <div class="stat-card"><div class="stat-value">${counts.deposit||0}</div><div class="stat-label">Deposit</div></div>
+    <div class="stat-card"><div class="stat-value">${counts.withdraw||0}</div><div class="stat-label">Withdraw</div></div>
+    <div class="stat-card"><div class="stat-value">${counts.redemption||0}</div><div class="stat-label">Redemption</div></div>
+    <div class="stat-card"><div class="stat-value">${counts.other||0}</div><div class="stat-label">Other</div></div>`;
+  const tbody = document.getElementById('enquiriesBody');
+  if (!items.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--gray);padding:20px">No enquiries in this category.</td></tr>'; return; }
+  tbody.innerHTML = items.map(e => {
+    const dt = e.createdAt?.toDate?.()?.toLocaleString() || '-';
+    const statusBadge = e.status === 'resolved'
+      ? '<span style="background:rgba(34,197,94,0.15);color:#22c55e;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700">✓ Resolved</span>'
+      : '<span style="background:rgba(245,158,11,0.15);color:#f59e0b;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700">⏳ Open</span>';
+    const typeLabel = ({deposit:'💰 Deposit', withdraw:'💸 Withdraw', redemption:'🎟️ Redemption', other:'❓ Other'})[e.type||'other'] || e.type;
+    const ref = e.refAmount ? `₹${e.refAmount}` : (e.refId || '-');
+    const safeMsg = (e.message||'').replace(/[<>]/g, c => ({'<':'&lt;','>':'&gt;'}[c]));
+    return `<tr>
+      <td><strong>${e.name||'User'}</strong><br/><span style="font-size:10px;color:var(--gray)">${e.email||''}</span></td>
+      <td style="font-size:11px">${typeLabel}</td>
+      <td style="font-size:11px">${ref}</td>
+      <td style="font-size:11px;max-width:240px">${safeMsg}</td>
+      <td style="font-size:11px">${dt}</td>
+      <td>${statusBadge}</td>
+      <td>
+        ${e.status!=='resolved'?`<button class="btn btn-sm btn-success" onclick="resolveEnquiry('${e.id}')"><i class="fas fa-check"></i> Resolve</button>`:''}
+        <button class="btn btn-sm btn-danger" onclick="deleteEnquiry('${e.id}')"><i class="fas fa-trash"></i></button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+window.resolveEnquiry = async function(id) {
+  try {
+    const enq = __enquiriesCache.find(e => e.id === id);
+    await updateDoc(doc(db, 'enquiries', id), { status: 'resolved', resolvedAt: serverTimestamp() });
+    if (enq?.uid) {
+      await addDoc(collection(db, 'notifications'), {
+        userId: enq.uid, type: 'success',
+        message: `✅ আপনার "${enq.type||'enquiry'}" enquiry টি owner দেখেছেন এবং মার্ক resolved করেছেন।`,
+        createdAt: serverTimestamp(), read: false
+      });
+    }
+    showToast('Enquiry resolved.');
+    loadEnquiries();
+  } catch(e) { showToast('Failed: '+e.message, 'error'); }
+};
+
+window.deleteEnquiry = async function(id) {
+  if (!confirm('Delete this enquiry?')) return;
+  await deleteDoc(doc(db, 'enquiries', id));
+  showToast('Deleted.');
+  loadEnquiries();
+};
+
+window.downloadResumeFromOwner = async function(btn) {
+  const docId = document.getElementById('resumeDetailDocId').value;
+  if (!docId) { showToast('Resume ID missing.', 'error'); return; }
+  if (!window.__downloadMyResume) { showToast('Loading PDF builder...', 'info'); await new Promise(r => setTimeout(r, 600)); }
+  if (window.__downloadMyResume) window.__downloadMyResume(docId, btn);
+  else showToast('PDF builder not loaded. Refresh and try again.', 'error');
 };
 
 window.toggleFeedbackPublic = async function(docId, show) {
@@ -2316,6 +2491,7 @@ window.saveSiteSettings = async function() {
   }
 };
 </script>
+<script src="js/my-resumes.js"></script>
 <script src="js/i18n.js"></script>
 <script src="js/chatbot.js"></script>
 <script src="js/pwa-install.js"></script>

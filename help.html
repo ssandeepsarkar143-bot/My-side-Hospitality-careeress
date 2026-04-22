@@ -419,6 +419,54 @@ body { background: var(--dark); color: #fff; font-family: 'Poppins', sans-serif;
       </div>
     </div>
 
+    <div class="faq-item" data-category="referral">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span><i class="fas fa-list" style="color:var(--gold);margin-right:8px"></i> Where can I see my referral history & status?</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        Open your dashboard → <b>Refer & Earn</b> card → click <b>"My Referrals"</b>. You'll see every user who joined using your link with auto-detected status:<br/>
+        • 🆕 <b>Just signed up</b> — they joined but haven't completed profile<br/>
+        • 👤 <b>Signed up · Profile complete</b> — they're active but haven't bought Prime yet<br/>
+        • 👑 <b>Prime member</b> — converted, and you've already received 10 HC points<br/>
+        Status updates automatically — no enquiry needed.
+      </div>
+    </div>
+
+    <div class="faq-item" data-category="wallet">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span><i class="fas fa-history" style="color:var(--gold);margin-right:8px"></i> How do I see status of my top-up / withdrawal?</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        Click <b>History</b> in the HC Wallet card. Every entry shows a colored status badge:<br/>
+        • ⏳ <b>Pending</b> — owner is reviewing<br/>
+        • ✓ <b>Approved / Paid</b> — done, points credited or money sent to your UPI<br/>
+        • ✗ <b>Rejected</b> — for withdrawals, points are auto-refunded back to your wallet<br/>
+        Pending items show an <b>Enquiry</b> button if you want to ask the owner about status.
+      </div>
+    </div>
+
+    <div class="faq-item" data-category="wallet">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span><i class="fas fa-comment-dots" style="color:var(--gold);margin-right:8px"></i> What is the "Enquiry" button on pending items?</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        If your top-up, withdrawal, or coupon redemption is taking too long, click the <b>Enquiry</b> button on that pending row, write your question, and submit. It goes straight to the owner's <b>Enquiries</b> dashboard. You'll receive a notification when it's resolved. Note: Referrals don't need enquiry — their status updates automatically.
+      </div>
+    </div>
+
+    <div class="faq-item" data-category="resume">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span><i class="fas fa-trash" style="color:var(--gold);margin-right:8px"></i> Can I delete a resume from "My Resumes"?</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        Yes! In your dashboard's <b>My Resumes</b> section, every saved resume has two buttons: <b>📄 Download</b> (PDF) and <b>🗑️ Delete</b>. Click delete and confirm — the resume is permanently removed from your account. You can always create a new one with the AI Resume Builder.
+      </div>
+    </div>
+
   </div>
 
   <!-- DYNAMIC FAQs FROM FIRESTORE -->
