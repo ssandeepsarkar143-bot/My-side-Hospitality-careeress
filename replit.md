@@ -92,3 +92,25 @@ Business Name: `Hospitality Careers`
 node server.js
 ```
 Port: 5000
+
+## v3 Major Update (2026-04-22)
+- **Backend AI** (`server.js`):
+  - Added `express.json` body parsing
+  - New `/api/chat` — Gemini-powered assistant; accepts message + history + lang; uses `gemini-flash-latest`
+  - New `/api/resume` — Gemini structured JSON output for AI resume generation
+  - Reads `GEMINI_API_KEY` from secrets; optional `GEMINI_MODEL` env override
+  - Serves `manifest.webmanifest`, `sw.js`, `offline.html`
+- **AI Assistant** (`js/chatbot.js`): Now calls `/api/chat` with Gemini; falls back to keyword KB if API fails. Status bar reads "Powered by Google Gemini". Multilingual auto-reply (EN/HI/BN).
+- **AI Resume Builder** (`resume-builder.html` — new page):
+  - 4-step wizard (Personal / Experience / Skills / Generate)
+  - Sends profile to `/api/resume`, renders live HTML preview
+  - jsPDF-based client-side PDF download (no server roundtrip needed for download)
+- **Contact page** (`contact.html`): Default email/phone/address placeholders are now empty italic gray ("Email not set yet" etc). Owner-set values from `siteContent/settings` instantly replace them.
+- **PWA / Mobile App**:
+  - `manifest.webmanifest` — installable web app (Android & iOS), standalone display, shortcuts to Find Jobs / Resume Builder / Membership
+  - `sw.js` — service worker with shell caching + offline page + network-first HTML
+  - `offline.html` — friendly offline fallback
+  - `js/pwa-install.js` — auto-shown install banner (Android `beforeinstallprompt` + iOS Safari "Add to Home Screen" hint), 7-day dismiss memory
+  - All 12 main HTML pages updated with manifest link, theme color (`#d4af37`), apple-touch-icon, and PWA install script
+- **Help page** (`help.html`): 3 new categories with 9 new FAQ entries — AI Assistant, Resume Builder, Install App (Android + iOS + offline + auto-update)
+- **Navigation**: Added "Resume" link in nav + footer of all public pages (index, about, contact, feedback, help, resume-builder)

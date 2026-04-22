@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AI Resume Builder – Hospitality Careers</title>
+<meta name="theme-color" content="#d4af37"/>
+<link rel="manifest" href="/manifest.webmanifest"/>
+<link rel="apple-touch-icon" href="/logo.png"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<link rel="stylesheet" href="css/styles.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+body{background:var(--dark);color:#fff;font-family:'Poppins',sans-serif;margin:0}
+.rb-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+@media(max-width:900px){.rb-grid{grid-template-columns:1fr}}
+.rb-step{display:none}
+.rb-step.active{display:block}
+.rb-stepper{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap}
+.rb-pill{flex:1;min-width:80px;text-align:center;padding:8px 6px;font-size:11px;font-weight:600;background:rgba(255,255,255,.04);border:1px solid rgba(212,175,55,.15);border-radius:18px;color:rgba(255,255,255,.6)}
+.rb-pill.done{background:rgba(212,175,55,.12);color:var(--gold);border-color:var(--gold)}
+.rb-pill.active{background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:#000;border-color:var(--gold)}
+.rb-actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+#rb-preview{background:#fff;color:#222;border-radius:12px;padding:24px;font-family:Georgia,serif;min-height:360px;max-height:70vh;overflow:auto}
+#rb-preview h1{margin:0 0 4px;font-size:24px;color:#1a1a2e}
+#rb-preview .rb-sub{color:#555;font-size:12px;margin-bottom:14px}
+#rb-preview h2{font-size:14px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid #d4af37;padding-bottom:4px;margin:18px 0 8px;color:#b8941f}
+#rb-preview ul{margin:4px 0 8px 18px;padding:0;font-size:13px;line-height:1.5}
+#rb-preview .rb-job{margin-bottom:10px}
+#rb-preview .rb-job b{font-size:13px}
+#rb-preview .rb-job .rb-period{color:#888;font-size:11px;font-style:italic}
+.rb-empty{text-align:center;color:#999;padding:60px 20px}
+.rb-loader{display:none;text-align:center;padding:30px;color:var(--gold)}
+.rb-loader.show{display:block}
+.rb-loader i{font-size:32px;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rb-tip{background:rgba(212,175,55,.08);border:1px solid rgba(212,175,55,.2);border-radius:10px;padding:12px;font-size:12px;color:rgba(255,255,255,.75);margin-bottom:14px}
+.rb-tip i{color:var(--gold);margin-right:6px}
+</style>
+</head>
+<body>
+
+<nav class="pub-nav">
+  <div class="navbar-brand">
+    <img src="/logo.png" class="navbar-logo" onerror="this.style.display='none'" alt="Logo"/>
+    <div class="navbar-title">Hospitality Careers</div>
+  </div>
+  <div class="pub-nav-links">
+    <a href="index.html" class="pub-nav-link"><i class="fas fa-home"></i> Home</a>
+    <a href="about.html" class="pub-nav-link"><i class="fas fa-info-circle"></i> About</a>
+    <a href="contact.html" class="pub-nav-link"><i class="fas fa-envelope"></i> Contact</a>
+    <a href="resume-builder.html" class="pub-nav-link"><i class="fas fa-file-alt"></i> Resume</a>
+    <a href="feedback.html" class="pub-nav-link"><i class="fas fa-star"></i> Feedback</a>
+    <a href="help.html" class="pub-nav-link"><i class="fas fa-question-circle"></i> Help</a>
+  </div>
+</nav>
+
+<div class="pub-hero">
+  <div>
+    <div class="pub-hero-title"><i class="fas fa-file-alt" style="-webkit-text-fill-color:var(--gold)"></i> AI Resume Builder</div>
+    <div class="pub-hero-sub">Powered by Google Gemini — answer a few questions and download a polished hospitality resume PDF in seconds.</div>
+  </div>
+</div>
+
+<div class="pub-section">
+<div class="rb-grid">
+  <!-- LEFT: FORM -->
+  <div class="pub-card">
+    <div class="rb-stepper">
+      <div class="rb-pill active" data-pill="1">1. Personal</div>
+      <div class="rb-pill" data-pill="2">2. Experience</div>
+      <div class="rb-pill" data-pill="3">3. Skills & More</div>
+      <div class="rb-pill" data-pill="4">4. Generate</div>
+    </div>
+
+    <div class="rb-tip"><i class="fas fa-lightbulb"></i> All fields are optional except <b>Name</b> and <b>Job Title</b>. The AI will fill in professional details from what you provide.</div>
+
+    <!-- STEP 1 -->
+    <div class="rb-step active" data-step="1">
+      <div class="form-row">
+        <div class="form-group"><label>Full Name *</label><input id="rb_fullName" class="form-control" placeholder="Ramesh Kumar" required/></div>
+        <div class="form-group"><label>Job Title You Want *</label><input id="rb_jobTitle" class="form-control" placeholder="Front Office Executive" required/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Email</label><input id="rb_email" type="email" class="form-control" placeholder="you@email.com"/></div>
+        <div class="form-group"><label>Phone</label><input id="rb_phone" class="form-control" placeholder="+91 9876543210"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>City</label><input id="rb_city" class="form-control" placeholder="Mumbai"/></div>
+        <div class="form-group"><label>Years of Experience</label><input id="rb_yearsExperience" class="form-control" placeholder="3"/></div>
+      </div>
+      <div class="rb-actions">
+        <button class="btn btn-outline" disabled>Back</button>
+        <button class="btn btn-primary" style="background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:#000" onclick="goStep(2)">Next <i class="fas fa-arrow-right"></i></button>
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="rb-step" data-step="2">
+      <div class="form-group"><label>Work Experience (free text – list hotels/companies, roles, years)</label>
+        <textarea id="rb_experience" class="form-control" rows="6" placeholder="e.g. Worked 2 years at Taj Hotel Mumbai as Guest Service Associate, handled check-in/check-out, managed VIP arrivals. Before that, 1 year at Marriott as Front Desk Trainee."></textarea></div>
+      <div class="form-group"><label>Education</label>
+        <textarea id="rb_education" class="form-control" rows="3" placeholder="e.g. Diploma in Hotel Management, IHM Mumbai (2020-2023). HSC, Mumbai Board (2020)."></textarea></div>
+      <div class="rb-actions">
+        <button class="btn btn-outline" onclick="goStep(1)"><i class="fas fa-arrow-left"></i> Back</button>
+        <button class="btn btn-primary" style="background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:#000" onclick="goStep(3)">Next <i class="fas fa-arrow-right"></i></button>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="rb-step" data-step="3">
+      <div class="form-group"><label>Skills (comma separated, optional)</label>
+        <input id="rb_skills" class="form-control" placeholder="Customer service, POS systems, Multi-tasking, Communication"/></div>
+      <div class="form-group"><label>Certifications (optional)</label>
+        <input id="rb_certifications" class="form-control" placeholder="Food Safety Level 2, First Aid Certified"/></div>
+      <div class="form-row">
+        <div class="form-group"><label>Languages</label><input id="rb_languages" class="form-control" placeholder="English, Hindi, Bengali"/></div>
+        <div class="form-group"><label>Hobbies</label><input id="rb_hobbies" class="form-control" placeholder="Cooking, Travel, Reading"/></div>
+      </div>
+      <div class="rb-actions">
+        <button class="btn btn-outline" onclick="goStep(2)"><i class="fas fa-arrow-left"></i> Back</button>
+        <button class="btn btn-primary" style="background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:#000" onclick="goStep(4)">Next <i class="fas fa-arrow-right"></i></button>
+      </div>
+    </div>
+
+    <!-- STEP 4 -->
+    <div class="rb-step" data-step="4">
+      <div class="rb-tip"><i class="fas fa-magic"></i> Click <b>Generate with AI</b> — Gemini will craft a professional summary, polish your bullet points, and build a clean resume in seconds.</div>
+      <div class="rb-actions">
+        <button class="btn btn-outline" onclick="goStep(3)"><i class="fas fa-arrow-left"></i> Back</button>
+        <button id="rb-generate" class="btn btn-primary" style="background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:#000;flex:1" onclick="generateResume()">
+          <i class="fas fa-wand-magic-sparkles"></i> Generate with AI
+        </button>
+      </div>
+      <div id="rb-loader" class="rb-loader"><i class="fas fa-circle-notch"></i><div style="margin-top:10px;font-size:13px">AI is crafting your resume...</div></div>
+      <div id="rb-error" class="alert alert-danger" style="margin-top:12px;display:none"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: PREVIEW -->
+  <div>
+    <div class="pub-card">
+      <div class="pub-card-title"><i class="fas fa-eye"></i> Live Preview</div>
+      <div id="rb-preview">
+        <div class="rb-empty"><i class="fas fa-file-alt" style="font-size:48px;color:#ddd;margin-bottom:14px;display:block"></i>Your resume will appear here once generated.</div>
+      </div>
+      <div class="rb-actions" id="rb-download-row" style="display:none">
+        <button class="btn btn-primary" style="background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:#000;flex:1" onclick="downloadPDF()">
+          <i class="fas fa-download"></i> Download PDF
+        </button>
+        <button class="btn btn-outline" onclick="generateResume()" title="Regenerate">
+          <i class="fas fa-rotate"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="pub-footer">
+  <div class="pub-footer-links">
+    <a href="index.html" class="pub-footer-link">Home</a>
+    <a href="about.html" class="pub-footer-link">About</a>
+    <a href="contact.html" class="pub-footer-link">Contact</a>
+    <a href="resume-builder.html" class="pub-footer-link">Resume</a>
+    <a href="feedback.html" class="pub-footer-link">Feedback</a>
+    <a href="help.html" class="pub-footer-link">Help</a>
+  </div>
+  <div>© 2026 Hospitality Careers. All rights reserved.</div>
+</div>
+
+<script>
+let currentStep = 1;
+let lastResume = null;
+let lastProfile = null;
+
+function goStep(n) {
+  currentStep = n;
+  document.querySelectorAll('.rb-step').forEach(s => s.classList.toggle('active', +s.dataset.step === n));
+  document.querySelectorAll('.rb-pill').forEach(p => {
+    const num = +p.dataset.pill;
+    p.classList.toggle('active', num === n);
+    p.classList.toggle('done', num < n);
+  });
+}
+
+function getProfile() {
+  return {
+    fullName: document.getElementById('rb_fullName').value.trim(),
+    email: document.getElementById('rb_email').value.trim(),
+    phone: document.getElementById('rb_phone').value.trim(),
+    city: document.getElementById('rb_city').value.trim(),
+    jobTitle: document.getElementById('rb_jobTitle').value.trim(),
+    yearsExperience: document.getElementById('rb_yearsExperience').value.trim(),
+    experience: document.getElementById('rb_experience').value.trim(),
+    education: document.getElementById('rb_education').value.trim(),
+    skills: document.getElementById('rb_skills').value.trim(),
+    certifications: document.getElementById('rb_certifications').value.trim(),
+    languages: document.getElementById('rb_languages').value.trim(),
+    hobbies: document.getElementById('rb_hobbies').value.trim()
+  };
+}
+
+async function generateResume() {
+  const profile = getProfile();
+  if (!profile.fullName || !profile.jobTitle) {
+    alert('Please fill Full Name and Job Title (Step 1) first.');
+    goStep(1); return;
+  }
+  const btn = document.getElementById('rb-generate');
+  const loader = document.getElementById('rb-loader');
+  const errBox = document.getElementById('rb-error');
+  errBox.style.display = 'none';
+  btn.disabled = true; loader.classList.add('show');
+
+  try {
+    const res = await fetch('/api/resume', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ profile })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || data.error || 'Failed');
+    lastResume = data.resume;
+    lastProfile = data.profile;
+    renderPreview();
+    document.getElementById('rb-download-row').style.display = 'flex';
+  } catch (e) {
+    errBox.textContent = '❌ ' + (e.message || 'Failed to generate. Try again.');
+    errBox.style.display = 'block';
+  } finally {
+    btn.disabled = false; loader.classList.remove('show');
+  }
+}
+
+function renderPreview() {
+  const p = lastProfile, r = lastResume;
+  if (!p || !r) return;
+  const esc = (s) => String(s || '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  const list = (arr) => (arr || []).map(x => `<li>${esc(x)}</li>`).join('');
+
+  const expHtml = (r.experience || []).map(j => `
+    <div class="rb-job">
+      <b>${esc(j.title)}</b> – ${esc(j.company)} <span class="rb-period">(${esc(j.period)})</span>
+      <ul>${(j.bullets || []).map(b => `<li>${esc(b)}</li>`).join('')}</ul>
+    </div>`).join('');
+
+  const eduHtml = (r.education || []).map(e => `
+    <div class="rb-job">
+      <b>${esc(e.degree)}</b> – ${esc(e.institution)} <span class="rb-period">(${esc(e.period)})</span>
+    </div>`).join('');
+
+  const contactBits = [p.email, p.phone, p.city].filter(Boolean).map(esc).join(' · ');
+
+  document.getElementById('rb-preview').innerHTML = `
+    <h1>${esc(p.fullName)}</h1>
+    <div class="rb-sub"><b>${esc(p.jobTitle)}</b>${contactBits ? ' · ' + contactBits : ''}</div>
+    ${r.summary ? `<h2>Professional Summary</h2><p style="font-size:13px;line-height:1.5">${esc(r.summary)}</p>` : ''}
+    ${r.skills?.length ? `<h2>Key Skills</h2><ul>${list(r.skills)}</ul>` : ''}
+    ${expHtml ? `<h2>Experience</h2>${expHtml}` : ''}
+    ${eduHtml ? `<h2>Education</h2>${eduHtml}` : ''}
+    ${r.certifications?.length ? `<h2>Certifications</h2><ul>${list(r.certifications)}</ul>` : ''}
+    ${r.languages?.length ? `<h2>Languages</h2><ul>${list(r.languages)}</ul>` : ''}
+    ${r.hobbies?.length ? `<h2>Interests</h2><ul>${list(r.hobbies)}</ul>` : ''}
+  `;
+}
+
+function downloadPDF() {
+  if (!lastResume || !lastProfile) return;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+  const W = doc.internal.pageSize.getWidth();
+  const M = 40;
+  let y = 50;
+  const p = lastProfile, r = lastResume;
+
+  function line(text, opts = {}) {
+    const { size = 10, style = 'normal', color = [40, 40, 60], gap = 4, indent = 0 } = opts;
+    doc.setFont('helvetica', style); doc.setFontSize(size); doc.setTextColor(...color);
+    const wrapped = doc.splitTextToSize(text, W - M * 2 - indent);
+    wrapped.forEach(w => {
+      if (y > 800) { doc.addPage(); y = 50; }
+      doc.text(w, M + indent, y); y += size + gap;
+    });
+  }
+  function heading(text) {
+    y += 6;
+    if (y > 770) { doc.addPage(); y = 50; }
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(184, 148, 31);
+    doc.text(text.toUpperCase(), M, y);
+    doc.setDrawColor(212, 175, 55); doc.setLineWidth(1);
+    doc.line(M, y + 3, W - M, y + 3);
+    y += 14;
+  }
+
+  // Header
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(22); doc.setTextColor(26, 26, 46);
+  doc.text(p.fullName || '', M, y); y += 22;
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(120, 120, 130);
+  doc.text(p.jobTitle || '', M, y); y += 14;
+  const contact = [p.email, p.phone, p.city].filter(Boolean).join(' · ');
+  if (contact) { doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(120, 120, 130); doc.text(contact, M, y); y += 10; }
+
+  if (r.summary) { heading('Professional Summary'); line(r.summary); }
+  if (r.skills?.length) { heading('Key Skills'); line('• ' + r.skills.join('   • ')); }
+  if (r.experience?.length) {
+    heading('Experience');
+    r.experience.forEach(j => {
+      line(`${j.title || ''} — ${j.company || ''}`, { style: 'bold', size: 10.5 });
+      if (j.period) line(j.period, { size: 9, style: 'italic', color: [120, 120, 130] });
+      (j.bullets || []).forEach(b => line('• ' + b, { indent: 10, size: 10 }));
+      y += 4;
+    });
+  }
+  if (r.education?.length) {
+    heading('Education');
+    r.education.forEach(e => {
+      line(`${e.degree || ''} — ${e.institution || ''}`, { style: 'bold' });
+      if (e.period) line(e.period, { size: 9, style: 'italic', color: [120, 120, 130] });
+      y += 2;
+    });
+  }
+  if (r.certifications?.length) { heading('Certifications'); r.certifications.forEach(c => line('• ' + c, { indent: 10 })); }
+  if (r.languages?.length) { heading('Languages'); line(r.languages.join(' · ')); }
+  if (r.hobbies?.length) { heading('Interests'); line(r.hobbies.join(' · ')); }
+
+  const safe = (p.fullName || 'resume').replace(/[^a-z0-9]+/gi, '_');
+  doc.save(`${safe}_Resume.pdf`);
+}
+</script>
+<script src="js/pwa-install.js"></script>
+<script src="js/chatbot.js"></script>
+</body>
+</html>

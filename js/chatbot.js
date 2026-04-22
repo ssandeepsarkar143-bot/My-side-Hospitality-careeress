@@ -222,7 +222,7 @@ win.innerHTML = `
   <div id="hc-av">🤖</div>
   <div id="hc-info">
     <div id="hc-name">HC Assistant</div>
-    <div id="hc-status">Online · AI Powered</div>
+    <div id="hc-status">Online · Powered by Google Gemini</div>
   </div>
   <button id="hc-close" title="Close">✕</button>
 </div>
@@ -296,14 +296,34 @@ function showTyping() {
 }
 function removeTyping() { const t = document.getElementById('hc-typing'); if(t) t.remove(); }
 
-function sendMsg(text) {
+const HC_HISTORY = [];
+
+async function sendMsg(text) {
   const msg = (text || inputEl.value).trim();
   if (!msg) return;
   inputEl.value = '';
   addMsg(msg, 'user');
+  HC_HISTORY.push({ role: 'user', text: msg });
   showTyping();
-  const delay = 600 + Math.random() * 600;
-  setTimeout(() => { removeTyping(); addMsg(getResponse(msg), 'bot'); }, delay);
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: msg, lang: currentLang, history: HC_HISTORY.slice(-8) })
+    });
+    const data = await res.json();
+    removeTyping();
+    if (res.ok && data.reply) {
+      addMsg(data.reply, 'bot');
+      HC_HISTORY.push({ role: 'bot', text: data.reply });
+    } else {
+      addMsg(getResponse(msg), 'bot');
+    }
+  } catch (e) {
+    removeTyping();
+    addMsg(getResponse(msg), 'bot');
+  }
 }
 
 function ensureOpen() {

@@ -1,0 +1,23 @@
+{
+  "name": "Hospitality Careers",
+  "short_name": "HC Jobs",
+  "description": "India's hospitality job portal — find jobs, hire staff, manage your career.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0a14",
+  "theme_color": "#d4af37",
+  "lang": "en",
+  "categories": ["business", "productivity", "lifestyle"],
+  "icons": [
+    { "src": "/logo.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/logo.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Find Jobs", "url": "/user-feed.html", "icons": [{ "src": "/logo.png", "sizes": "192x192" }] },
+    { "name": "Resume Builder", "url": "/resume-builder.html", "icons": [{ "src": "/logo.png", "sizes": "192x192" }] },
+    { "name": "Membership", "url": "/membership.html", "icons": [{ "src": "/logo.png", "sizes": "192x192" }] }
+  ]
+}
