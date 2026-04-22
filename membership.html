@@ -210,10 +210,15 @@ function userMatchesOfferCategory(offer, userId, userEmail) {
   const cat = offer.category || 'all';
   const ud = currentUserData;
   const role = ud?.role || 'User';
+  const tag = ud?.tag || '';
   if (cat === 'all') return true;
+  if (cat === 'normal') return role === 'User';
+  if (cat === 'all_prime') return role === 'Prime';
   if (cat === 'prime' && role === 'Prime') return true;
-  if (cat === 'prime2' && (role === 'Prime2' || (ud?.membershipCount >= 2))) return true;
-  if (cat === 'prime3' && (role === 'Prime3' || (ud?.membershipCount >= 3))) return true;
+  if (cat === 'prime2' && (tag === 'Prime2' || ud?.membershipCount >= 2)) return true;
+  if (cat === 'prime3' && (tag === 'Prime3' || ud?.membershipCount >= 3)) return true;
+  // Dynamic tag-based category, e.g. "tag:Prime4"
+  if (cat.startsWith('tag:')) return tag === cat.slice(4);
   if (cat === 'newUsers1Week') {
     // Check if user joined within the last 7 days
     const joinDate = ud?.createdAt?.toDate?.() || new Date(currentUser?.metadata?.creationTime);

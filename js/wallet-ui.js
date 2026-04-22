@@ -155,6 +155,28 @@ function buildHTML(accent) {
       <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
         <button class="hcw-btn-outline" id="hcwCopyRef"><i class="fas fa-copy"></i> Copy Link</button>
         <button class="hcw-btn" id="hcwShareRef"><i class="fas fa-share-alt"></i> Share</button>
+        <button class="hcw-btn-outline" id="hcwOpenRefHist"><i class="fas fa-list"></i> My Referrals</button>
+      </div>
+    </div>
+    <div id="hcwRefHistBox" style="display:none" class="hcw-section">
+      <div class="hcw-sub" style="font-weight:700;color:${accent};margin-bottom:8px"><i class="fas fa-users"></i> Referral History (auto-status)</div>
+      <div id="hcwRefHistList"><div class="hcw-sub">Loading…</div></div>
+    </div>
+  </div>
+
+  <!-- ENQUIRY MODAL -->
+  <div id="hcwEnqModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;padding:20px">
+    <div style="background:#1a1a2e;border:1px solid ${accent}66;border-radius:14px;padding:20px;max-width:440px;width:100%">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div style="font-weight:800;color:${accent};font-size:15px"><i class="fas fa-comment-dots"></i> Send Enquiry to Owner</div>
+        <button onclick="window.__hcwCloseEnq()" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer">&times;</button>
+      </div>
+      <div id="hcwEnqRefInfo" class="hcw-sub" style="margin-bottom:10px;padding:10px;background:rgba(0,0,0,0.3);border-radius:8px"></div>
+      <textarea id="hcwEnqMsg" rows="4" class="hcw-input" placeholder="Apnar enquiry / question likhun (e.g. 'Amar topup-er status ki?', 'Withdrawal kobe pabo?', etc.)" style="resize:vertical;min-height:90px"></textarea>
+      <div class="hcw-msg" id="hcwEnqMsgBox"></div>
+      <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+        <button class="hcw-btn-outline" onclick="window.__hcwCloseEnq()">Cancel</button>
+        <button class="hcw-btn" id="hcwEnqSubmit"><i class="fas fa-paper-plane"></i> Send Enquiry</button>
       </div>
     </div>
   </div>
@@ -365,17 +387,136 @@ export async function attachWallet({ db, auth, user, userData, mountId = 'hcWall
     const list = document.getElementById('hcwTxList');
     list.innerHTML = '<div class="hcw-sub">Loading…</div>';
     try {
-      const snap = await getDocs(query(collection(db, 'walletTransactions'), where('uid','==',user.uid)));
-      const items = snap.docs.map(d => d.data()).sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0)).slice(0, 30);
+      // Pull from 3 sources so user sees status of pending top-ups & withdrawals too
+      const [txSnap, tpSnap, wdSnap] = await Promise.all([
+        getDocs(query(collection(db, 'walletTransactions'), where('uid','==',user.uid))),
+        getDocs(query(collection(db, 'walletTopups'), where('uid','==',user.uid))),
+        getDocs(query(collection(db, 'walletWithdrawals'), where('uid','==',user.uid)))
+      ]);
+      const merged = [];
+      txSnap.forEach(d => {
+        const t = d.data();
+        merged.push({
+          kind: 'tx', type: t.type, amount: t.amount, note: t.note || '',
+          createdAt: t.createdAt, status: 'completed', refId: t.ref || ''
+        });
+      });
+      tpSnap.forEach(d => {
+        const t = d.data();
+        if (t.status === 'approved') return; // already in walletTransactions
+        merged.push({
+          kind: 'topup', type: 'topup', amount: t.amount, note: `UTR: ${t.utr||'-'}`,
+          createdAt: t.createdAt, status: t.status || 'pending', refId: d.id, enqType: 'deposit'
+        });
+      });
+      wdSnap.forEach(d => {
+        const t = d.data();
+        merged.push({
+          kind: 'withdraw', type: 'withdraw', amount: -Math.abs(t.amount||0),
+          note: `Withdraw to ${t.upi||'-'}`,
+          createdAt: t.createdAt, status: t.status || 'pending', refId: d.id, enqType: 'withdraw'
+        });
+      });
+      merged.sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0));
+      const items = merged.slice(0, 50);
       if (!items.length) { list.innerHTML = '<div class="hcw-sub">No transactions yet.</div>'; return; }
+      const labels = {topup:'Top-up', referral:'Referral Bonus', spend:'Membership Payment', withdraw:'Withdrawal', refund:'Withdrawal Refund', adjust:'Adjustment'};
+      const statusBadge = (s) => {
+        const map = {
+          pending: ['#f59e0b','⏳ Pending'], approved:['#22c55e','✓ Approved'], paid:['#22c55e','✓ Paid'],
+          rejected: ['#ef4444','✗ Rejected'], completed: ['#22c55e','✓ Done']
+        };
+        const [c,t] = map[s] || ['#9ca3af', s];
+        return `<span style="background:${c}22;color:${c};padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;margin-left:6px">${t}</span>`;
+      };
       list.innerHTML = items.map(t => {
         const sign = t.amount > 0 ? '+' : '';
         const cls = t.amount > 0 ? 'hcw-tx-amt-pos' : 'hcw-tx-amt-neg';
-        const label = ({topup:'Top-up Approved', referral:'Referral Bonus', spend:'Membership Payment', withdraw:'Withdrawal', refund:'Withdrawal Refund', adjust:'Adjustment'})[t.type] || t.type;
-        return `<div class="hcw-tx"><div><div style="font-weight:600">${label}</div><div class="hcw-sub">${t.note||''} · ${fmtDate(t.createdAt)}</div></div><div class="${cls}">${sign}${t.amount} pts</div></div>`;
+        const showEnq = t.status === 'pending' && t.enqType;
+        const enqBtn = showEnq
+          ? `<button class="hcw-btn-outline" style="padding:4px 10px;font-size:10px;margin-top:6px" onclick="window.__hcwOpenEnq('${t.enqType}','${t.refId}',${Math.abs(t.amount)})"><i class="fas fa-comment-dots"></i> Enquiry</button>`
+          : '';
+        return `<div class="hcw-tx" style="align-items:flex-start">
+          <div style="flex:1">
+            <div style="font-weight:600">${labels[t.type]||t.type}${statusBadge(t.status)}</div>
+            <div class="hcw-sub">${t.note} · ${fmtDate(t.createdAt)}</div>
+            ${enqBtn}
+          </div>
+          <div class="${cls}">${sign}${t.amount} pts</div>
+        </div>`;
       }).join('');
     } catch (e) {
       list.innerHTML = `<div class="hcw-sub" style="color:#ef4444">Could not load transactions.</div>`;
+    }
+  }
+
+  // Enquiry modal helpers
+  window.__hcwOpenEnq = function(enqType, refId, amount) {
+    document.getElementById('hcwEnqRefInfo').innerHTML =
+      `<b style="color:${accent}">${enqType==='deposit'?'💰 Deposit (Top-up)':enqType==='withdraw'?'💸 Withdrawal':'🎟️ Coupon Redemption'}</b>` +
+      (amount?` · Amount: ₹${amount}`:'') +
+      (refId?`<br/><span style="font-size:10px;opacity:0.7">Ref: ${refId}</span>`:'');
+    document.getElementById('hcwEnqModal').dataset.enqType = enqType;
+    document.getElementById('hcwEnqModal').dataset.refId = refId || '';
+    document.getElementById('hcwEnqModal').dataset.refAmount = amount || 0;
+    document.getElementById('hcwEnqMsg').value = '';
+    document.getElementById('hcwEnqMsgBox').className = 'hcw-msg';
+    document.getElementById('hcwEnqModal').style.display = 'flex';
+  };
+  window.__hcwCloseEnq = function() {
+    document.getElementById('hcwEnqModal').style.display = 'none';
+  };
+  document.getElementById('hcwEnqSubmit').onclick = async () => {
+    const m = document.getElementById('hcwEnqModal');
+    const msg = (document.getElementById('hcwEnqMsg').value || '').trim();
+    if (msg.length < 5) return showMsg('hcwEnqMsgBox', 'Please write your enquiry (min 5 chars).', 'err');
+    try {
+      await addDoc(collection(db, 'enquiries'), {
+        uid: user.uid, email: user.email || '',
+        name: ud.displayName || user.displayName || user.email,
+        type: m.dataset.enqType || 'other',
+        refId: m.dataset.refId || '',
+        refAmount: parseInt(m.dataset.refAmount) || 0,
+        message: msg, status: 'open',
+        createdAt: serverTimestamp()
+      });
+      showMsg('hcwEnqMsgBox', '✅ Enquiry sent! Owner will reply soon. Track in Notifications.', 'ok');
+      setTimeout(() => window.__hcwCloseEnq(), 1500);
+    } catch (e) {
+      showMsg('hcwEnqMsgBox', 'Failed: ' + e.message, 'err');
+    }
+  };
+
+  // Referral history
+  document.getElementById('hcwOpenRefHist').onclick = async () => {
+    const b = document.getElementById('hcwRefHistBox');
+    b.style.display = b.style.display === 'none' ? 'block' : 'none';
+    if (b.style.display === 'block') await renderRefHistory();
+  };
+  async function renderRefHistory() {
+    const list = document.getElementById('hcwRefHistList');
+    list.innerHTML = '<div class="hcw-sub">Loading…</div>';
+    try {
+      const snap = await getDocs(query(collection(db, 'users'), where('referredBy','==', user.uid)));
+      if (snap.empty) { list.innerHTML = '<div class="hcw-sub">এখনো কেউ আপনার referral link দিয়ে join করেনি। Link share করুন!</div>'; return; }
+      const items = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+        .sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0));
+      list.innerHTML = items.map(u => {
+        let status, color;
+        if (u.role === 'Prime') { status = `👑 Prime member${u.tag&&u.tag!=='Prime'?' ('+u.tag+')':''} — আপনি ১০ pts পেয়েছেন`; color = '#22c55e'; }
+        else if (u.profileComplete || u.phone || u.displayName) { status = '👤 Signed up · Profile complete · এখনো Prime কেনেনি'; color = '#f59e0b'; }
+        else { status = '🆕 Just signed up'; color = '#9ca3af'; }
+        const name = (u.displayName || u.email || 'User').replace(/[<>]/g,'');
+        return `<div class="hcw-tx" style="align-items:flex-start">
+          <div style="flex:1">
+            <div style="font-weight:600">${name}</div>
+            <div class="hcw-sub" style="color:${color}">${status}</div>
+            <div class="hcw-sub" style="opacity:0.6">Joined ${fmtDate(u.createdAt)}</div>
+          </div>
+        </div>`;
+      }).join('');
+    } catch(e) {
+      list.innerHTML = `<div class="hcw-sub" style="color:#ef4444">Could not load: ${e.message}</div>`;
     }
   }
 
