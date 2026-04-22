@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>AI Resume Builder – Hospitality Careers</title>
+<title>Resume Studio – Hospitality Careers</title>
 <meta name="theme-color" content="#d4af37"/>
 <link rel="manifest" href="/manifest.webmanifest"/>
 <link rel="apple-touch-icon" href="/logo.png"/>
@@ -59,8 +59,8 @@ body{background:var(--dark);color:#fff;font-family:'Poppins',sans-serif;margin:0
 
 <div class="pub-hero">
   <div>
-    <div class="pub-hero-title"><i class="fas fa-file-alt" style="-webkit-text-fill-color:var(--gold)"></i> AI Resume Builder</div>
-    <div class="pub-hero-sub">Powered by Google Gemini — answer a few questions and download a polished hospitality resume PDF in seconds.</div>
+    <div class="pub-hero-title"><i class="fas fa-file-alt" style="-webkit-text-fill-color:var(--gold)"></i> Hospitality Careers Resume Studio</div>
+    <div class="pub-hero-sub">Our professional resume builder — answer a few questions and download a polished hospitality resume PDF in seconds, crafted by the Hospitality Careers team.</div>
   </div>
 </div>
 
@@ -75,10 +75,25 @@ body{background:var(--dark);color:#fff;font-family:'Poppins',sans-serif;margin:0
       <div class="rb-pill" data-pill="4">4. Generate</div>
     </div>
 
-    <div class="rb-tip"><i class="fas fa-lightbulb"></i> All fields are optional except <b>Name</b> and <b>Job Title</b>. The AI will fill in professional details from what you provide.</div>
+    <div class="rb-tip"><i class="fas fa-lightbulb"></i> All fields are optional except <b>Name</b> and <b>Job Title</b>. Our system will craft professional details from what you provide.</div>
 
     <!-- STEP 1 -->
     <div class="rb-step active" data-step="1">
+      <!-- PHOTO UPLOAD -->
+      <div class="form-group">
+        <label>Profile Photo (optional, instant upload)</label>
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+          <div id="rb_photoPreview" style="width:96px;height:96px;border-radius:14px;background:rgba(212,175,55,0.08);border:2px dashed rgba(212,175,55,0.4);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden">
+            <i class="fas fa-user" style="font-size:34px;color:var(--gold);opacity:0.6"></i>
+          </div>
+          <div style="flex:1;min-width:200px">
+            <input type="file" id="rb_photoFile" accept="image/*" class="form-control" onchange="handlePhotoUpload(event)" style="font-size:12px"/>
+            <div style="font-size:11px;color:var(--gray);margin-top:6px"><i class="fas fa-info-circle"></i> JPG / PNG · Auto resized · Embedded directly in your PDF (max 2 MB)</div>
+            <button type="button" id="rb_photoRemoveBtn" onclick="removePhoto()" style="display:none;margin-top:8px;background:transparent;border:1px solid rgba(239,68,68,0.4);color:#ef4444;padding:5px 12px;border-radius:6px;font-size:11px;cursor:pointer"><i class="fas fa-times"></i> Remove photo</button>
+          </div>
+        </div>
+        <input type="hidden" id="rb_photoData"/>
+      </div>
       <div class="form-row">
         <div class="form-group"><label>Full Name *</label><input id="rb_fullName" class="form-control" placeholder="Ramesh Kumar" required/></div>
         <div class="form-group"><label>Job Title You Want *</label><input id="rb_jobTitle" class="form-control" placeholder="Front Office Executive" required/></div>
@@ -127,14 +142,14 @@ body{background:var(--dark);color:#fff;font-family:'Poppins',sans-serif;margin:0
 
     <!-- STEP 4 -->
     <div class="rb-step" data-step="4">
-      <div class="rb-tip"><i class="fas fa-magic"></i> Click <b>Generate with AI</b> — Gemini will craft a professional summary, polish your bullet points, and build a clean resume in seconds.</div>
+      <div class="rb-tip"><i class="fas fa-magic"></i> Click <b>Generate My Resume</b> — Hospitality Careers will craft a professional summary, polish your bullet points, and build a clean resume in seconds.</div>
       <div class="rb-actions">
         <button class="btn btn-outline" onclick="goStep(3)"><i class="fas fa-arrow-left"></i> Back</button>
         <button id="rb-generate" class="btn btn-primary" style="background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:#000;flex:1" onclick="generateResume()">
-          <i class="fas fa-wand-magic-sparkles"></i> Generate with AI
+          <i class="fas fa-wand-magic-sparkles"></i> Generate My Resume
         </button>
       </div>
-      <div id="rb-loader" class="rb-loader"><i class="fas fa-circle-notch"></i><div style="margin-top:10px;font-size:13px">AI is crafting your resume...</div></div>
+      <div id="rb-loader" class="rb-loader"><i class="fas fa-circle-notch"></i><div style="margin-top:10px;font-size:13px">Hospitality Careers is crafting your resume...</div></div>
       <div id="rb-error" class="alert alert-danger" style="margin-top:12px;display:none"></div>
     </div>
   </div>
@@ -186,8 +201,41 @@ function goStep(n) {
   });
 }
 
+window.handlePhotoUpload = function(ev) {
+  const file = ev.target.files && ev.target.files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) { alert('Photo too large. Please use an image under 2 MB.'); ev.target.value=''; return; }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      const c = document.createElement('canvas');
+      const max = 320;
+      const scale = Math.min(1, max / Math.max(img.width, img.height));
+      c.width = Math.round(img.width * scale);
+      c.height = Math.round(img.height * scale);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      const dataUrl = c.toDataURL('image/jpeg', 0.85);
+      document.getElementById('rb_photoData').value = dataUrl;
+      document.getElementById('rb_photoPreview').innerHTML = `<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover"/>`;
+      document.getElementById('rb_photoRemoveBtn').style.display = 'inline-block';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+};
+
+window.removePhoto = function() {
+  document.getElementById('rb_photoData').value = '';
+  document.getElementById('rb_photoFile').value = '';
+  document.getElementById('rb_photoPreview').innerHTML = '<i class="fas fa-user" style="font-size:34px;color:var(--gold);opacity:0.6"></i>';
+  document.getElementById('rb_photoRemoveBtn').style.display = 'none';
+  if (lastProfile) { lastProfile.photo = ''; renderPreview(); }
+};
+
 function getProfile() {
   return {
+    photo: document.getElementById('rb_photoData').value || '',
     fullName: document.getElementById('rb_fullName').value.trim(),
     email: document.getElementById('rb_email').value.trim(),
     phone: document.getElementById('rb_phone').value.trim(),
@@ -257,8 +305,10 @@ function renderPreview() {
     </div>`).join('');
 
   const contactBits = [p.email, p.phone, p.city].filter(Boolean).map(esc).join(' · ');
+  const photoTag = p.photo ? `<img src="${p.photo}" style="width:90px;height:90px;border-radius:8px;object-fit:cover;float:right;margin:0 0 10px 14px;border:2px solid #d4af37"/>` : '';
 
   document.getElementById('rb-preview').innerHTML = `
+    ${photoTag}
     <h1>${esc(p.fullName)}</h1>
     <div class="rb-sub"><b>${esc(p.jobTitle)}</b>${contactBits ? ' · ' + contactBits : ''}</div>
     ${r.summary ? `<h2>Professional Summary</h2><p style="font-size:13px;line-height:1.5">${esc(r.summary)}</p>` : ''}
@@ -299,13 +349,25 @@ function downloadPDF() {
     y += 14;
   }
 
-  // Header
+  // Header (with optional photo on the right)
+  const headerTop = y;
+  const photoSize = 70;
+  const hasPhoto = !!p.photo;
+  if (hasPhoto) {
+    try { doc.addImage(p.photo, 'JPEG', W - M - photoSize, headerTop - 10, photoSize, photoSize); } catch(_) {}
+  }
+  const textWidth = hasPhoto ? (W - M*2 - photoSize - 14) : (W - M*2);
   doc.setFont('helvetica', 'bold'); doc.setFontSize(22); doc.setTextColor(26, 26, 46);
-  doc.text(p.fullName || '', M, y); y += 22;
+  doc.text(p.fullName || '', M, y, { maxWidth: textWidth }); y += 22;
   doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(120, 120, 130);
-  doc.text(p.jobTitle || '', M, y); y += 14;
+  doc.text(p.jobTitle || '', M, y, { maxWidth: textWidth }); y += 14;
   const contact = [p.email, p.phone, p.city].filter(Boolean).join(' · ');
-  if (contact) { doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(120, 120, 130); doc.text(contact, M, y); y += 10; }
+  if (contact) {
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(120, 120, 130);
+    const wrappedContact = doc.splitTextToSize(contact, textWidth);
+    wrappedContact.forEach(w => { doc.text(w, M, y); y += 11; });
+  }
+  if (hasPhoto && y < headerTop + photoSize) y = headerTop + photoSize + 4;
 
   if (r.summary) { heading('Professional Summary'); line(r.summary); }
   if (r.skills?.length) { heading('Key Skills'); line('• ' + r.skills.join('   • ')); }
@@ -352,6 +414,7 @@ window.saveResumeRecord = async function(profile, ai) {
       email: profile.email || '',
       phone: profile.phone || '',
       location: profile.city || '',
+      photo: profile.photo || '',
       experience: expText,
       skills: (profile.skills||[]).join(', '),
       education: eduText,
