@@ -3202,10 +3202,11 @@ window.saveSiteSettings = async function() {
 <script src="js/my-resumes.js"></script>
 <script type="module">
 // ============== CONNECT HUB LOGIC (Phase 4) ==============
-import { collection, doc, getDoc, getDocs, query, where, onSnapshot, deleteDoc as fbDeleteDoc, updateDoc as fbUpdateDoc, serverTimestamp as fbServerTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { collection, doc, getDoc, getDocs, query, where, onSnapshot, deleteDoc as fbDeleteDoc, updateDoc as fbUpdateDoc, serverTimestamp as fbServerTimestamp, setDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 const _chDb = getFirestore(getApp());
+const db = _chDb;
 
 const CH_INDIAN_STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Andaman & Nicobar','Chandigarh','Dadra & Nagar Haveli','Daman & Diu','Delhi','Jammu & Kashmir','Ladakh','Lakshadweep','Puducherry'];
 
