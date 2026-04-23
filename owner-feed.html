@@ -751,28 +751,134 @@
         <button type="button" class="btn btn-sm" onclick="toggleSelectAllAuth(false)" style="background:rgba(239,68,68,0.12);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:3px 10px;font-size:11px">None</button>
       </div>
     </div>
-    <div class="authority-grid" id="authorityGrid">
-      <label class="authority-item"><input type="checkbox" id="auth_dashboard" checked/><div class="authority-label"><strong>Small User Control Dashboard</strong>View basic user information</div></label>
-      <label class="authority-item"><input type="checkbox" id="auth_connectEmployer"/><div class="authority-label"><strong>Approve Connect Employer Requests</strong>Can approve/reject employer connections</div></label>
-      <label class="authority-item"><input type="checkbox" id="auth_resumeDownload"/><div class="authority-label"><strong>Approve Resume Download Requests</strong>Can approve resume access</div></label>
-      <label class="authority-item"><input type="checkbox" id="auth_contact"/><div class="authority-label"><strong>Approve Contact Requests</strong>Can approve candidate contact visibility</div></label>
-      <label class="authority-item"><input type="checkbox" id="auth_membership"/><div class="authority-label"><strong>Approve Membership Requests</strong>Can approve membership upgrades</div></label>
-      <label class="authority-item"><input type="checkbox" id="auth_jobPost"/><div class="authority-label"><strong>Approve Job Post Requests</strong>Can publish pending job posts</div></label>
-      <label class="authority-item"><input type="checkbox" id="auth_jobList"/><div class="authority-label"><strong>Manage Job List</strong>Can edit and delete job listings</div></label>
-      <label class="authority-item"><input type="checkbox" id="auth_candidates"/><div class="authority-label"><strong>Candidate List & Hiring</strong>View candidates and mark Hired</div></label>
-      <label class="authority-item"><input type="checkbox" id="auth_walletTopups"/><div class="authority-label"><strong>Approve HC Wallet Top-ups</strong>Verify UTR & credit user wallets</div></label>
-      <label class="authority-item"><input type="checkbox" id="auth_walletWithdrawals"/><div class="authority-label"><strong>Approve Wallet Withdrawals</strong>Pay & mark withdrawals, or refund on reject</div></label>
-      <label class="authority-item"><input type="checkbox" id="auth_walletRecords"/><div class="authority-label"><strong>View Wallet Transaction Records</strong>Read-only ledger access</div></label>
-      <label class="authority-item"><input type="checkbox" id="auth_coupons"/><div class="authority-label"><strong>Create & Send Coupons</strong>Send discount / trial / free-month / referral coupons</div></label>
-      <label class="authority-item"><input type="checkbox" id="auth_discounts"/><div class="authority-label"><strong>Discounts & Offers</strong>Create membership offers + base price upgrade</div></label>
-      <label class="authority-item"><input type="checkbox" id="auth_referrals"/><div class="authority-label"><strong>Refer & Earn Records</strong>View referrals + edit reward points</div></label>
-      <label class="authority-item"><input type="checkbox" id="auth_enquiries"/><div class="authority-label"><strong>Handle Enquiries</strong>Respond to user deposit/withdraw/coupon enquiries</div></label>
-      <label class="authority-item"><input type="checkbox" id="auth_feedback"/><div class="authority-label"><strong>Manage Feedback</strong>Read user feedback & toggle public display</div></label>
-      <label class="authority-item"><input type="checkbox" id="auth_resumeRecords"/><div class="authority-label"><strong>AI Resume Records</strong>View & download user resumes (PDF)</div></label>
-      <label class="authority-item"><input type="checkbox" id="auth_engagement"/><div class="authority-label"><strong>Engagement Tools</strong>Send notifications / push messages to users</div></label>
-      <label class="authority-item"><input type="checkbox" id="auth_content"/><div class="authority-label"><strong>Site Content</strong>Edit About / Contact / Help / Banners</div></label>
-      <label class="authority-item"><input type="checkbox" id="auth_settings"/><div class="authority-label"><strong>Settings</strong>Manage UPI / app links / general config</div></label>
-      <label class="authority-item"><input type="checkbox" id="auth_promote"/><div class="authority-label"><strong>Promote / Demote Admins</strong>Sub-admin management (use carefully)</div></label>
+    <!-- Authority Categories — visually grouped, with category-level select-all -->
+    <div id="authorityGrid">
+
+      <!-- 👁 Dashboard & Visibility -->
+      <div class="auth-category" data-cat="visibility">
+        <div class="auth-cat-head">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1">
+            <input type="checkbox" class="auth-cat-toggle" data-cat="visibility" onchange="toggleAuthCategory('visibility', this.checked)"/>
+            <span class="auth-cat-title">👁️ Dashboard &amp; Visibility</span>
+          </label>
+          <span class="auth-cat-count" id="auth-cat-count-visibility">0/1</span>
+        </div>
+        <div class="authority-grid">
+          <label class="authority-item"><input type="checkbox" id="auth_dashboard" data-cat="visibility" checked/><div class="authority-label"><strong>Small User Control Dashboard</strong>View basic user information</div></label>
+        </div>
+      </div>
+
+      <!-- ✅ Approval Workflows -->
+      <div class="auth-category" data-cat="approvals">
+        <div class="auth-cat-head">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1">
+            <input type="checkbox" class="auth-cat-toggle" data-cat="approvals" onchange="toggleAuthCategory('approvals', this.checked)"/>
+            <span class="auth-cat-title">✅ Approval Workflows</span>
+          </label>
+          <span class="auth-cat-count" id="auth-cat-count-approvals">0/5</span>
+        </div>
+        <div class="authority-grid">
+          <label class="authority-item"><input type="checkbox" id="auth_connectEmployer" data-cat="approvals"/><div class="authority-label"><strong>Approve Connect Employer Requests</strong>Can approve/reject employer connections</div></label>
+          <label class="authority-item"><input type="checkbox" id="auth_resumeDownload" data-cat="approvals"/><div class="authority-label"><strong>Approve Resume Download Requests</strong>Can approve resume access</div></label>
+          <label class="authority-item"><input type="checkbox" id="auth_contact" data-cat="approvals"/><div class="authority-label"><strong>Approve Contact Requests</strong>Can approve candidate contact visibility</div></label>
+          <label class="authority-item"><input type="checkbox" id="auth_membership" data-cat="approvals"/><div class="authority-label"><strong>Approve Membership Requests</strong>Can approve membership upgrades</div></label>
+          <label class="authority-item"><input type="checkbox" id="auth_jobPost" data-cat="approvals"/><div class="authority-label"><strong>Approve Job Post Requests</strong>Can publish pending job posts</div></label>
+        </div>
+      </div>
+
+      <!-- 📋 Job & Candidate Management -->
+      <div class="auth-category" data-cat="jobs">
+        <div class="auth-cat-head">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1">
+            <input type="checkbox" class="auth-cat-toggle" data-cat="jobs" onchange="toggleAuthCategory('jobs', this.checked)"/>
+            <span class="auth-cat-title">📋 Job &amp; Candidate Management</span>
+          </label>
+          <span class="auth-cat-count" id="auth-cat-count-jobs">0/2</span>
+        </div>
+        <div class="authority-grid">
+          <label class="authority-item"><input type="checkbox" id="auth_jobList" data-cat="jobs"/><div class="authority-label"><strong>Manage Job List</strong>Can edit and delete job listings</div></label>
+          <label class="authority-item"><input type="checkbox" id="auth_candidates" data-cat="jobs"/><div class="authority-label"><strong>Candidate List &amp; Hiring</strong>View candidates and mark Hired</div></label>
+        </div>
+      </div>
+
+      <!-- 💰 Wallet & Finance -->
+      <div class="auth-category" data-cat="wallet">
+        <div class="auth-cat-head">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1">
+            <input type="checkbox" class="auth-cat-toggle" data-cat="wallet" onchange="toggleAuthCategory('wallet', this.checked)"/>
+            <span class="auth-cat-title">💰 Wallet &amp; Finance</span>
+          </label>
+          <span class="auth-cat-count" id="auth-cat-count-wallet">0/3</span>
+        </div>
+        <div class="authority-grid">
+          <label class="authority-item"><input type="checkbox" id="auth_walletTopups" data-cat="wallet"/><div class="authority-label"><strong>Approve HC Wallet Top-ups</strong>Verify UTR &amp; credit user wallets</div></label>
+          <label class="authority-item"><input type="checkbox" id="auth_walletWithdrawals" data-cat="wallet"/><div class="authority-label"><strong>Approve Wallet Withdrawals</strong>Pay &amp; mark withdrawals, or refund on reject</div></label>
+          <label class="authority-item"><input type="checkbox" id="auth_walletRecords" data-cat="wallet"/><div class="authority-label"><strong>View Wallet Transaction Records</strong>Read-only ledger access</div></label>
+        </div>
+      </div>
+
+      <!-- 🎁 Marketing & Engagement -->
+      <div class="auth-category" data-cat="marketing">
+        <div class="auth-cat-head">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1">
+            <input type="checkbox" class="auth-cat-toggle" data-cat="marketing" onchange="toggleAuthCategory('marketing', this.checked)"/>
+            <span class="auth-cat-title">🎁 Marketing &amp; Engagement</span>
+          </label>
+          <span class="auth-cat-count" id="auth-cat-count-marketing">0/4</span>
+        </div>
+        <div class="authority-grid">
+          <label class="authority-item"><input type="checkbox" id="auth_coupons" data-cat="marketing"/><div class="authority-label"><strong>Create &amp; Send Coupons</strong>Send discount / trial / free-month / referral coupons</div></label>
+          <label class="authority-item"><input type="checkbox" id="auth_discounts" data-cat="marketing"/><div class="authority-label"><strong>Discounts &amp; Offers</strong>Create membership offers + base price upgrade</div></label>
+          <label class="authority-item"><input type="checkbox" id="auth_referrals" data-cat="marketing"/><div class="authority-label"><strong>Refer &amp; Earn Records</strong>View referrals + edit reward points</div></label>
+          <label class="authority-item"><input type="checkbox" id="auth_engagement" data-cat="marketing"/><div class="authority-label"><strong>Engagement Tools</strong>Send notifications / push messages to users</div></label>
+        </div>
+      </div>
+
+      <!-- 💬 Support & Feedback -->
+      <div class="auth-category" data-cat="support">
+        <div class="auth-cat-head">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1">
+            <input type="checkbox" class="auth-cat-toggle" data-cat="support" onchange="toggleAuthCategory('support', this.checked)"/>
+            <span class="auth-cat-title">💬 Support &amp; Feedback</span>
+          </label>
+          <span class="auth-cat-count" id="auth-cat-count-support">0/2</span>
+        </div>
+        <div class="authority-grid">
+          <label class="authority-item"><input type="checkbox" id="auth_enquiries" data-cat="support"/><div class="authority-label"><strong>Handle Enquiries</strong>Respond to user deposit/withdraw/coupon enquiries</div></label>
+          <label class="authority-item"><input type="checkbox" id="auth_feedback" data-cat="support"/><div class="authority-label"><strong>Manage Feedback</strong>Read user feedback &amp; toggle public display</div></label>
+        </div>
+      </div>
+
+      <!-- 📄 Content & Records -->
+      <div class="auth-category" data-cat="content">
+        <div class="auth-cat-head">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1">
+            <input type="checkbox" class="auth-cat-toggle" data-cat="content" onchange="toggleAuthCategory('content', this.checked)"/>
+            <span class="auth-cat-title">📄 Content &amp; Records</span>
+          </label>
+          <span class="auth-cat-count" id="auth-cat-count-content">0/2</span>
+        </div>
+        <div class="authority-grid">
+          <label class="authority-item"><input type="checkbox" id="auth_resumeRecords" data-cat="content"/><div class="authority-label"><strong>AI Resume Records</strong>View &amp; download user resumes (PDF)</div></label>
+          <label class="authority-item"><input type="checkbox" id="auth_content" data-cat="content"/><div class="authority-label"><strong>Site Content</strong>Edit About / Contact / Help / Banners</div></label>
+        </div>
+      </div>
+
+      <!-- ⚙️ System & Admin Management -->
+      <div class="auth-category" data-cat="system">
+        <div class="auth-cat-head">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1">
+            <input type="checkbox" class="auth-cat-toggle" data-cat="system" onchange="toggleAuthCategory('system', this.checked)"/>
+            <span class="auth-cat-title">⚙️ System &amp; Admin Management</span>
+          </label>
+          <span class="auth-cat-count" id="auth-cat-count-system">0/2</span>
+        </div>
+        <div class="authority-grid">
+          <label class="authority-item"><input type="checkbox" id="auth_settings" data-cat="system"/><div class="authority-label"><strong>Settings</strong>Manage UPI / app links / general config</div></label>
+          <label class="authority-item"><input type="checkbox" id="auth_promote" data-cat="system"/><div class="authority-label"><strong>Promote / Demote Admins</strong>Sub-admin management (use carefully)</div></label>
+        </div>
+      </div>
+
     </div>
     <button class="btn btn-success w-full mt-16" onclick="confirmPromote()"><i class="fas fa-check"></i> Promote to Admin</button>
   </div>
@@ -1362,11 +1468,47 @@ window.applyRolePreset = function() {
   const preset = ROLE_PRESETS[role];
   if (!preset) return;
   ALL_AUTH_KEYS.forEach(k => { const el = document.getElementById('auth_'+k); if (el) el.checked = preset.includes(k); });
+  refreshAuthCategoryCounts();
   showToast(`Preset applied for ${role} (${preset.length} permissions). You can override.`);
 };
 window.toggleSelectAllAuth = function(state) {
   ALL_AUTH_KEYS.forEach(k => { const el = document.getElementById('auth_'+k); if (el) el.checked = state; });
+  refreshAuthCategoryCounts();
 };
+
+// ── Authority Category helpers (Phase 1: visual category grouping) ──────────
+window.toggleAuthCategory = function(cat, state) {
+  document.querySelectorAll(`#authorityGrid input[type="checkbox"][data-cat="${cat}"]`).forEach(cb => {
+    if (cb.classList.contains('auth-cat-toggle')) return;
+    cb.checked = state;
+  });
+  refreshAuthCategoryCounts();
+};
+function refreshAuthCategoryCounts() {
+  document.querySelectorAll('#authorityGrid .auth-category').forEach(catEl => {
+    const cat = catEl.dataset.cat;
+    const items = catEl.querySelectorAll('.authority-item input[type="checkbox"]');
+    const checked = Array.from(items).filter(cb => cb.checked).length;
+    const total = items.length;
+    const countEl = document.getElementById('auth-cat-count-' + cat);
+    if (countEl) {
+      countEl.textContent = `${checked}/${total}`;
+      countEl.style.color = checked === total ? '#22c55e' : (checked === 0 ? 'var(--gray)' : 'var(--gold)');
+    }
+    const headToggle = catEl.querySelector('.auth-cat-toggle');
+    if (headToggle) {
+      headToggle.checked = checked === total && total > 0;
+      headToggle.indeterminate = checked > 0 && checked < total;
+    }
+  });
+}
+// Auto-update counts whenever any authority checkbox changes
+document.addEventListener('change', (e) => {
+  if (e.target && e.target.matches('#authorityGrid .authority-item input[type="checkbox"]')) {
+    refreshAuthCategoryCounts();
+  }
+});
+window.refreshAuthCategoryCounts = refreshAuthCategoryCounts;
 window.toggleSelectAllStates = function(state) {
   document.querySelectorAll('#auth_statesBox .auth_state_cb').forEach(cb => { cb.checked = state; });
   updateStatesCount();
@@ -1404,6 +1546,7 @@ window.openPromote = async function(uid, name, existingData) {
     if (existingAuths && Object.keys(existingAuths).length) el.checked = !!existingAuths[k];
     else el.checked = (ROLE_PRESETS[existingRole]||['dashboard']).includes(k);
   });
+  refreshAuthCategoryCounts();
   // Load states
   const box = document.getElementById('auth_statesBox');
   box.innerHTML = '<div style="color:var(--gray)">Loading...</div>';
