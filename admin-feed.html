@@ -921,10 +921,50 @@ window.deleteJob = async function(id) {
   loadJobList();
 };
 
+// ===== Phase 5: Owner Preview Mode detection =====
+const _urlParams = new URLSearchParams(window.location.search);
+const PREVIEW_AS_UID = _urlParams.get('previewAs');
+const PREVIEW_AS_NAME = _urlParams.get('previewName') || 'Admin';
+window.__PREVIEW_MODE__ = false;
+
 onAuthStateChanged(auth, async (user) => {
   if (!user) { window.location.href = 'index.html'; return; }
   currentUser = user;
   try {
+    // PREVIEW MODE: owner is viewing as another admin
+    if (PREVIEW_AS_UID && user.email?.toLowerCase() === 'ssandeepsarkar143@gmail.com') {
+      const targetSnap = await getDoc(doc(db, 'users', PREVIEW_AS_UID));
+      if (!targetSnap.exists() || targetSnap.data().role !== 'Admin') {
+        alert('Cannot preview: target user not found or not an Admin.');
+        window.close(); return;
+      }
+      adminData = targetSnap.data();
+      window.__PREVIEW_MODE__ = true;
+      window.__PREVIEW_TARGET_UID__ = PREVIEW_AS_UID;
+      // Override currentUser-derived data so all section loaders use target admin's allocations
+      window.__PREVIEW_DISPLAY_NAME__ = adminData.displayName || adminData.email || PREVIEW_AS_NAME;
+      document.getElementById('adminNameEl').textContent = `${window.__PREVIEW_DISPLAY_NAME__} (Preview)`;
+      document.getElementById('loader').style.display = 'none';
+      // Inject preview banner
+      const banner = document.createElement('div');
+      banner.id = 'preview-banner';
+      banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:10000;background:linear-gradient(90deg,#ef4444,#dc2626);color:#fff;padding:8px 14px;text-align:center;font-weight:700;font-size:13px;box-shadow:0 2px 10px rgba(239,68,68,0.4)';
+      banner.innerHTML = `<i class="fas fa-eye"></i> PREVIEW MODE — Viewing as <strong>${(window.__PREVIEW_DISPLAY_NAME__).replace(/[<>]/g,'')}</strong> · Read-only · <a href="javascript:window.close()" style="color:#fff;text-decoration:underline;margin-left:10px"><i class="fas fa-times"></i> Exit Preview</a>`;
+      document.body.prepend(banner);
+      document.body.style.paddingTop = '40px';
+      // Skip MPIN entirely
+      unlockDashboard();
+      // Disable all write controls after a tick
+      setTimeout(() => {
+        document.querySelectorAll('button.btn-primary,button.btn-success,button.btn-danger,button.btn-warning,input[type="submit"]').forEach(b => {
+          if (b.closest('#preview-banner') || b.closest('#gc-panel')) return;
+          b.disabled = true; b.style.opacity = '0.5'; b.style.cursor = 'not-allowed';
+          b.title = 'Disabled in Preview Mode';
+        });
+      }, 600);
+      return;
+    }
+
     const snap = await getDoc(doc(db, 'users', user.uid));
     if (!snap.exists()) { window.location.href = 'index.html'; return; }
     adminData = snap.data();
