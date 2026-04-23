@@ -929,6 +929,52 @@ input[type="range"] {
 .authority-label { font-size: 13px; color: rgba(255,255,255,0.8); }
 .authority-label strong { display: block; color: var(--gold-light); margin-bottom: 3px; font-size: 13px; }
 
+/* ── Authority Categories (visually grouped permissions) ── */
+.auth-category {
+  margin-top: 14px;
+  background: rgba(212,175,55,0.04);
+  border: 1px solid rgba(212,175,55,0.18);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.auth-cat-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(212,175,55,0.10);
+  border-bottom: 1px solid rgba(212,175,55,0.15);
+}
+.auth-cat-head .auth-cat-toggle {
+  width: 18px; height: 18px; accent-color: var(--gold); cursor: pointer;
+}
+.auth-cat-title {
+  font-weight: 700;
+  color: var(--gold-light);
+  font-size: 13px;
+  letter-spacing: 0.2px;
+}
+.auth-cat-count {
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(0,0,0,0.25);
+  padding: 3px 10px;
+  border-radius: 999px;
+  color: var(--gray);
+  min-width: 38px;
+  text-align: center;
+}
+.auth-category .authority-grid {
+  margin-top: 0;
+  padding: 10px 12px;
+  gap: 8px;
+}
+.auth-category .authority-item {
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.03);
+}
+
 /* ========== PROFILE POPUP ========== */
 .profile-popup {
   text-align: center;
