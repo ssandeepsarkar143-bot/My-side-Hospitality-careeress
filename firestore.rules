@@ -99,5 +99,40 @@ service cloud.firestore {
       allow create: if isSignedIn();
       allow update, delete: if isOwner();
     }
+
+    // AUDIT LOG (Phase 1) — append-only by signed-in users; owner full
+    match /auditLog/{id} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update, delete: if isOwner();
+    }
+
+    // CONNECT HUB GROUPS (Phase 4) — owner manages; members read/write own group
+    match /connectGroups/{groupId} {
+      allow read: if isSignedIn() && (
+        isOwner() ||
+        request.auth.uid in resource.data.memberUids
+      );
+      allow create: if isOwner();
+      allow update: if isOwner() ||
+        (isSignedIn() && request.auth.uid in resource.data.memberUids
+          && request.resource.data.memberUids == resource.data.memberUids
+          && request.resource.data.ownerUid == resource.data.ownerUid);
+      allow delete: if isOwner();
+
+      // MESSAGES — only group members can read/post; nobody updates or deletes
+      match /messages/{msgId} {
+        allow read: if isSignedIn() && (
+          isOwner() ||
+          request.auth.uid in get(/databases/$(database)/documents/connectGroups/$(groupId)).data.memberUids
+        );
+        allow create: if isSignedIn() && (
+          isOwner() ||
+          request.auth.uid in get(/databases/$(database)/documents/connectGroups/$(groupId)).data.memberUids
+        );
+        allow update: if false;
+        allow delete: if isOwner();
+      }
+    }
   }
 }

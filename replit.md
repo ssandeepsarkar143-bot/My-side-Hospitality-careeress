@@ -133,3 +133,24 @@ Port: 5000
   - All 12 main HTML pages updated with manifest link, theme color (`#d4af37`), apple-touch-icon, and PWA install script
 - **Help page** (`help.html`): 3 new categories with 9 new FAQ entries — AI Assistant, Resume Builder, Install App (Android + iOS + offline + auto-update)
 - **Navigation**: Added "Resume" link in nav + footer of all public pages (index, about, contact, feedback, help, resume-builder)
+
+## Phase 4 Update (2026-04-23) — Connect Hub & Group Chat
+- **New module `js/group-chat.js`** — shared real-time group chat (auth-gated)
+  - Floating FAB (bottom-right) opens slide-in panel
+  - List view → thread view with message bubbles (me/them/system styles)
+  - Real-time `onSnapshot` for groups + messages
+  - Modern WhatsApp-style UI (gold accent, dark theme)
+- **Owner Connect Hub** (`owner-feed.html` → new sidebar item "Connect Hub")
+  - Create groups by state filter + role category preset:
+    - "Management" (Op Mgr + Branch Head auto-tick)
+    - "All Team" (every admin auto-tick)
+    - "Marketing" (Marketing Mgr + Recruiter + TL auto-tick)
+  - Custom mode: pick states → members appear grouped by role with checkboxes
+  - Existing groups table: Active/Closed status, dismiss/restore/delete buttons
+  - Welcome system message auto-posted on group creation
+- **Admins** (`admin-feed.html`) — same group-chat module loads after MPIN unlock; admins see/chat in groups they're members of; cannot create
+- **Help page audience filter** (`help.html`)
+  - FAQ items can be tagged `data-audience="all|user|admin|owner"`
+  - Auto-applies on auth state change based on user's role
+- **Firestore rules** — added `connectGroups` + `connectGroups/{id}/messages` (members read/write own; owner full; messages immutable except by owner) + `auditLog` rules
+- **Safety fix**: `js/firebase-config.js` now uses `getApps().length ? getApp() : initializeApp(...)` to avoid double-init when both inline scripts and the shared module load

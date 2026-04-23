@@ -92,6 +92,7 @@
       <div class="sidebar-item" onclick="showSection('resumeRecords')"><i class="fas fa-file-alt"></i> AI Resume Records</div>
       <div class="sidebar-section">Engagement</div>
       <div class="sidebar-item" onclick="showSection('notifications')"><i class="fas fa-bell"></i> Notifications</div>
+      <div class="sidebar-item" onclick="showSection('connectHub')"><i class="fas fa-users-rays"></i> Connect Hub</div>
       <div class="sidebar-section">Site Content</div>
       <div class="sidebar-item" onclick="showSection('siteSettings')"><i class="fas fa-cog"></i> Edit Site Content</div>
       <div class="sidebar-section">Settings</div>
@@ -493,6 +494,53 @@
           <table>
             <thead><tr><th>Name</th><th>Job Title</th><th>Email</th><th>Phone</th><th>Experience</th><th>Skills</th><th>Date</th><th>Action</th></tr></thead>
             <tbody id="resumeRecordsBody"><tr><td colspan="8" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ============== CONNECT HUB (Phase 4) ============== -->
+      <div id="sec-connectHub" class="page-section">
+        <div class="section-title"><i class="fas fa-users-rays"></i> Connect Hub — Group Chats</div>
+        <div class="card" style="margin-bottom:20px">
+          <h3 style="color:#d4af37;margin-bottom:12px"><i class="fas fa-plus-circle"></i> Create New Group</h3>
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Group Name</label>
+              <input type="text" id="ch_groupName" class="form-control" maxlength="80" placeholder="e.g. West Bengal Marketing Team"/>
+            </div>
+            <div class="form-group">
+              <label>Category Preset</label>
+              <select id="ch_preset" class="form-control" onchange="applyConnectHubPreset()">
+                <option value="">— Custom (manual select) —</option>
+                <option value="management">Management (Op Mgr + Branch Head)</option>
+                <option value="all_team">All Team (every admin)</option>
+                <option value="marketing">Marketing (Marketing Mgr + Recruiter + TL)</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Filter by States <span style="font-size:11px;color:var(--gray)">(empty = All India)</span></label>
+            <div id="ch_statesBox" style="max-height:120px;overflow-y:auto;background:rgba(255,255,255,0.04);border:1px solid rgba(212,175,55,0.2);border-radius:8px;padding:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px;font-size:12px"></div>
+            <div style="margin-top:6px">
+              <button class="btn btn-sm" style="background:rgba(212,175,55,0.15);color:#d4af37" onclick="ch_selectAllStates(true)">Select All States</button>
+              <button class="btn btn-sm" style="background:rgba(255,255,255,0.06);color:#fff" onclick="ch_selectAllStates(false)">Clear</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Members <span style="font-size:11px;color:var(--gray)">(state-filtered admins)</span></label>
+            <div id="ch_membersBox" style="max-height:200px;overflow-y:auto;background:rgba(255,255,255,0.04);border:1px solid rgba(212,175,55,0.2);border-radius:8px;padding:10px;font-size:12px">
+              <div style="color:var(--gray);text-align:center;padding:14px">Select states above to load members…</div>
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="createConnectHubGroup()"><i class="fas fa-comments"></i> Create Group Chat</button>
+          <span id="ch_msg" style="margin-left:10px;font-size:12px"></span>
+        </div>
+
+        <div class="card">
+          <h3 style="color:#d4af37;margin-bottom:12px"><i class="fas fa-list"></i> Existing Groups</h3>
+          <table class="data-table">
+            <thead><tr><th>Name</th><th>Members</th><th>States</th><th>Roles</th><th>Last Activity</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="ch_groupsBody"><tr><td colspan="7" style="text-align:center;color:var(--gray);padding:20px">Loading…</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -1000,6 +1048,7 @@ function loadSectionData(name) {
     case 'resumeRecords': loadResumeRecords(); break;
     case 'enquiries': loadEnquiries(); break;
     case 'siteSettings': loadSiteSettings(); break;
+    case 'connectHub': loadConnectHubSection(); break;
   }
 }
 
@@ -1084,6 +1133,11 @@ function unlockDashboard() {
   document.getElementById('mpinScreen').style.display = 'none';
   document.getElementById('mainDashboard').style.display = 'block';
   loadRevenue();
+  // Init group chat (Phase 4)
+  import('./js/group-chat.js').then(m => {
+    m.default.init({ user: currentUser });
+    window.__OWNER_GROUP_CHAT_READY__ = true;
+  }).catch(e => console.warn('GroupChat init failed:', e));
 }
 
 // REVENUE
@@ -3029,6 +3083,196 @@ window.saveSiteSettings = async function() {
 };
 </script>
 <script src="js/my-resumes.js"></script>
+<script type="module">
+// ============== CONNECT HUB LOGIC (Phase 4) ==============
+import { collection, doc, getDoc, getDocs, query, where, onSnapshot, deleteDoc as fbDeleteDoc, updateDoc as fbUpdateDoc, serverTimestamp as fbServerTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+const _chDb = getFirestore(getApp());
+
+const CH_INDIAN_STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Andaman & Nicobar','Chandigarh','Dadra & Nagar Haveli','Daman & Diu','Delhi','Jammu & Kashmir','Ladakh','Lakshadweep','Puducherry'];
+
+let _chAdmins = [];
+let _chUnsubGroups = null;
+
+window.loadConnectHubSection = async function() {
+  // Render state checkboxes
+  const sb = document.getElementById('ch_statesBox');
+  if (sb && !sb.dataset.loaded) {
+    sb.innerHTML = CH_INDIAN_STATES.map(s => {
+      const safe = s.replace(/"/g,'&quot;');
+      return `<label style="display:flex;align-items:center;gap:5px;cursor:pointer;color:#fff"><input type="checkbox" class="ch_state_cb" value="${safe}" onchange="ch_refreshMembers()"/><span>${s}</span></label>`;
+    }).join('');
+    sb.dataset.loaded = '1';
+  }
+  // Load all admins once
+  try {
+    const snap = await getDocs(query(collection(_chDb, 'users'), where('role','==','Admin')));
+    _chAdmins = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch(e) { console.warn('load admins failed', e); _chAdmins = []; }
+  ch_refreshMembers();
+  startConnectGroupsListener();
+};
+
+window.ch_selectAllStates = function(check) {
+  document.querySelectorAll('.ch_state_cb').forEach(c => c.checked = !!check);
+  ch_refreshMembers();
+};
+
+window.applyConnectHubPreset = function() {
+  const p = document.getElementById('ch_preset').value;
+  // Reset state filter when preset chosen
+  if (p === 'all_team' || p === 'management' || p === 'marketing') {
+    document.querySelectorAll('.ch_state_cb').forEach(c => c.checked = true);
+  }
+  ch_refreshMembers();
+  // After members render, auto-tick
+  setTimeout(() => {
+    const wantRoles = p === 'management' ? ['Operations Manager','Branch Head']
+                    : p === 'marketing'  ? ['Marketing Manager','Recruiter','Team Leader']
+                    : p === 'all_team'   ? null
+                    : [];
+    document.querySelectorAll('.ch_member_cb').forEach(cb => {
+      const role = cb.dataset.role || '';
+      if (!wantRoles) cb.checked = true;
+      else if (wantRoles.includes(role)) cb.checked = true;
+    });
+    // Suggest a group name
+    const nameEl = document.getElementById('ch_groupName');
+    if (nameEl && !nameEl.value) {
+      nameEl.value = p === 'management' ? 'Management Team'
+                   : p === 'marketing'  ? 'Marketing Team'
+                   : p === 'all_team'   ? 'All Team'
+                   : '';
+    }
+  }, 50);
+};
+
+window.ch_refreshMembers = function() {
+  const states = Array.from(document.querySelectorAll('.ch_state_cb:checked')).map(c => c.value);
+  const box = document.getElementById('ch_membersBox');
+  if (!box) return;
+  const noStateFilter = states.length === 0;
+  const list = _chAdmins.filter(a => {
+    if (noStateFilter) return true;
+    const aStates = a.locations || [];
+    if (!aStates.length) return false;
+    return aStates.some(s => states.includes(s));
+  });
+  if (!list.length) {
+    box.innerHTML = `<div style="color:var(--gray);text-align:center;padding:14px">No admins ${noStateFilter ? 'found' : 'in selected states'}.</div>`;
+    return;
+  }
+  // Group by adminRole
+  const byRole = {};
+  list.forEach(a => {
+    const r = a.adminRole || 'Admin';
+    (byRole[r] = byRole[r] || []).push(a);
+  });
+  const order = ['Operations Manager','Branch Head','Admin','Team Leader','Marketing Manager','Recruiter','Accountant','Support Executive'];
+  const sortedRoles = Object.keys(byRole).sort((a,b) => {
+    const ai = order.indexOf(a), bi = order.indexOf(b);
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+  });
+  box.innerHTML = sortedRoles.map(role => {
+    const members = byRole[role];
+    return `<div style="margin-bottom:10px"><div style="font-weight:700;color:#d4af37;font-size:11px;margin-bottom:4px;text-transform:uppercase">${role} (${members.length})</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:4px;padding-left:8px">
+        ${members.map(m => `<label style="display:flex;align-items:center;gap:6px;cursor:pointer;color:#fff;font-size:11px">
+          <input type="checkbox" class="ch_member_cb" value="${m.id}" data-role="${role}" data-name="${(m.displayName||m.email||'').replace(/"/g,'&quot;')}"/>
+          <span>${(m.displayName||m.email||'').slice(0,28)}</span>
+        </label>`).join('')}
+      </div></div>`;
+  }).join('');
+};
+
+window.createConnectHubGroup = async function() {
+  const name = document.getElementById('ch_groupName').value.trim();
+  const msg = document.getElementById('ch_msg');
+  msg.style.color = '#ef4444';
+  if (!name) { msg.textContent = 'Group name required.'; return; }
+  const memberUids = Array.from(document.querySelectorAll('.ch_member_cb:checked')).map(c => c.value);
+  if (!memberUids.length) { msg.textContent = 'Select at least one member.'; return; }
+  const states = Array.from(document.querySelectorAll('.ch_state_cb:checked')).map(c => c.value);
+  const roles = [...new Set(Array.from(document.querySelectorAll('.ch_member_cb:checked')).map(c => c.dataset.role))];
+  try {
+    if (!window.GroupChat) {
+      const m = await import('./js/group-chat.js');
+      m.default.init({ user: currentUser });
+    }
+    await window.GroupChat.createGroup({ name, states, roles, memberUids });
+    msg.style.color = '#22c55e'; msg.textContent = '✓ Group created!';
+    document.getElementById('ch_groupName').value = '';
+    document.getElementById('ch_preset').value = '';
+    document.querySelectorAll('.ch_member_cb').forEach(c => c.checked = false);
+    showToast('Group chat created');
+    setTimeout(() => msg.textContent = '', 3000);
+  } catch (e) {
+    msg.textContent = 'Error: ' + e.message;
+  }
+};
+
+function startConnectGroupsListener() {
+  if (_chUnsubGroups) _chUnsubGroups();
+  _chUnsubGroups = onSnapshot(collection(_chDb, 'connectGroups'), (snap) => {
+    const tbody = document.getElementById('ch_groupsBody');
+    if (!tbody) return;
+    const list = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0));
+    if (!list.length) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--gray);padding:20px">No groups yet.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = list.map(g => {
+      const last = g.lastMessageAt?.toDate?.()?.toLocaleString() || '—';
+      const status = g.dismissedAt
+        ? '<span class="badge badge-pending">Closed</span>'
+        : '<span class="badge badge-approved">Active</span>';
+      const safeName = (g.name||'').replace(/[<>&"]/g, c => ({ '<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;' }[c]));
+      return `<tr>
+        <td><strong>${safeName}</strong></td>
+        <td style="text-align:center">${(g.memberUids||[]).length}</td>
+        <td style="font-size:10px">${(g.states||[]).slice(0,3).map(s=>`<span style="background:rgba(212,175,55,0.15);padding:1px 5px;border-radius:3px;margin:1px;display:inline-block">${s}</span>`).join('')||'<span style="color:var(--gray)">All India</span>'}${(g.states||[]).length>3?` <span style="color:var(--gray)">+${g.states.length-3}</span>`:''}</td>
+        <td style="font-size:10px">${(g.roles||[]).join(', ')||'—'}</td>
+        <td style="font-size:11px">${last}</td>
+        <td>${status}</td>
+        <td style="white-space:nowrap">
+          ${g.dismissedAt
+            ? `<button class="btn btn-sm" style="background:#22c55e;color:#fff" onclick="ch_restoreGroup('${g.id}')"><i class="fas fa-redo"></i> Restore</button>`
+            : `<button class="btn btn-sm btn-warning" style="background:#ffc107;color:#000" onclick="ch_dismissGroup('${g.id}')"><i class="fas fa-archive"></i> Close</button>`}
+          <button class="btn btn-sm btn-danger" onclick="ch_deleteGroup('${g.id}','${safeName.replace(/'/g,'&#39;')}')"><i class="fas fa-trash"></i></button>
+        </td>
+      </tr>`;
+    }).join('');
+  }, (err) => {
+    const tbody = document.getElementById('ch_groupsBody');
+    if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="color:#ef4444;text-align:center;padding:20px">Error: ${err.message}</td></tr>`;
+  });
+}
+
+window.ch_dismissGroup = async function(id) {
+  if (!confirm('Close this group? Members will see "closed by Owner" and cannot send messages.')) return;
+  if (!window.GroupChat) { const m = await import('./js/group-chat.js'); m.default.init({ user: currentUser }); }
+  await window.GroupChat.dismissGroup(id);
+  showToast('Group closed');
+};
+window.ch_restoreGroup = async function(id) {
+  if (!window.GroupChat) { const m = await import('./js/group-chat.js'); m.default.init({ user: currentUser }); }
+  await window.GroupChat.restoreGroup(id);
+  showToast('Group restored');
+};
+window.ch_deleteGroup = async function(id, name) {
+  if (!confirm(`Permanently delete group "${name}" and ALL its messages? This cannot be undone.`)) return;
+  try {
+    // delete messages subcollection (best-effort, client-side)
+    const msgs = await getDocs(collection(_chDb, 'connectGroups', id, 'messages'));
+    await Promise.all(msgs.docs.map(d => fbDeleteDoc(d.ref)));
+    await fbDeleteDoc(doc(_chDb, 'connectGroups', id));
+    showToast('Group deleted');
+  } catch(e) { alert('Delete failed: ' + e.message); }
+};
+</script>
+
 <script src="js/i18n.js"></script>
 <script src="js/chatbot.js"></script>
 <script src="js/pwa-install.js"></script>
