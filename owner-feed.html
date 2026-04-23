@@ -97,6 +97,9 @@
       <div class="sidebar-item" onclick="showSection('siteSettings')"><i class="fas fa-cog"></i> Edit Site Content</div>
       <div class="sidebar-section">Settings</div>
       <div class="sidebar-item" onclick="showSection('manageMpin')"><i class="fas fa-key"></i> Manage MPINs</div>
+      <div class="sidebar-item" onclick="showSection('previewCenter')"><i class="fas fa-eye"></i> Switch View Center</div>
+      <div class="sidebar-item" onclick="showSection('previewLog')"><i class="fas fa-stopwatch"></i> Preview Activity Log</div>
+      <div class="sidebar-item" onclick="showSection('delegationCfg')"><i class="fas fa-user-tag"></i> Promotion Delegation</div>
       <div class="sidebar-item" onclick="showSection('auditLog')"><i class="fas fa-history"></i> Change & Modification Log</div>
     </div>
 
@@ -691,6 +694,62 @@
       </div>
 
       <!-- AUDIT / CHANGE LOG -->
+      <!-- ============ SWITCH VIEW CENTER ============ -->
+      <div id="sec-previewCenter" class="page-section">
+        <div class="section-title"><i class="fas fa-eye"></i> Switch View Center — Preview Any Admin's Dashboard</div>
+        <div class="card" style="background:linear-gradient(135deg,rgba(59,130,246,0.06),rgba(59,130,246,0.02));border:1px solid rgba(59,130,246,0.25)">
+          <p style="color:rgba(255,255,255,0.85);font-size:13px;margin-bottom:14px"><i class="fas fa-info-circle" style="color:#3b82f6"></i> Click any row to open that admin's dashboard in <strong>read-only Preview Mode</strong> in a new tab. All actions are logged.</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+            <input id="previewCenterSearch" class="form-control" style="flex:1;min-width:200px" placeholder="🔍 Search admin by name / email / state…" oninput="renderPreviewCenter()"/>
+            <select id="previewCenterRole" class="form-control" style="max-width:220px" onchange="renderPreviewCenter()">
+              <option value="">All Roles</option>
+              <option>Operations Manager</option><option>Branch Head</option><option>Admin</option>
+              <option>Team Leader</option><option>Accountant</option><option>Recruiter</option><option>Marketing Manager</option><option>Support Executive</option>
+            </select>
+            <button class="btn btn-sm" onclick="loadPreviewCenter()" style="background:rgba(255,255,255,0.08)"><i class="fas fa-sync"></i> Refresh</button>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Admin</th><th>Role</th><th>States</th><th>Last Preview</th><th>Action</th></tr></thead>
+              <tbody id="previewCenterBody"><tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">Loading…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ PREVIEW ACTIVITY LOG ============ -->
+      <div id="sec-previewLog" class="page-section">
+        <div class="section-title"><i class="fas fa-stopwatch"></i> Preview Activity Log</div>
+        <div class="card">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:end">
+            <div style="flex:1;min-width:160px"><label style="font-size:12px;color:var(--gray)">Filter by Admin</label><select id="plFilterTarget" class="form-control" onchange="renderPreviewLog()"><option value="">All Admins</option></select></div>
+            <div style="flex:1;min-width:160px"><label style="font-size:12px;color:var(--gray)">Date</label><input type="date" id="plFilterDate" class="form-control" onchange="renderPreviewLog()"/></div>
+            <button class="btn btn-sm" onclick="loadPreviewLog()" style="background:rgba(255,255,255,0.08)"><i class="fas fa-sync"></i> Refresh</button>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Started</th><th>Ended</th><th>Duration</th><th>Previewed Admin</th><th>By</th></tr></thead>
+              <tbody id="previewLogBody"><tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">Loading…</td></tr></tbody>
+            </table>
+          </div>
+          <p style="font-size:11px;color:var(--gray);margin-top:10px"><i class="fas fa-info-circle"></i> Each Switch View session is recorded with start time, end time, and duration. Active sessions show "In Progress".</p>
+        </div>
+      </div>
+
+      <!-- ============ PROMOTION DELEGATION ============ -->
+      <div id="sec-delegationCfg" class="page-section">
+        <div class="section-title"><i class="fas fa-user-tag"></i> Promotion Delegation — Configure Op Manager / Branch Head Powers</div>
+        <div class="card" style="background:linear-gradient(135deg,rgba(245,158,11,0.06),rgba(245,158,11,0.02));border:1px solid rgba(245,158,11,0.25)">
+          <p style="color:rgba(255,255,255,0.85);font-size:13px;margin-bottom:14px">
+            <i class="fas fa-info-circle" style="color:#f59e0b"></i>
+            Choose which roles each delegated promoter can assign and which authorities they can grant. They can <strong>never</strong> promote anyone equal to or higher than their own role.
+          </p>
+          <div id="delegationCfgBox" style="display:flex;flex-direction:column;gap:18px"></div>
+          <button class="btn btn-primary" onclick="saveDelegationConfig()" style="margin-top:14px"><i class="fas fa-save"></i> Save Delegation Config</button>
+          <div id="delegationCfgMsg" class="alert mt-8"></div>
+        </div>
+      </div>
+
       <div id="sec-auditLog" class="page-section">
         <div class="section-title"><i class="fas fa-history"></i> Change &amp; Modification Log</div>
         <div class="card">
@@ -933,6 +992,44 @@
 </div>
 
 <!-- AI RESUME DETAIL MODAL -->
+<!-- PROMOTE VERIFICATION MODAL (Phase 7) -->
+<div class="modal-overlay" id="promoteVerifyModal">
+  <div class="modal-box" style="max-width:600px;max-height:88vh;overflow-y:auto">
+    <div class="modal-header">
+      <div class="modal-title" style="color:#3b82f6"><i class="fas fa-shield-alt"></i> Verify Promotion</div>
+      <button class="modal-close" onclick="closeModal('promoteVerifyModal')">&times;</button>
+    </div>
+    <div style="padding:20px">
+      <div style="background:linear-gradient(135deg,rgba(59,130,246,0.12),rgba(34,197,94,0.06));border:1px solid rgba(59,130,246,0.3);border-radius:14px;padding:18px;margin-bottom:18px">
+        <div style="font-size:11px;color:var(--gray);margin-bottom:4px">USER</div>
+        <div style="font-size:18px;font-weight:700;color:#fff" id="vfTargetName">—</div>
+        <div style="font-size:12px;color:var(--gray);margin-top:2px" id="vfTargetEmail"></div>
+        <div style="font-size:12px;color:var(--gray);margin-top:10px">ACTION</div>
+        <div style="font-size:14px;font-weight:700" id="vfMode">—</div>
+      </div>
+      <div style="margin-bottom:14px">
+        <div style="font-size:11px;color:var(--gray);margin-bottom:6px">ASSIGNED ROLE</div>
+        <div style="font-size:16px;font-weight:700;color:#d4af37" id="vfRole">—</div>
+      </div>
+      <div style="margin-bottom:14px">
+        <div style="font-size:11px;color:var(--gray);margin-bottom:6px">STATE ALLOCATION</div>
+        <div id="vfStates" style="line-height:1.8"></div>
+      </div>
+      <div style="margin-bottom:18px">
+        <div style="font-size:11px;color:var(--gray);margin-bottom:6px">AUTHORITIES GRANTED</div>
+        <div id="vfAuths" style="line-height:1.8"></div>
+      </div>
+      <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:10px;padding:10px;margin-bottom:16px;font-size:12px;color:#f59e0b">
+        <i class="fas fa-exclamation-triangle"></i> Please verify carefully. Click <strong>Confirm & Promote</strong> to apply, or <strong>Go Back</strong> to edit.
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn btn-sm" style="background:rgba(255,255,255,0.08);color:#fff" onclick="closeModal('promoteVerifyModal')"><i class="fas fa-arrow-left"></i> Go Back & Edit</button>
+        <button id="vfConfirmBtn" class="btn btn-sm" style="background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff" onclick="finalizePromote()"><i class="fas fa-check-circle"></i> Confirm & Promote</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="resumeDetailModal">
   <div class="modal-box" style="max-width:760px;max-height:88vh;overflow-y:auto;background:#fff;color:#1a1a2e">
     <div class="modal-header" style="border-bottom:1px solid #e5e5e5">
@@ -1042,6 +1139,9 @@ function loadSectionData(name) {
     case 'coupons': loadCouponsSection(); break;
     case 'discounts': loadOffers(); break;
     case 'manageMpin': loadAdminMpinList(); loadMpinRecords(); break;
+    case 'previewCenter': loadPreviewCenter(); break;
+    case 'previewLog': loadPreviewLog(); break;
+    case 'delegationCfg': loadDelegationConfig(); break;
     case 'auditLog': loadAuditLog(); break;
     case 'notifications': loadNotifications(); break;
     case 'feedbackRecords': loadFeedbackRecords(); break;
@@ -1636,6 +1736,7 @@ async function logAudit(action, details, extras = {}) {
 }
 window.logAudit = logAudit;
 
+// Phase 7 — Promote VERIFICATION preview (one-time confirmation)
 window.confirmPromote = async function() {
   if (!promoteUserId) return;
   const roleSel = document.getElementById('auth_role').value;
@@ -1643,44 +1744,57 @@ window.confirmPromote = async function() {
   const states = Array.from(document.querySelectorAll('.auth_state_cb:checked')).map(c => c.value);
   const targetUser = allUsers.find(u => u.id === promoteUserId) || {};
   const wasAdmin = targetUser.role === 'Admin';
-  const authorities = {
-    dashboard: document.getElementById('auth_dashboard').checked,
-    connectEmployer: document.getElementById('auth_connectEmployer').checked,
-    resumeDownload: document.getElementById('auth_resumeDownload').checked,
-    contact: document.getElementById('auth_contact').checked,
-    membership: document.getElementById('auth_membership').checked,
-    jobPost: document.getElementById('auth_jobPost').checked,
-    jobList: document.getElementById('auth_jobList').checked,
-    candidates: document.getElementById('auth_candidates').checked,
-    walletTopups: document.getElementById('auth_walletTopups').checked,
-    walletWithdrawals: document.getElementById('auth_walletWithdrawals').checked,
-    walletRecords: document.getElementById('auth_walletRecords').checked,
-    coupons: document.getElementById('auth_coupons').checked,
-    discounts: document.getElementById('auth_discounts').checked,
-    referrals: document.getElementById('auth_referrals').checked,
-    enquiries: document.getElementById('auth_enquiries').checked,
-    feedback: document.getElementById('auth_feedback').checked,
-    resumeRecords: document.getElementById('auth_resumeRecords').checked,
-    engagement: document.getElementById('auth_engagement').checked,
-    content: document.getElementById('auth_content').checked,
-    settings: document.getElementById('auth_settings').checked,
-    promote: document.getElementById('auth_promote').checked
+  const authorityLabels = {
+    dashboard:'Small Dashboard', connectEmployer:'Approve Connect Employer', resumeDownload:'Approve Resume Download',
+    contact:'Approve Contact Requests', membership:'Approve Membership', jobPost:'Approve Job Posts',
+    jobList:'Manage Job List', candidates:'Candidate List & Hiring', walletTopups:'Wallet Top-ups',
+    walletWithdrawals:'Wallet Withdrawals', walletRecords:'Wallet Records', coupons:'Coupons',
+    discounts:'Discounts & Offers', referrals:'Refer & Earn', enquiries:'Enquiries', feedback:'Feedback',
+    resumeRecords:'AI Resume Records', engagement:'Engagement Tools', content:'Site Content',
+    settings:'Settings', promote:'Promote / Demote Admins'
   };
-  await updateDoc(doc(db, 'users', promoteUserId), {
-    role: 'Admin', tag: 'Admin',
-    adminRole: roleLabel,
-    locations: states,
-    authorities,
-    promotedAt: serverTimestamp()
-  });
-  await logAudit(wasAdmin ? 'Admin Updated' : 'User Promoted to Admin',
-    `${targetUser.displayName||targetUser.email} → ${roleLabel} (${states.length?states.join(', '):'All India'})`,
-    { targetUid: promoteUserId, targetName: targetUser.displayName||targetUser.email, states, payload: { role: roleLabel, authorities } });
-  closeModal('promoteModal');
-  showToast(wasAdmin ? 'Admin updated successfully!' : 'User promoted to Admin successfully!');
-  loadUsers();
-  loadAdminMpinList && loadAdminMpinList();
-  loadMpinRecords && loadMpinRecords();
+  const authoritiesObj = {};
+  Object.keys(authorityLabels).forEach(k => { authoritiesObj[k] = !!document.getElementById('auth_'+k)?.checked; });
+  const enabledList = Object.entries(authoritiesObj).filter(([_,v])=>v).map(([k])=>authorityLabels[k]);
+  // Build preview modal content
+  document.getElementById('vfTargetName').textContent = targetUser.displayName || targetUser.email || '—';
+  document.getElementById('vfTargetEmail').textContent = targetUser.email || '';
+  document.getElementById('vfRole').textContent = roleLabel;
+  document.getElementById('vfMode').innerHTML = wasAdmin ? '<span style="color:#f59e0b">UPDATE existing admin</span>' : '<span style="color:#22c55e">PROMOTE user → Admin</span>';
+  document.getElementById('vfStates').innerHTML = states.length ? states.map(s=>`<span style="background:rgba(212,175,55,0.2);padding:3px 8px;border-radius:6px;margin:2px;display:inline-block;font-size:12px">📍 ${s}</span>`).join('') : '<span style="color:#f59e0b">⚠ All India access</span>';
+  document.getElementById('vfAuths').innerHTML = enabledList.length ? enabledList.map(a=>`<span style="background:rgba(34,197,94,0.18);padding:3px 8px;border-radius:6px;margin:2px;display:inline-block;font-size:12px;color:#22c55e">✓ ${a}</span>`).join('') : '<span style="color:#ef4444">⚠ NO authorities granted!</span>';
+  // Stash for finalize
+  window.__pendingPromote = { uid: promoteUserId, roleLabel, states, authorities: authoritiesObj, wasAdmin, targetUser };
+  document.getElementById('promoteVerifyModal').classList.add('active');
+};
+
+window.finalizePromote = async function() {
+  const p = window.__pendingPromote; if (!p) return;
+  const btn = document.getElementById('vfConfirmBtn');
+  btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Promoting…';
+  try {
+    await updateDoc(doc(db, 'users', p.uid), {
+      role: 'Admin', tag: 'Admin',
+      adminRole: p.roleLabel,
+      locations: p.states,
+      authorities: p.authorities,
+      promotedAt: serverTimestamp()
+    });
+    await logAudit(p.wasAdmin ? 'Admin Updated' : 'User Promoted to Admin',
+      `${p.targetUser.displayName||p.targetUser.email} → ${p.roleLabel} (${p.states.length?p.states.join(', '):'All India'})`,
+      { targetUid: p.uid, targetName: p.targetUser.displayName||p.targetUser.email, states: p.states, payload: { role: p.roleLabel, authorities: p.authorities } });
+    closeModal('promoteVerifyModal');
+    closeModal('promoteModal');
+    showToast(p.wasAdmin ? 'Admin updated successfully!' : 'User promoted to Admin successfully!');
+    window.__pendingPromote = null;
+    loadUsers();
+    loadAdminMpinList && loadAdminMpinList();
+    loadMpinRecords && loadMpinRecords();
+  } catch(e) {
+    showToast('Failed: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.innerHTML = '<i class="fas fa-check-circle"></i> Confirm & Promote';
+  }
 };
 
 window.demoteAdmin = async function(uid) {
@@ -3232,14 +3346,14 @@ function startConnectGroupsListener() {
         ? '<span class="badge badge-pending">Closed</span>'
         : '<span class="badge badge-approved">Active</span>';
       const safeName = (g.name||'').replace(/[<>&"]/g, c => ({ '<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;' }[c]));
-      return `<tr>
+      return `<tr style="cursor:pointer" onclick="ch_openGroup('${g.id}')" title="Click row to open chat">
         <td><strong>${safeName}</strong></td>
         <td style="text-align:center">${(g.memberUids||[]).length}</td>
         <td style="font-size:10px">${(g.states||[]).slice(0,3).map(s=>`<span style="background:rgba(212,175,55,0.15);padding:1px 5px;border-radius:3px;margin:1px;display:inline-block">${s}</span>`).join('')||'<span style="color:var(--gray)">All India</span>'}${(g.states||[]).length>3?` <span style="color:var(--gray)">+${g.states.length-3}</span>`:''}</td>
         <td style="font-size:10px">${(g.roles||[]).join(', ')||'—'}</td>
         <td style="font-size:11px">${last}</td>
         <td>${status}</td>
-        <td style="white-space:nowrap">
+        <td style="white-space:nowrap" onclick="event.stopPropagation()">
           ${g.dismissedAt
             ? `<button class="btn btn-sm" style="background:#22c55e;color:#fff" onclick="ch_restoreGroup('${g.id}')"><i class="fas fa-redo"></i> Restore</button>`
             : `<button class="btn btn-sm btn-warning" style="background:#ffc107;color:#000" onclick="ch_dismissGroup('${g.id}')"><i class="fas fa-archive"></i> Close</button>`}
@@ -3253,6 +3367,16 @@ function startConnectGroupsListener() {
   });
 }
 
+window.ch_openGroup = async function(id) {
+  if (!window.GroupChat) { const m = await import('./js/group-chat.js'); m.default.init({ user: currentUser }); }
+  if (typeof window.GroupChat.openThread === 'function') {
+    if (typeof window.GroupChat.togglePanel === 'function') {
+      const panel = document.getElementById('gc-panel');
+      if (panel && !panel.classList.contains('open')) window.GroupChat.togglePanel();
+    }
+    window.GroupChat.openThread(id);
+  }
+};
 window.ch_dismissGroup = async function(id) {
   if (!confirm('Close this group? Members will see "closed by Owner" and cannot send messages.')) return;
   if (!window.GroupChat) { const m = await import('./js/group-chat.js'); m.default.init({ user: currentUser }); }
@@ -3265,10 +3389,164 @@ window.ch_restoreGroup = async function(id) {
   showToast('Group restored');
 };
 // ============== PHASE 5: SWITCH ADMIN VIEW ==============
-window.switchAdminView = function(adminId, adminName) {
+window.switchAdminView = async function(adminId, adminName) {
   if (!confirm(`Open dashboard preview as "${adminName}"?\n\nYou will see exactly what this admin sees. All changes are blocked in preview mode.`)) return;
-  const url = `admin-feed.html?previewAs=${encodeURIComponent(adminId)}&previewName=${encodeURIComponent(adminName)}`;
+  // Pre-create preview session log entry
+  let sessionId = '';
+  try {
+    const u = auth.currentUser;
+    const ref = await addDoc(collection(db, 'previewLog'), {
+      byUid: u?.uid || '', byName: u?.displayName || u?.email || 'Owner',
+      targetUid: adminId, targetName: adminName,
+      startedAt: serverTimestamp(), endedAt: null, durationSec: null, status: 'active'
+    });
+    sessionId = ref.id;
+  } catch(_) {}
+  const url = `admin-feed.html?previewAs=${encodeURIComponent(adminId)}&previewName=${encodeURIComponent(adminName)}&sid=${encodeURIComponent(sessionId)}`;
   window.open(url, '_blank', 'noopener');
+};
+
+// ============== PHASE 7: SWITCH VIEW CENTER ==============
+let __pcAdmins = [];
+window.loadPreviewCenter = async function() {
+  const tbody = document.getElementById('previewCenterBody'); if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px"><i class="fas fa-spinner fa-spin"></i></td></tr>';
+  try {
+    const snap = await getDocs(query(collection(db, 'users'), where('role','==','Admin')));
+    __pcAdmins = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+    // Fetch last preview per admin
+    const plSnap = await getDocs(collection(db, 'previewLog'));
+    const lastByUid = {};
+    plSnap.docs.forEach(d => {
+      const x = d.data(); const t = x.startedAt?.toMillis?.() || 0;
+      if (!lastByUid[x.targetUid] || lastByUid[x.targetUid] < t) lastByUid[x.targetUid] = t;
+    });
+    __pcAdmins.forEach(a => { a._lastPreview = lastByUid[a.id] || 0; });
+    renderPreviewCenter();
+  } catch(e) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#ef4444">Error: ${e.message}</td></tr>`; }
+};
+
+window.renderPreviewCenter = function() {
+  const tbody = document.getElementById('previewCenterBody'); if (!tbody) return;
+  const q = (document.getElementById('previewCenterSearch')?.value || '').toLowerCase();
+  const r = document.getElementById('previewCenterRole')?.value || '';
+  let list = __pcAdmins.slice();
+  if (r) list = list.filter(a => (a.adminRole||'') === r);
+  if (q) list = list.filter(a => (a.displayName||'').toLowerCase().includes(q) || (a.email||'').toLowerCase().includes(q) || (a.locations||[]).some(s => s.toLowerCase().includes(q)));
+  list.sort((a,b) => (b._lastPreview||0) - (a._lastPreview||0));
+  if (!list.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">No admins match.</td></tr>'; return; }
+  tbody.innerHTML = list.map(a => {
+    const safeName = (a.displayName||a.email||'').replace(/'/g,'&#39;');
+    return `<tr style="cursor:pointer" onclick="switchAdminView('${a.id}','${safeName}')">
+      <td><strong>${a.displayName||'N/A'}</strong><div style="font-size:11px;color:var(--gray)">${a.email||''}</div></td>
+      <td><span class="badge badge-pending">${a.adminRole||'Admin'}</span></td>
+      <td style="font-size:10px">${(a.locations||[]).map(s=>`<span style="background:rgba(212,175,55,0.15);padding:2px 6px;border-radius:4px;margin:1px;display:inline-block">📍 ${s}</span>`).join('') || '<span style="color:var(--gray)">All India</span>'}</td>
+      <td style="font-size:11px">${a._lastPreview ? new Date(a._lastPreview).toLocaleString() : '<span style="color:var(--gray)">Never</span>'}</td>
+      <td><button class="btn btn-sm" style="background:#3b82f6;color:#fff" onclick="event.stopPropagation();switchAdminView('${a.id}','${safeName}')"><i class="fas fa-eye"></i> Preview</button></td>
+    </tr>`;
+  }).join('');
+};
+
+// ============== PHASE 7: PREVIEW ACTIVITY LOG ==============
+let __plAll = [];
+window.loadPreviewLog = async function() {
+  const tbody = document.getElementById('previewLogBody'); if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px"><i class="fas fa-spinner fa-spin"></i></td></tr>';
+  try {
+    const snap = await getDocs(collection(db, 'previewLog'));
+    __plAll = snap.docs.map(d => ({ id:d.id, ...d.data() })).sort((a,b) => (b.startedAt?.toMillis?.()||0) - (a.startedAt?.toMillis?.()||0));
+    const targets = [...new Set(__plAll.map(p => p.targetName))].sort();
+    const sel = document.getElementById('plFilterTarget');
+    if (sel) sel.innerHTML = '<option value="">All Admins</option>' + targets.map(t=>`<option value="${t}">${t}</option>`).join('');
+    renderPreviewLog();
+  } catch(e) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#ef4444">Error: ${e.message}</td></tr>`; }
+};
+
+window.renderPreviewLog = function() {
+  const tbody = document.getElementById('previewLogBody'); if (!tbody) return;
+  const ft = document.getElementById('plFilterTarget')?.value || '';
+  const fd = document.getElementById('plFilterDate')?.value || '';
+  let list = __plAll;
+  if (ft) list = list.filter(p => p.targetName === ft);
+  if (fd) list = list.filter(p => { const d = p.startedAt?.toDate?.(); if (!d) return false; return d.toISOString().slice(0,10) === fd; });
+  if (!list.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">No preview sessions match.</td></tr>'; return; }
+  tbody.innerHTML = list.slice(0, 500).map(p => {
+    const start = p.startedAt?.toDate?.();
+    const end = p.endedAt?.toDate?.();
+    let dur = '';
+    if (p.durationSec != null) {
+      const s = p.durationSec; const m = Math.floor(s/60); const ss = s%60;
+      dur = m > 0 ? `${m}m ${ss}s` : `${ss}s`;
+    } else if (start && p.status === 'active') {
+      dur = '<span style="color:#22c55e;font-weight:700"><i class="fas fa-circle" style="font-size:8px;animation:hcGlow 1.5s infinite"></i> In Progress</span>';
+    } else dur = '—';
+    return `<tr>
+      <td style="font-size:11px;white-space:nowrap">${start?.toLocaleString()||'—'}</td>
+      <td style="font-size:11px;white-space:nowrap">${end?.toLocaleString()||'<span style="color:var(--gray)">—</span>'}</td>
+      <td>${dur}</td>
+      <td><strong>${(p.targetName||'').replace(/[<>]/g,'')}</strong></td>
+      <td style="font-size:11px">${(p.byName||'').replace(/[<>]/g,'')}</td>
+    </tr>`;
+  }).join('');
+};
+
+// ============== PHASE 7: PROMOTION DELEGATION CONFIG ==============
+const DELEGATABLE_ROLES = ['Admin','Team Leader','Accountant','Recruiter','Support Executive','Marketing Manager','Branch Head'];
+const DELEGATABLE_AUTHS = [
+  ['dashboard','Small Dashboard'],['connectEmployer','Approve Connect Employer'],['resumeDownload','Approve Resume Download'],
+  ['contact','Approve Contact Requests'],['membership','Approve Membership'],['jobPost','Approve Job Posts'],
+  ['jobList','Manage Job List'],['candidates','Candidate List & Hiring'],
+  ['walletTopups','Wallet Top-ups'],['walletWithdrawals','Wallet Withdrawals'],['walletRecords','Wallet Records'],
+  ['coupons','Coupons'],['discounts','Discounts & Offers'],['referrals','Refer & Earn'],
+  ['enquiries','Enquiries'],['feedback','Feedback'],['resumeRecords','AI Resume Records'],
+  ['engagement','Engagement Tools'],['content','Site Content']
+];
+
+window.loadDelegationConfig = async function() {
+  const box = document.getElementById('delegationCfgBox'); if (!box) return;
+  let cfg = { opManager: { roles: [], auths: [] }, branchHead: { roles: [], auths: [] } };
+  try {
+    const snap = await getDoc(doc(db, 'siteContent', 'delegationConfig'));
+    if (snap.exists()) cfg = { ...cfg, ...snap.data() };
+  } catch(_){}
+  // Op Manager can promote up to Branch Head and below; Branch Head only Team Leader and below
+  const tiers = {
+    opManager: { label: 'Operations Manager', icon: 'fa-user-shield', color: '#a855f7', allowedMax: ['Branch Head','Admin','Team Leader','Accountant','Recruiter','Support Executive','Marketing Manager'] },
+    branchHead: { label: 'Branch Head', icon: 'fa-user-tie', color: '#3b82f6', allowedMax: ['Team Leader','Admin','Accountant','Recruiter','Support Executive','Marketing Manager'] }
+  };
+  box.innerHTML = Object.entries(tiers).map(([key, t]) => {
+    const c = cfg[key] || { roles: [], auths: [] };
+    return `<div style="background:rgba(255,255,255,0.04);border:1px solid ${t.color}55;border-radius:14px;padding:16px">
+      <div style="font-weight:700;font-size:15px;color:${t.color};margin-bottom:12px"><i class="fas ${t.icon}"></i> ${t.label} — Promotion Powers</div>
+      <div style="font-size:12px;color:var(--gray);margin-bottom:8px">Allowed Roles to Promote:</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+        ${t.allowedMax.map(r => `<label style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.05);padding:5px 10px;border-radius:18px;cursor:pointer;font-size:12px"><input type="checkbox" data-tier="${key}" data-kind="role" value="${r}" ${c.roles?.includes(r)?'checked':''}/> ${r}</label>`).join('')}
+      </div>
+      <div style="font-size:12px;color:var(--gray);margin-bottom:8px">Allowed Authorities to Grant:</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px">
+        ${DELEGATABLE_AUTHS.map(([k,lbl]) => `<label style="display:flex;align-items:center;gap:6px;font-size:11.5px;cursor:pointer"><input type="checkbox" data-tier="${key}" data-kind="auth" value="${k}" ${c.auths?.includes(k)?'checked':''}/> ${lbl}</label>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+};
+
+window.saveDelegationConfig = async function() {
+  const cfg = { opManager: { roles: [], auths: [] }, branchHead: { roles: [], auths: [] } };
+  document.querySelectorAll('#delegationCfgBox input[type="checkbox"]:checked').forEach(cb => {
+    const tier = cb.dataset.tier; const kind = cb.dataset.kind;
+    if (kind === 'role') cfg[tier].roles.push(cb.value);
+    else if (kind === 'auth') cfg[tier].auths.push(cb.value);
+  });
+  const el = document.getElementById('delegationCfgMsg');
+  try {
+    await setDoc(doc(db, 'siteContent', 'delegationConfig'), { ...cfg, updatedAt: serverTimestamp() }, { merge: true });
+    await logAudit('Delegation Config Updated', `Op Manager: ${cfg.opManager.roles.length} roles / ${cfg.opManager.auths.length} auths · Branch Head: ${cfg.branchHead.roles.length} roles / ${cfg.branchHead.auths.length} auths`, { payload: cfg });
+    el.textContent = '✓ Delegation config saved successfully.';
+    el.className = 'alert alert-success show';
+    showToast('Delegation config saved!');
+  } catch(e) {
+    el.textContent = 'Failed: ' + e.message; el.className = 'alert alert-danger show';
+  }
 };
 
 window.ch_deleteGroup = async function(id, name) {

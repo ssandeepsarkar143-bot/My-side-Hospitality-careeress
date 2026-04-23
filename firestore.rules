@@ -88,7 +88,25 @@ service cloud.firestore {
     // OFFERS / UPGRADES / MPINS / NOTIFICATIONS / FEEDBACK
     match /offers/{id}     { allow read: if true; allow write: if isOwner(); }
     match /upgrades/{id}   { allow read: if isSignedIn(); allow write: if isOwner(); }
-    match /mpins/{id}      { allow read, write: if isOwner(); }
+    // MPINS — Phase 7: self can manage own; Owner/OpMgr/BranchHead can manage any
+    match /mpins/{id} {
+      function isMgmt() {
+        return isSignedIn() &&
+          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          (
+            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.adminRole == 'Operations Manager' ||
+            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.adminRole == 'Branch Head'
+          );
+      }
+      allow read, write: if isOwner() || isSelf(id) || isMgmt();
+    }
+
+    // PREVIEW LOG (Phase 7) — owner creates/updates; any signed-in can read for transparency
+    match /previewLog/{id} {
+      allow read: if isSignedIn();
+      allow create, update: if isOwner() || isSignedIn();
+      allow delete: if isOwner();
+    }
     match /notifications/{id} {
       allow read: if isSignedIn();
       allow create: if isSignedIn();

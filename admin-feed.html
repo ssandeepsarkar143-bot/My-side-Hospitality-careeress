@@ -383,10 +383,29 @@ function setupAuthority() {
   const adminRole = adminData?.adminRole || '';
   const isOpMgr = adminRole === 'Operations Manager';
   const isBranchHead = adminRole === 'Branch Head';
+  // Phase 7 — Manage MPIN visible to ALL promoted admins (each can self-manage their MPIN)
+  document.getElementById('nav_management_header').classList.remove('hidden');
+  document.getElementById('nav_manageMpin').classList.remove('hidden');
+  // Tag the MPIN section with role so we can hide elements
+  window.__MPIN_FULL_ACCESS__ = isOpMgr || isBranchHead;
+  if (!window.__MPIN_FULL_ACCESS__) {
+    // Hide "Set Other Admin MPIN" card + state-wide records table for non-OpMgr/non-BranchHead
+    setTimeout(() => {
+      const sec = document.getElementById('sec-manageMpin');
+      if (!sec) return;
+      const cards = sec.querySelectorAll('.card');
+      // First .card = self-MPIN (keep), second .card (in grid-2) = set-other (hide), third = records (replace with self-only view)
+      cards.forEach((c, i) => { if (i === 1) c.style.display = 'none'; });
+      // Update records-table title + button text for self-only mode
+      const lastCard = cards[cards.length - 1];
+      if (lastCard) {
+        const title = lastCard.querySelector('.card-title');
+        if (title) title.innerHTML = '<span><i class="fas fa-user-lock"></i> My MPIN Status</span>';
+      }
+    }, 100);
+  }
   if (isOpMgr || isBranchHead) {
-    document.getElementById('nav_management_header').classList.remove('hidden');
     document.getElementById('nav_managePromoted').classList.remove('hidden');
-    document.getElementById('nav_manageMpin').classList.remove('hidden');
     if (isOpMgr) document.getElementById('nav_auditLog').classList.remove('hidden');
   }
   // User Control state filter
@@ -541,8 +560,15 @@ window.loadMpinRecordsAdmin = async function() {
   if (!tbody) return;
   tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
   try {
-    const snap = await getDocs(query(collection(db, 'users'), where('role','==','Admin')));
-    const list = snap.docs.map(d => ({ id:d.id, ...d.data() })).filter(a => isAdminInMyStates(a));
+    let list;
+    if (!window.__MPIN_FULL_ACCESS__) {
+      // Self-only view for non-OpMgr/non-BranchHead
+      const meSnap = await getDoc(doc(db, 'users', currentUser.uid));
+      list = meSnap.exists() ? [{ id: currentUser.uid, ...meSnap.data() }] : [];
+    } else {
+      const snap = await getDocs(query(collection(db, 'users'), where('role','==','Admin')));
+      list = snap.docs.map(d => ({ id:d.id, ...d.data() })).filter(a => isAdminInMyStates(a));
+    }
     if (!list.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">No admins in your state(s)</td></tr>'; return; }
     const rows = await Promise.all(list.map(async a => {
       let mpinSet=false, updatedAt=null;
@@ -629,14 +655,28 @@ window.renderManagePromoted = function() {
   }).join('');
 };
 
-window.openAdminEditRole = function(adminId) {
+window.openAdminEditRole = async function(adminId) {
   const a = __mpAll.find(x => x.id === adminId); if (!a) return;
   window.__editingAdminId = adminId;
   document.getElementById('editRoleUserName').textContent = `Editing: ${a.displayName||a.email}`;
-  // Op Manager + Branch Head are intentionally NOT in the dropdown
+  // Phase 7 — Honour Owner's delegation config
+  const myRole = adminData?.adminRole || '';
+  const tierKey = myRole === 'Operations Manager' ? 'opManager' : (myRole === 'Branch Head' ? 'branchHead' : null);
+  let allowedRoles = ['Admin','Team Leader','Accountant','Recruiter','Support Executive','Marketing Manager'];
+  if (tierKey) {
+    try {
+      const cfgSnap = await getDoc(doc(db, 'siteContent', 'delegationConfig'));
+      if (cfgSnap.exists()) {
+        const cfg = cfgSnap.data()[tierKey];
+        if (cfg?.roles?.length) allowedRoles = cfg.roles;
+      }
+    } catch(_){}
+  }
+  // Re-build dropdown from allowedRoles
+  const sel = document.getElementById('er_role');
+  sel.innerHTML = allowedRoles.map(r => `<option value="${r}">${r}</option>`).join('');
   const cur = a.adminRole;
-  const allowedRoles = ['Admin','Team Leader','Accountant','Recruiter','Support Executive','Marketing Manager'];
-  document.getElementById('er_role').value = allowedRoles.includes(cur) ? cur : 'Admin';
+  document.getElementById('er_role').value = allowedRoles.includes(cur) ? cur : (allowedRoles[0]||'Admin');
   // Build state checkboxes — only my own states
   const myStates = adminAllocatedStates();
   const preSel = new Set(a.locations || []);
@@ -925,7 +965,9 @@ window.deleteJob = async function(id) {
 const _urlParams = new URLSearchParams(window.location.search);
 const PREVIEW_AS_UID = _urlParams.get('previewAs');
 const PREVIEW_AS_NAME = _urlParams.get('previewName') || 'Admin';
+const PREVIEW_SESSION_ID = _urlParams.get('sid') || '';
 window.__PREVIEW_MODE__ = false;
+window.__PREVIEW_START_TIME__ = 0;
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) { window.location.href = 'index.html'; return; }
@@ -941,6 +983,28 @@ onAuthStateChanged(auth, async (user) => {
       adminData = targetSnap.data();
       window.__PREVIEW_MODE__ = true;
       window.__PREVIEW_TARGET_UID__ = PREVIEW_AS_UID;
+      window.__PREVIEW_START_TIME__ = Date.now();
+      // End-of-session logger
+      const endPreviewSession = async () => {
+        if (!PREVIEW_SESSION_ID || !window.__PREVIEW_START_TIME__) return;
+        const dur = Math.round((Date.now() - window.__PREVIEW_START_TIME__) / 1000);
+        try {
+          await updateDoc(doc(db, 'previewLog', PREVIEW_SESSION_ID), {
+            endedAt: serverTimestamp(), durationSec: dur, status: 'ended'
+          });
+        } catch(_) {}
+        window.__PREVIEW_START_TIME__ = 0;
+      };
+      window.addEventListener('beforeunload', () => {
+        if (!PREVIEW_SESSION_ID || !window.__PREVIEW_START_TIME__) return;
+        const dur = Math.round((Date.now() - window.__PREVIEW_START_TIME__) / 1000);
+        try {
+          const blob = new Blob([JSON.stringify({ sid: PREVIEW_SESSION_ID, dur })], { type: 'application/json' });
+          navigator.sendBeacon && navigator.sendBeacon('/api/preview-end', blob);
+        } catch(_) {}
+        endPreviewSession();
+      });
+      window.addEventListener('pagehide', endPreviewSession);
       // Override currentUser-derived data so all section loaders use target admin's allocations
       window.__PREVIEW_DISPLAY_NAME__ = adminData.displayName || adminData.email || PREVIEW_AS_NAME;
       document.getElementById('adminNameEl').textContent = `${window.__PREVIEW_DISPLAY_NAME__} (Preview)`;
