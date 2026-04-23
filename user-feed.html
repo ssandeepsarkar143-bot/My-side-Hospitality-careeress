@@ -144,6 +144,9 @@
     </div>
   </div>
 
+  <!-- HC WALLET + REFER & EARN -->
+  <div id="hcWalletMount"></div>
+
   <!-- Job Search & Filter -->
   <div class="filter-section">
     <div style="font-size:14px;font-weight:700;color:var(--gold);margin-bottom:16px"><i class="fas fa-filter"></i> Search & Filter Jobs</div>
@@ -807,6 +810,12 @@ onAuthStateChanged(auth, async (user) => {
   loadJobAlert();
   checkNotifBadge();
   loadAppDownloadButtons();
+  // HC Wallet + Refer & Earn
+  try {
+    const { attachWallet } = await import('./js/wallet-ui.js');
+    const userSnap = snap.exists() ? snap.data() : {};
+    attachWallet({ db, auth, user, userData: userSnap, mountId: 'hcWalletMount', accent: '#d4af37' });
+  } catch(e) { console.warn('Wallet UI failed:', e.message); }
   // My Resumes — show only if user has any
   window.__FIREBASE_CFG__ = firebaseConfig;
   if (window.loadMyResumes) {

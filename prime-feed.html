@@ -117,6 +117,9 @@ body { background: linear-gradient(135deg, #0d0d2b, #1a1a4e); }
     </div>
   </div>
 
+  <!-- HC WALLET + REFER & EARN -->
+  <div id="hcWalletMount"></div>
+
   <!-- Filter -->
   <div class="filter-section" style="border-color:rgba(167,139,250,0.2)">
     <div style="font-size:14px;font-weight:700;margin-bottom:16px;color:#a78bfa"><i class="fas fa-filter"></i> Search & Filter Jobs</div>
@@ -774,6 +777,11 @@ onAuthStateChanged(auth, async (user) => {
   loadMembershipDetails();
   checkPrimeNotifBadge();
   loadPrimeAppButtons();
+  // HC Wallet + Refer & Earn
+  try {
+    const { attachWallet } = await import('./js/wallet-ui.js');
+    attachWallet({ db, auth, user, userData, mountId: 'hcWalletMount', accent: '#a78bfa' });
+  } catch(e) { console.warn('Wallet UI failed:', e.message); }
   document.body.classList.add('prime');
   window.__FIREBASE_CFG__ = firebaseConfig;
   if (window.loadMyResumes) {

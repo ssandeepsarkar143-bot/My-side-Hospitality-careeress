@@ -94,6 +94,25 @@
   }
   window.__downloadMyResume = downloadById;
 
+  window.__deleteMyResume = async function(docId, btn) {
+    if (!confirm('Are you sure you want to delete this resume? This cannot be undone.')) return;
+    btn.disabled = true; const original = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    try {
+      const { getFirestore, doc: fsDoc, deleteDoc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+      const { getApps, initializeApp } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js');
+      const apps = getApps();
+      const app = apps.length ? apps[0] : initializeApp(window.__FIREBASE_CFG__);
+      const db = getFirestore(app);
+      await deleteDoc(fsDoc(db, 'aiResumes', docId));
+      const card = btn.closest('div[data-resume-card]');
+      if (card) card.remove();
+      const counter = document.getElementById('myResumesCount');
+      const remaining = document.querySelectorAll('[data-resume-card]').length;
+      if (counter) counter.textContent = `(${remaining})`;
+      if (remaining === 0) { const sec = document.getElementById('myResumesSection'); if (sec) sec.style.display = 'none'; }
+    } catch(e) { alert('Could not delete: ' + (e.message||e)); btn.disabled = false; btn.innerHTML = original; }
+  };
+
   window.loadMyResumes = async function(uid, db, fns) {
     const sec = document.getElementById('myResumesSection');
     const list = document.getElementById('myResumesList');
@@ -117,13 +136,14 @@
         const name = (r.name||'Untitled').replace(/[<>]/g,'');
         const role = (r.jobTitle||'').replace(/[<>]/g,'');
         const date = fmtDate(r.createdAt);
-        return `<div style="display:flex;align-items:center;gap:10px;padding:10px;background:rgba(0,0,0,0.2);border-radius:8px;margin-bottom:6px">
+        return `<div data-resume-card style="display:flex;align-items:center;gap:8px;padding:10px;background:rgba(0,0,0,0.2);border-radius:8px;margin-bottom:6px">
           ${photo}
           <div style="flex:1;min-width:0">
             <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>
             <div style="font-size:11px;color:var(--gray)">${role}${date?' · '+date:''}</div>
           </div>
-          <button onclick="window.__downloadMyResume('${r.id}', this)" style="background:${accent};color:#000;border:none;padding:7px 12px;border-radius:7px;font-size:11px;font-weight:800;cursor:pointer;flex-shrink:0"><i class="fas fa-download"></i> PDF</button>
+          <button onclick="window.__downloadMyResume('${r.id}', this)" style="background:${accent};color:#000;border:none;padding:7px 10px;border-radius:7px;font-size:11px;font-weight:800;cursor:pointer;flex-shrink:0"><i class="fas fa-download"></i></button>
+          <button onclick="window.__deleteMyResume('${r.id}', this)" title="Delete resume" style="background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.4);padding:7px 10px;border-radius:7px;font-size:11px;font-weight:800;cursor:pointer;flex-shrink:0"><i class="fas fa-trash"></i></button>
         </div>`;
       }).join('');
     } catch(e) { console.error('loadMyResumes:', e); }

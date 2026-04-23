@@ -997,14 +997,14 @@ input[type="range"] {
 }
 
 /* ===== USER TAB BUTTONS ===== */
-.user-tab-btn {
+.user-tab-btn, .enq-tab-btn {
   background: rgba(255,255,255,0.05);
   border: 1px solid rgba(212,175,55,0.2);
   color: var(--gray);
   font-size: 12px;
   transition: var(--transition);
 }
-.user-tab-btn.active {
+.user-tab-btn.active, .enq-tab-btn.active {
   background: linear-gradient(135deg, var(--gold), var(--gold-dark));
   color: #000;
   border-color: var(--gold);

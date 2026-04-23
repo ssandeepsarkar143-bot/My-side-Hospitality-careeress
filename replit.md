@@ -20,7 +20,26 @@ A full-featured hospitality job portal with role-based authentication (Owner, Ad
 | `owner-feed.html` | Owner full-control dashboard (MPIN protected) |
 | `admin-feed.html` | Admin dashboard (MPIN protected, authority-based) |
 | `job-post-from.html` | Job posting form |
-| `membership.html` | Prime membership purchase page |
+| `membership.html` | Prime membership purchase page (UPI + HC Wallet payment) |
+| `help.html` | FAQs (incl. HC Wallet & Refer & Earn) |
+
+## HC Wallet, Refer & Earn, Withdraw, Coupons (NEW)
+- **HC Wallet**: 1 point = ₹1. Top-up via UPI → submit UTR → owner approves in `walletTopups` → balance auto-credited.
+- **Pay from Wallet**: On membership.html, users pay Prime instantly from wallet.
+- **Withdraw to UPI**: Users withdraw ₹200+ to their UPI; wallet debited immediately. Owner sees in `walletWithdrawals` section → Mark Paid (notify) or Reject (auto-refund). Collection: `walletWithdrawals`.
+- **Refer & Earn**: Unique `referralCode` per user; on referee Prime approval, both get 10 pts. Logged in `referralRewards`.
+- **Coupons**: Owner creates coupons (discount ₹X / trial X days / 1 month free) and targets specific user, all users, normal users, all Prime, or specific Prime tier (Prime, Prime2, Prime3, … dynamically). Users get notification + see "My Coupons" card on dashboard. Discount auto-applies on Membership page; trial/freeMonth instantly upgrades to Prime. Collection: `coupons` (one doc per target user). User doc field: `activeCoupon`.
+- **Owner Dashboard sections**: HC Wallet Top-ups, Wallet Withdrawals, Wallet Records (ledger), Refer & Earn Records, Create & Send Coupons (with stats + table).
+- **Firestore collections**: `walletTopups`, `walletTransactions` (types: topup/spend/referral/withdraw/refund/adjust), `walletWithdrawals`, `referralRewards`, `coupons`.
+- **User doc fields**: `walletBalance`, `referralCode`, `referredBy`, `referredByCode`, `primeReferralCredited`, `referralPrimeCount`, `activeCoupon`.
+- **Shared module**: `js/wallet-ui.js` (attachWallet UI: balance/topup/withdraw/history + My Coupons + referral; payMembershipFromWallet, maybeCreditReferral).
+
+## Firebase Deployment (from VS Code)
+1. `npm install -g firebase-tools`
+2. `firebase login`
+3. `firebase functions:secrets:set GEMINI_API_KEY` (paste key)
+4. `firebase deploy` — deploys hosting + functions + rules.
+5. Gemini AI calls (`/api/chat`, `/api/resume`) auto-route to Cloud Functions in production via `firebase.json` rewrites.
 
 ## User Roles & Redirects
 - **Owner** (ssandeepsarkar143@gmail.com) → `owner-feed.html`

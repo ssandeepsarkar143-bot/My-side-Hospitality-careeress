@@ -73,21 +73,30 @@
       <div class="sidebar-item" onclick="window.open('job-post-from.html','_self')"><i class="fas fa-plus-circle"></i> Add Job (Live)</div>
       <div class="sidebar-section">Candidate</div>
       <div class="sidebar-item" onclick="showSection('candidates')"><i class="fas fa-user-graduate"></i> Candidate List</div>
-      <div class="sidebar-section">Requests</div>
+      <div class="sidebar-section">Requests & Approvals</div>
       <div class="sidebar-item" onclick="showSection('connectReqs')"><i class="fas fa-link"></i> Connect Employer</div>
       <div class="sidebar-item" onclick="showSection('contactReqs')"><i class="fas fa-phone"></i> Contact Requests</div>
       <div class="sidebar-item" onclick="showSection('resumeReqs')"><i class="fas fa-file-download"></i> Resume Requests</div>
       <div class="sidebar-item" onclick="showSection('membershipReqs')"><i class="fas fa-crown"></i> Membership Requests</div>
-      <div class="sidebar-section">Finance</div>
+      <div class="sidebar-section">Wallet & Payments</div>
+      <div class="sidebar-item" onclick="showSection('walletTopups')"><i class="fas fa-wallet"></i> HC Wallet Top-ups</div>
+      <div class="sidebar-item" onclick="showSection('walletWithdrawals')"><i class="fas fa-money-bill-transfer"></i> Wallet Withdrawals</div>
+      <div class="sidebar-item" onclick="showSection('walletRecords')"><i class="fas fa-coins"></i> Wallet Records</div>
+      <div class="sidebar-section">Marketing & Promotions</div>
+      <div class="sidebar-item" onclick="showSection('referralRecords')"><i class="fas fa-gift"></i> Refer & Earn Records</div>
+      <div class="sidebar-item" onclick="showSection('coupons')"><i class="fas fa-ticket"></i> Create & Send Coupons</div>
       <div class="sidebar-item" onclick="showSection('discounts')"><i class="fas fa-tag"></i> Discounts & Offers</div>
-      <div class="sidebar-section">Engagement</div>
-      <div class="sidebar-item" onclick="showSection('notifications')"><i class="fas fa-bell"></i> Notifications</div>
+      <div class="sidebar-section">Support & Records</div>
+      <div class="sidebar-item" onclick="showSection('enquiries')"><i class="fas fa-comments"></i> Enquiries</div>
       <div class="sidebar-item" onclick="showSection('feedbackRecords')"><i class="fas fa-star"></i> Feedback Records</div>
       <div class="sidebar-item" onclick="showSection('resumeRecords')"><i class="fas fa-file-alt"></i> AI Resume Records</div>
+      <div class="sidebar-section">Engagement</div>
+      <div class="sidebar-item" onclick="showSection('notifications')"><i class="fas fa-bell"></i> Notifications</div>
       <div class="sidebar-section">Site Content</div>
       <div class="sidebar-item" onclick="showSection('siteSettings')"><i class="fas fa-cog"></i> Edit Site Content</div>
       <div class="sidebar-section">Settings</div>
       <div class="sidebar-item" onclick="showSection('manageMpin')"><i class="fas fa-key"></i> Manage MPINs</div>
+      <div class="sidebar-item" onclick="showSection('auditLog')"><i class="fas fa-history"></i> Change & Modification Log</div>
     </div>
 
     <!-- CONTENT -->
@@ -121,7 +130,11 @@
             <option value="lowest_prime">Sort: Lowest Prime Tag → Highest</option>
           </select>
           <input type="text" id="userTableSearch" class="form-control" placeholder="🔍 Search by name or email..." oninput="filterUserTable(this.value)" style="max-width:280px;padding:6px 10px;font-size:12px"/>
+          <select id="userStateFilter" class="form-control" style="max-width:200px;padding:6px 10px;font-size:12px" onchange="applyUserTab()">
+            <option value="">📍 All States</option>
+          </select>
         </div>
+        <div id="stateAdminInfo" style="margin-bottom:10px;font-size:12px;color:var(--gold-light)"></div>
         <div class="table-wrapper">
           <table>
             <thead><tr><th>Name</th><th>Email</th><th>Role / Tag</th><th>Joined</th><th>Membership</th><th>Actions</th></tr></thead>
@@ -218,6 +231,144 @@
         </div>
       </div>
 
+      <!-- HC WALLET TOP-UP REQUESTS -->
+      <div id="sec-walletTopups" class="page-section">
+        <div class="section-title"><i class="fas fa-wallet"></i> HC Wallet Top-up Requests</div>
+        <div class="stats-grid" id="walletTopupStats" style="margin-bottom:16px"></div>
+        <div class="card mb-16">
+          <p style="font-size:12px;color:var(--gray);margin-bottom:0">Users add money to their HC Wallet by paying any amount via UPI to your UPI ID, then submitting the UTR. Approve here to instantly credit their wallet (1 point = ₹1).</p>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>User</th><th>Email</th><th>Amount</th><th>UTR</th><th>Submitted</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="walletTopupsBody"><tr><td colspan="7" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- WALLET WITHDRAWALS -->
+      <div id="sec-walletWithdrawals" class="page-section">
+        <div class="section-title"><i class="fas fa-money-bill-transfer"></i> HC Wallet Withdrawals</div>
+        <div class="stats-grid" id="walletWdStats" style="margin-bottom:16px"></div>
+        <div class="card mb-16">
+          <p style="font-size:12px;color:var(--gray);margin-bottom:0">Users withdraw HC Wallet balance (min ₹200) to their UPI. Amount is auto-deducted on request. After paying them via UPI, click <b>Mark Paid</b>. <b>Reject</b> auto-refunds points back to their wallet.</p>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>User</th><th>Email</th><th>Amount</th><th>UPI ID</th><th>Account Name</th><th>Submitted</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="walletWdBody"><tr><td colspan="8" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- WALLET RECORDS -->
+      <div id="sec-walletRecords" class="page-section">
+        <div class="section-title"><i class="fas fa-coins"></i> Wallet Transaction Records</div>
+        <div class="stats-grid" id="walletRecStats" style="margin-bottom:16px"></div>
+        <div class="card mb-16">
+          <p style="font-size:12px;color:var(--gray);margin-bottom:0">Full ledger of every wallet transaction across all users — top-ups, referral bonuses, and Prime payments made from wallet.</p>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>User UID</th><th>Type</th><th>Amount</th><th>Note</th><th>When</th></tr></thead>
+            <tbody id="walletRecBody"><tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- COUPONS: CREATE & SEND -->
+      <div id="sec-coupons" class="page-section">
+        <div class="section-title"><i class="fas fa-ticket"></i> Create & Send Coupons</div>
+        <div class="stats-grid" id="couponStats" style="margin-bottom:16px"></div>
+
+        <div class="card mb-16">
+          <div class="card-title"><i class="fas fa-plus-circle"></i> Create New Coupon</div>
+          <p style="font-size:12px;color:var(--gray);margin-bottom:12px">Create a coupon and send it to one or many users. Discount coupons auto-apply on the Membership page when claimed; trial / free-month coupons instantly upgrade the user to Prime on claim. Users get a notification immediately.</p>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Coupon Type</label>
+              <select id="cpnType" class="form-control" onchange="onCpnTypeChange()">
+                <option value="discount">💸 Discount (₹ OFF on Prime Membership)</option>
+                <option value="trial">⏰ Free Prime Trial (X days)</option>
+                <option value="freeMonth">🎁 1 Month Free Prime Membership</option>
+              </select>
+            </div>
+            <div class="form-group" id="cpnValueWrap">
+              <label id="cpnValueLabel">Discount Amount (₹)</label>
+              <input type="number" id="cpnValue" class="form-control" placeholder="e.g. 100" min="1"/>
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Coupon Title (visible to user)</label>
+              <input type="text" id="cpnTitle" class="form-control" placeholder="e.g. Diwali Special — ₹100 OFF"/>
+            </div>
+            <div class="form-group">
+              <label>Expires in (days)</label>
+              <input type="number" id="cpnExpDays" class="form-control" placeholder="30" min="1" value="30"/>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Message to user (optional)</label>
+            <input type="text" id="cpnMsg" class="form-control" placeholder="A short note shown with the coupon"/>
+          </div>
+
+          <div class="form-group">
+            <label>Send To</label>
+            <select id="cpnTarget" class="form-control" onchange="onCpnTargetChange()">
+              <option value="">-- Select target --</option>
+              <option value="all_users">📢 All Users (everyone)</option>
+              <option value="normal">👤 Normal Users only (role = User)</option>
+              <option value="all_prime">👑 All Prime Members (any tier)</option>
+              <option value="referrers">🎁 Referrers (users who referred ≥1)</option>
+              <optgroup id="cpnTagGroup" label="By Prime Tier"></optgroup>
+              <option value="single_email">✉️ Specific User (by email)</option>
+            </select>
+          </div>
+          <div class="form-group" id="cpnEmailWrap" style="display:none">
+            <label>Target User Email</label>
+            <input type="email" id="cpnEmail" class="form-control" placeholder="user@example.com"/>
+          </div>
+
+          <button class="btn btn-primary" onclick="createCouponBatch()"><i class="fas fa-paper-plane"></i> Create & Send Coupon</button>
+          <div id="cpnMsgBox" class="alert mt-8"></div>
+        </div>
+
+        <div class="card-title"><i class="fas fa-list"></i> All Coupons</div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Code</th><th>Title</th><th>Type</th><th>Value</th><th>Target Email</th><th>Status</th><th>Created</th><th>Expires</th><th>Action</th></tr></thead>
+            <tbody id="couponsBody"><tr><td colspan="9" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- REFER & EARN RECORDS -->
+      <div id="sec-referralRecords" class="page-section">
+        <div class="section-title"><i class="fas fa-gift"></i> Refer & Earn Records</div>
+        <div class="stats-grid" id="referralStats" style="margin-bottom:16px"></div>
+        <div class="card mb-16">
+          <div class="card-title"><i class="fas fa-edit"></i> Referral Reward Settings</div>
+          <p style="font-size:12px;color:var(--gray);margin-bottom:10px">Set how many HC points (1 pt = ₹1) <b>both</b> the referrer and new Prime user get when the referral converts to Prime. Default: 10 pts.</p>
+          <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+            <div class="form-group" style="flex:1;min-width:160px;margin-bottom:0">
+              <label>Reward Points (per referral)</label>
+              <input type="number" id="refRewardPts" class="form-control" placeholder="10" min="1" value="10"/>
+            </div>
+            <button class="btn btn-primary" onclick="saveReferralReward()" style="height:44px;white-space:nowrap"><i class="fas fa-save"></i> Save</button>
+          </div>
+          <div id="refRewardMsg" class="alert mt-8"></div>
+          <p style="font-size:12px;color:var(--gray);margin-top:10px;margin-bottom:0">Tracks every successful referral. Both parties receive the reward automatically when the referral becomes Prime.</p>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Referrer UID</th><th>Referred Email</th><th>Points</th><th>When</th></tr></thead>
+            <tbody id="referralRecBody"><tr><td colspan="4" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
       <!-- DISCOUNTS & OFFERS -->
       <div id="sec-discounts" class="page-section">
         <div class="section-title"><i class="fas fa-tag"></i> Discounts, Offers & Upgrade</div>
@@ -240,9 +391,9 @@
             <div class="form-group"><label>কাদের জন্য Offer?</label>
               <select id="discountCategory" class="form-control" onchange="toggleDiscountUserField()">
                 <option value="all">সবার জন্য (All Users)</option>
-                <option value="prime">Prime Members</option>
-                <option value="prime2">Prime2 Members</option>
-                <option value="prime3">Prime3 Members</option>
+                <option value="normal">👤 Normal Users only (role = User)</option>
+                <option value="all_prime">👑 All Prime Members (any tier)</option>
+                <optgroup id="discountTagGroup" label="By Prime Tier"></optgroup>
                 <option value="newUsers1Week">নতুন Users (১ সপ্তাহের মধ্যে যোগ দিয়েছেন)</option>
                 <option value="specificUser">Specific User (নির্দিষ্ট ব্যক্তি)</option>
               </select>
@@ -310,6 +461,26 @@
           <table>
             <thead><tr><th>Name</th><th>Email</th><th>Rating</th><th>Message</th><th>Date</th><th>Show Publicly</th></tr></thead>
             <tbody id="feedbackBody"><tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ENQUIRIES -->
+      <div id="sec-enquiries" class="page-section">
+        <div class="section-title"><i class="fas fa-comments"></i> User Enquiries</div>
+        <p style="font-size:12px;color:var(--gray);margin-bottom:12px"><i class="fas fa-info-circle"></i> Pending Top-up / Withdrawal / Coupon redemption এ user-রা যে enquiry পাঠিয়েছে সব এখানে।</p>
+        <div class="stats-grid" id="enquiryStats" style="margin-bottom:14px"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+          <button class="btn btn-sm enq-tab-btn active" data-enq="all" onclick="setEnqTab('all')">All</button>
+          <button class="btn btn-sm enq-tab-btn" data-enq="deposit" onclick="setEnqTab('deposit')"><i class="fas fa-wallet"></i> Deposit</button>
+          <button class="btn btn-sm enq-tab-btn" data-enq="withdraw" onclick="setEnqTab('withdraw')"><i class="fas fa-money-bill-transfer"></i> Withdraw</button>
+          <button class="btn btn-sm enq-tab-btn" data-enq="redemption" onclick="setEnqTab('redemption')"><i class="fas fa-ticket"></i> Coupon Redemption</button>
+          <button class="btn btn-sm enq-tab-btn" data-enq="other" onclick="setEnqTab('other')"><i class="fas fa-question-circle"></i> Other</button>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>User</th><th>Type</th><th>Ref</th><th>Message</th><th>Date</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="enquiriesBody"><tr><td colspan="7" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -447,14 +618,47 @@
             <div id="ownerMpinMsg" class="alert mt-8"></div>
           </div>
           <div class="card">
-            <div class="card-title"><i class="fas fa-users-cog"></i> Set Admin MPIN</div>
+            <div class="card-title"><i class="fas fa-users-cog"></i> Set / Reset Admin MPIN</div>
             <div class="form-group"><label>Select Admin</label>
               <select id="adminMpinSelect" class="form-control"><option value="">Loading admins...</option></select>
             </div>
             <div class="form-group"><label>New MPIN (4 digits)</label><input type="password" id="adminMpinNew" class="form-control" maxlength="4" inputmode="numeric" placeholder="Enter 4-digit MPIN"/></div>
-            <button class="btn btn-primary" onclick="setAdminMpin()"><i class="fas fa-save"></i> Set Admin MPIN</button>
+            <button class="btn btn-primary" onclick="setAdminMpin()"><i class="fas fa-save"></i> Save Admin MPIN</button>
             <div id="adminMpinMsg" class="alert mt-8"></div>
           </div>
+        </div>
+        <!-- MPIN RECORDS TABLE -->
+        <div class="card" style="margin-top:16px">
+          <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+            <span><i class="fas fa-list"></i> All Admin MPIN Records</span>
+            <button class="btn btn-sm" onclick="loadMpinRecords()" style="background:rgba(255,255,255,0.08)"><i class="fas fa-sync"></i> Refresh</button>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Admin</th><th>Role</th><th>Allocated States</th><th>MPIN Status</th><th>Last Updated</th><th>Actions</th></tr></thead>
+              <tbody id="mpinRecordsBody"><tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- AUDIT / CHANGE LOG -->
+      <div id="sec-auditLog" class="page-section">
+        <div class="section-title"><i class="fas fa-history"></i> Change &amp; Modification Log</div>
+        <div class="card">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:end">
+            <div style="flex:1;min-width:160px"><label style="font-size:12px;color:var(--gray)">Filter by Action</label><select id="auditFilterAction" class="form-control" onchange="renderAuditLog()"><option value="">All Actions</option></select></div>
+            <div style="flex:1;min-width:160px"><label style="font-size:12px;color:var(--gray)">Filter by User</label><select id="auditFilterBy" class="form-control" onchange="renderAuditLog()"><option value="">All Users</option></select></div>
+            <div style="flex:1;min-width:160px"><label style="font-size:12px;color:var(--gray)">Filter by State</label><select id="auditFilterState" class="form-control" onchange="renderAuditLog()"><option value="">All States</option></select></div>
+            <button class="btn btn-sm" onclick="loadAuditLog()" style="background:rgba(255,255,255,0.08)"><i class="fas fa-sync"></i> Refresh</button>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>When</th><th>Who</th><th>Action</th><th>Target / Details</th><th>State</th></tr></thead>
+              <tbody id="auditLogBody"><tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
+            </table>
+          </div>
+          <p style="font-size:11px;color:var(--gray);margin-top:10px"><i class="fas fa-info-circle"></i> Every Owner / Operations Manager / Branch Head action (settings change, promote/demote, MPIN set/reset, role edit, etc.) is logged here.</p>
         </div>
       </div>
 
@@ -505,6 +709,48 @@
       <button class="modal-close" onclick="closeModal('promoteModal')">&times;</button>
     </div>
     <div id="promoteUserName" style="font-size:14px;color:var(--gold-light);margin-bottom:16px;font-weight:600"></div>
+
+    <!-- ROLE -->
+    <div class="form-group">
+      <label style="font-weight:700"><i class="fas fa-id-badge" style="color:var(--gold)"></i> Admin Role / Designation</label>
+      <select id="auth_role" class="form-control">
+        <option value="Admin">Admin (Default)</option>
+        <option value="Branch Head">Branch Head</option>
+        <option value="Team Leader">Team Leader</option>
+        <option value="Accountant">Accountant</option>
+        <option value="Recruiter">Recruiter</option>
+        <option value="Support Executive">Support Executive</option>
+        <option value="Marketing Manager">Marketing Manager</option>
+        <option value="Operations Manager">Operations Manager</option>
+        <option value="custom">✏️ Custom (type below)</option>
+      </select>
+      <input type="text" id="auth_roleCustom" class="form-control mt-8" placeholder="Type custom role..." style="display:none"/>
+    </div>
+
+    <!-- LOCATION / STATE ASSIGNMENT -->
+    <div class="form-group">
+      <label style="font-weight:700;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <span><i class="fas fa-map-marker-alt" style="color:var(--gold)"></i> Assign Location / States <span style="color:var(--gray);font-weight:400;font-size:11px">(leave empty = All India)</span></span>
+        <span style="display:flex;gap:6px">
+          <button type="button" class="btn btn-sm" onclick="toggleSelectAllStates(true)" style="background:rgba(34,197,94,0.15);color:#22c55e;border:1px solid rgba(34,197,94,0.3);padding:3px 10px;font-size:11px"><i class="fas fa-check-double"></i> Select All</button>
+          <button type="button" class="btn btn-sm" onclick="toggleSelectAllStates(false)" style="background:rgba(239,68,68,0.12);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:3px 10px;font-size:11px"><i class="fas fa-times"></i> Clear</button>
+        </span>
+      </label>
+      <input type="text" id="auth_statesSearch" class="form-control" placeholder="🔍 Search state..." oninput="filterStatesBox(this.value)" style="margin-bottom:6px;font-size:12px;padding:6px 10px"/>
+      <div id="auth_statesBox" style="max-height:160px;overflow-y:auto;background:rgba(255,255,255,0.04);border:1px solid rgba(212,175,55,0.2);border-radius:8px;padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px">
+        <div style="color:var(--gray)">Loading states...</div>
+      </div>
+      <p style="font-size:11px;color:var(--gray);margin-top:6px;margin-bottom:0" id="auth_statesCount">✓ Selected = admin will only see jobs / users from those states.</p>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0 8px;flex-wrap:wrap;gap:8px">
+      <div style="font-weight:700;color:var(--gold);font-size:13px">🛡️ Permissions Checklist <span style="color:var(--gray);font-size:11px;font-weight:400">(role-based suggestions auto-tick — you can override)</span></div>
+      <div style="display:flex;gap:6px">
+        <button type="button" class="btn btn-sm" onclick="applyRolePreset()" style="background:rgba(212,175,55,0.15);color:var(--gold);border:1px solid rgba(212,175,55,0.3);padding:3px 10px;font-size:11px"><i class="fas fa-magic"></i> Re-apply Role Preset</button>
+        <button type="button" class="btn btn-sm" onclick="toggleSelectAllAuth(true)" style="background:rgba(34,197,94,0.12);color:#22c55e;border:1px solid rgba(34,197,94,0.3);padding:3px 10px;font-size:11px">All</button>
+        <button type="button" class="btn btn-sm" onclick="toggleSelectAllAuth(false)" style="background:rgba(239,68,68,0.12);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:3px 10px;font-size:11px">None</button>
+      </div>
+    </div>
     <div class="authority-grid" id="authorityGrid">
       <label class="authority-item"><input type="checkbox" id="auth_dashboard" checked/><div class="authority-label"><strong>Small User Control Dashboard</strong>View basic user information</div></label>
       <label class="authority-item"><input type="checkbox" id="auth_connectEmployer"/><div class="authority-label"><strong>Approve Connect Employer Requests</strong>Can approve/reject employer connections</div></label>
@@ -513,8 +759,38 @@
       <label class="authority-item"><input type="checkbox" id="auth_membership"/><div class="authority-label"><strong>Approve Membership Requests</strong>Can approve membership upgrades</div></label>
       <label class="authority-item"><input type="checkbox" id="auth_jobPost"/><div class="authority-label"><strong>Approve Job Post Requests</strong>Can publish pending job posts</div></label>
       <label class="authority-item"><input type="checkbox" id="auth_jobList"/><div class="authority-label"><strong>Manage Job List</strong>Can edit and delete job listings</div></label>
+      <label class="authority-item"><input type="checkbox" id="auth_candidates"/><div class="authority-label"><strong>Candidate List & Hiring</strong>View candidates and mark Hired</div></label>
+      <label class="authority-item"><input type="checkbox" id="auth_walletTopups"/><div class="authority-label"><strong>Approve HC Wallet Top-ups</strong>Verify UTR & credit user wallets</div></label>
+      <label class="authority-item"><input type="checkbox" id="auth_walletWithdrawals"/><div class="authority-label"><strong>Approve Wallet Withdrawals</strong>Pay & mark withdrawals, or refund on reject</div></label>
+      <label class="authority-item"><input type="checkbox" id="auth_walletRecords"/><div class="authority-label"><strong>View Wallet Transaction Records</strong>Read-only ledger access</div></label>
+      <label class="authority-item"><input type="checkbox" id="auth_coupons"/><div class="authority-label"><strong>Create & Send Coupons</strong>Send discount / trial / free-month / referral coupons</div></label>
+      <label class="authority-item"><input type="checkbox" id="auth_discounts"/><div class="authority-label"><strong>Discounts & Offers</strong>Create membership offers + base price upgrade</div></label>
+      <label class="authority-item"><input type="checkbox" id="auth_referrals"/><div class="authority-label"><strong>Refer & Earn Records</strong>View referrals + edit reward points</div></label>
+      <label class="authority-item"><input type="checkbox" id="auth_enquiries"/><div class="authority-label"><strong>Handle Enquiries</strong>Respond to user deposit/withdraw/coupon enquiries</div></label>
+      <label class="authority-item"><input type="checkbox" id="auth_feedback"/><div class="authority-label"><strong>Manage Feedback</strong>Read user feedback & toggle public display</div></label>
+      <label class="authority-item"><input type="checkbox" id="auth_resumeRecords"/><div class="authority-label"><strong>AI Resume Records</strong>View & download user resumes (PDF)</div></label>
+      <label class="authority-item"><input type="checkbox" id="auth_engagement"/><div class="authority-label"><strong>Engagement Tools</strong>Send notifications / push messages to users</div></label>
+      <label class="authority-item"><input type="checkbox" id="auth_content"/><div class="authority-label"><strong>Site Content</strong>Edit About / Contact / Help / Banners</div></label>
+      <label class="authority-item"><input type="checkbox" id="auth_settings"/><div class="authority-label"><strong>Settings</strong>Manage UPI / app links / general config</div></label>
+      <label class="authority-item"><input type="checkbox" id="auth_promote"/><div class="authority-label"><strong>Promote / Demote Admins</strong>Sub-admin management (use carefully)</div></label>
     </div>
     <button class="btn btn-success w-full mt-16" onclick="confirmPromote()"><i class="fas fa-check"></i> Promote to Admin</button>
+  </div>
+</div>
+
+<!-- AI RESUME DETAIL MODAL -->
+<div class="modal-overlay" id="resumeDetailModal">
+  <div class="modal-box" style="max-width:760px;max-height:88vh;overflow-y:auto;background:#fff;color:#1a1a2e">
+    <div class="modal-header" style="border-bottom:1px solid #e5e5e5">
+      <div class="modal-title" style="color:#1a1a2e"><i class="fas fa-file-alt" style="color:#d4af37"></i> Resume Details</div>
+      <button class="modal-close" onclick="closeModal('resumeDetailModal')" style="color:#1a1a2e">&times;</button>
+    </div>
+    <input type="hidden" id="resumeDetailDocId"/>
+    <div id="resumeDetailContent" style="margin-top:16px"></div>
+    <div style="display:flex;gap:10px;margin-top:18px;padding-top:14px;border-top:1px solid #e5e5e5">
+      <button class="btn btn-success" onclick="downloadResumeFromOwner(this)" style="flex:1"><i class="fas fa-download"></i> Download PDF</button>
+      <button class="btn" onclick="closeModal('resumeDetailModal')" style="background:#e5e5e5;color:#1a1a2e">Close</button>
+    </div>
   </div>
 </div>
 
@@ -547,7 +823,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, doc, getDoc, getDocs, collection, query, where, updateDoc, deleteDoc, addDoc, serverTimestamp, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, getDoc, getDocs, collection, query, where, updateDoc, deleteDoc, addDoc, serverTimestamp, setDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCuAuc9qhA7D_-Lqt-69pbG81KTIiDFVpg",
@@ -560,6 +836,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+window.__FIREBASE_CFG__ = firebaseConfig;
 
 const OWNER_EMAIL = 'ssandeepsarkar143@gmail.com';
 const MPIN_DOC = 'owner';
@@ -604,11 +881,18 @@ function loadSectionData(name) {
     case 'contactReqs': loadRequests('contact','contactReqsBody'); break;
     case 'resumeReqs': loadRequests('resumeDownload','resumeReqsBody'); break;
     case 'membershipReqs': loadMembershipReqs(); break;
+    case 'walletTopups': loadWalletTopups(); break;
+    case 'walletWithdrawals': loadWalletWithdrawals(); break;
+    case 'walletRecords': loadWalletRecords(); break;
+    case 'referralRecords': loadReferralRecords(); break;
+    case 'coupons': loadCouponsSection(); break;
     case 'discounts': loadOffers(); break;
-    case 'manageMpin': loadAdminMpinList(); break;
+    case 'manageMpin': loadAdminMpinList(); loadMpinRecords(); break;
+    case 'auditLog': loadAuditLog(); break;
     case 'notifications': loadNotifications(); break;
     case 'feedbackRecords': loadFeedbackRecords(); break;
     case 'resumeRecords': loadResumeRecords(); break;
+    case 'enquiries': loadEnquiries(); break;
     case 'siteSettings': loadSiteSettings(); break;
   }
 }
@@ -925,9 +1209,33 @@ window.setUserTab = function(tab) {
 };
 
 function applyUserTab() {
+  // Populate state filter once
+  const stateSel = document.getElementById('userStateFilter');
+  if (stateSel && stateSel.options.length <= 1) {
+    const set = new Set();
+    allUsers.forEach(u => { if (u.state) set.add(u.state); (u.locations||[]).forEach(s => set.add(s)); });
+    INDIAN_STATES.forEach(s => set.add(s));
+    stateSel.innerHTML = '<option value="">📍 All States</option>' + Array.from(set).sort().map(s => `<option value="${s}">${s}</option>`).join('');
+  }
   let filtered = [...allUsers];
   if (currentUserTab === 'membership') filtered = filtered.filter(u => u.role === 'Prime');
   else if (currentUserTab === 'admin') filtered = filtered.filter(u => u.role === 'Admin');
+  const stateVal = stateSel?.value || '';
+  const infoEl = document.getElementById('stateAdminInfo');
+  if (stateVal) {
+    if (currentUserTab === 'admin') {
+      filtered = filtered.filter(u => (u.locations||[]).includes(stateVal) || !(u.locations||[]).length);
+    } else {
+      filtered = filtered.filter(u => u.state === stateVal);
+    }
+    // Show admin assigned to this state + work record
+    const stateAdmins = allUsers.filter(u => u.role==='Admin' && (u.locations||[]).includes(stateVal));
+    if (stateAdmins.length && infoEl) {
+      infoEl.innerHTML = '<i class="fas fa-user-shield"></i> Admins assigned to <b>'+stateVal+'</b>: ' + stateAdmins.map(a => `<span style="background:rgba(212,175,55,0.15);padding:3px 8px;border-radius:6px;margin:0 4px;cursor:pointer" onclick="viewUserDetails('${a.id}')" title="${a.adminRole||'Admin'} — Click to view work record"><b>${a.displayName||a.email}</b> <span style="color:var(--gray);font-size:11px">(${a.adminRole||'Admin'})</span></span>`).join('');
+    } else if (infoEl) {
+      infoEl.innerHTML = '<span style="color:var(--gray)">⚠️ No admin assigned to <b>'+stateVal+'</b> yet — promote one for local control.</span>';
+    }
+  } else if (infoEl) { infoEl.innerHTML = ''; }
   filtered = applySortToUsers(filtered);
   const searchVal = document.getElementById('userTableSearch')?.value || '';
   if (searchVal) {
@@ -964,14 +1272,15 @@ function renderUsersTable(users, tab) {
   }
   if (tab === 'admin') {
     tbody.innerHTML = users.map(u => `<tr>
-      <td style="cursor:pointer;color:var(--gold)" onclick="viewUserDetails('${u.id}')">${u.displayName || 'N/A'}</td>
+      <td style="cursor:pointer;color:var(--gold)" onclick="viewUserDetails('${u.id}')">${u.displayName || 'N/A'}<div style="font-size:10px;color:var(--gray);margin-top:2px">${u.adminRole?('🎖️ '+u.adminRole):''}</div></td>
       <td>${u.email}</td>
-      <td><span class="badge badge-rejected">Admin</span></td>
+      <td><span class="badge badge-rejected">${u.adminRole||'Admin'}</span><div style="margin-top:4px;font-size:10px">${(u.locations||[]).length ? (u.locations||[]).map(s=>`<span style=\"background:rgba(212,175,55,0.15);padding:2px 6px;border-radius:4px;margin:1px;display:inline-block\">📍 ${s}</span>`).join('') : '<span style="color:var(--gray)">All India</span>'}</div></td>
       <td>${u.createdAt?.toDate?.()?.toLocaleDateString() || 'N/A'}</td>
       <td>—</td>
       <td>
         <button class="btn btn-sm btn-info" onclick="viewUserDetails('${u.id}')">Details</button>
-        <button class="btn btn-sm btn-danger" onclick="demoteAdmin('${u.id}')"><i class="fas fa-user-minus"></i> Remove Admin</button>
+        <button class="btn btn-sm btn-warning" style="background:linear-gradient(135deg,#ffc107,#e0a800);color:#000" onclick="openPromote('${u.id}','${(u.displayName||u.email).replace(/'/g,'&#39;')}')"><i class="fas fa-edit"></i> Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="demoteAdmin('${u.id}')"><i class="fas fa-user-minus"></i> Remove</button>
       </td>
     </tr>`).join('');
     return;
@@ -1020,14 +1329,123 @@ window.viewUserDetails = async function(uid) {
   document.getElementById('userDetailsModal').classList.add('active');
 };
 
-window.openPromote = function(uid, name) {
-  promoteUserId = uid;
-  document.getElementById('promoteUserName').textContent = 'Promoting: ' + name;
-  document.getElementById('promoteModal').classList.add('active');
+const INDIAN_STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Andaman & Nicobar','Chandigarh','Dadra & Nagar Haveli','Daman & Diu','Delhi','Jammu & Kashmir','Ladakh','Lakshadweep','Puducherry'];
+
+async function getAllKnownStates() {
+  const set = new Set(INDIAN_STATES);
+  try {
+    const [jobsSnap, usersSnap] = await Promise.all([
+      getDocs(collection(db,'jobPosts')),
+      getDocs(collection(db,'users'))
+    ]);
+    jobsSnap.forEach(d => { const j = d.data(); const loc = (j.location||j.state||'').trim(); if (loc) loc.split(/[,/]/).forEach(s => { const t=s.trim(); if (t && t.length<40) set.add(t); }); });
+    usersSnap.forEach(d => { const u = d.data(); if (u.state) set.add(u.state); });
+  } catch(_){}
+  return Array.from(set).sort();
+}
+
+// Role-based authority presets
+const ROLE_PRESETS = {
+  'Admin': ['dashboard'],
+  'Branch Head': ['dashboard','connectEmployer','resumeDownload','contact','membership','jobPost','jobList','candidates','walletTopups','walletWithdrawals','walletRecords','enquiries','feedback','resumeRecords'],
+  'Team Leader': ['dashboard','candidates','jobList','jobPost','contact'],
+  'Accountant': ['dashboard','walletTopups','walletWithdrawals','walletRecords','membership','enquiries'],
+  'Recruiter': ['dashboard','candidates','contact','resumeDownload','jobPost','resumeRecords'],
+  'Support Executive': ['dashboard','enquiries','feedback','contact'],
+  'Marketing Manager': ['dashboard','coupons','discounts','referrals','engagement','content'],
+  'Operations Manager': ['dashboard','connectEmployer','resumeDownload','contact','membership','jobPost','jobList','candidates','walletTopups','walletWithdrawals','walletRecords','coupons','discounts','referrals','enquiries','feedback','resumeRecords','engagement','content','settings','promote']
 };
+const ALL_AUTH_KEYS = ['dashboard','connectEmployer','resumeDownload','contact','membership','jobPost','jobList','candidates','walletTopups','walletWithdrawals','walletRecords','coupons','discounts','referrals','enquiries','feedback','resumeRecords','engagement','content','settings','promote'];
+
+window.applyRolePreset = function() {
+  const role = document.getElementById('auth_role').value;
+  const preset = ROLE_PRESETS[role];
+  if (!preset) return;
+  ALL_AUTH_KEYS.forEach(k => { const el = document.getElementById('auth_'+k); if (el) el.checked = preset.includes(k); });
+  showToast(`Preset applied for ${role} (${preset.length} permissions). You can override.`);
+};
+window.toggleSelectAllAuth = function(state) {
+  ALL_AUTH_KEYS.forEach(k => { const el = document.getElementById('auth_'+k); if (el) el.checked = state; });
+};
+window.toggleSelectAllStates = function(state) {
+  document.querySelectorAll('#auth_statesBox .auth_state_cb').forEach(cb => { cb.checked = state; });
+  updateStatesCount();
+};
+window.filterStatesBox = function(q) {
+  const ql = (q||'').toLowerCase();
+  document.querySelectorAll('#auth_statesBox label[data-state]').forEach(lbl => {
+    lbl.style.display = lbl.dataset.state.toLowerCase().includes(ql) ? '' : 'none';
+  });
+};
+function updateStatesCount() {
+  const total = document.querySelectorAll('#auth_statesBox .auth_state_cb').length;
+  const sel = document.querySelectorAll('#auth_statesBox .auth_state_cb:checked').length;
+  const el = document.getElementById('auth_statesCount');
+  if (el) el.innerHTML = sel === 0 ? '<span style="color:var(--gold)">⚠ All India access (no state restriction)</span>' : `✓ <strong>${sel}</strong>/${total} states selected`;
+}
+
+window.openPromote = async function(uid, name, existingData) {
+  promoteUserId = uid;
+  document.getElementById('promoteUserName').textContent = (existingData?'Editing: ':'Promoting: ') + name;
+  const existing = existingData || (allUsers.find(u => u.id === uid) || {});
+  const existingRole = existing.adminRole || 'Admin';
+  const isPreset = ROLE_PRESETS.hasOwnProperty(existingRole);
+  document.getElementById('auth_role').value = isPreset ? existingRole : 'custom';
+  document.getElementById('auth_roleCustom').style.display = isPreset ? 'none' : 'block';
+  document.getElementById('auth_roleCustom').value = isPreset ? '' : existingRole;
+  document.getElementById('auth_role').onchange = function(){
+    document.getElementById('auth_roleCustom').style.display = this.value==='custom' ? 'block' : 'none';
+    if (this.value !== 'custom') applyRolePreset();
+  };
+  // Apply existing authorities OR preset
+  const existingAuths = existing.authorities;
+  ALL_AUTH_KEYS.forEach(k => {
+    const el = document.getElementById('auth_'+k); if (!el) return;
+    if (existingAuths && Object.keys(existingAuths).length) el.checked = !!existingAuths[k];
+    else el.checked = (ROLE_PRESETS[existingRole]||['dashboard']).includes(k);
+  });
+  // Load states
+  const box = document.getElementById('auth_statesBox');
+  box.innerHTML = '<div style="color:var(--gray)">Loading...</div>';
+  document.getElementById('auth_statesSearch').value = '';
+  document.getElementById('promoteModal').classList.add('active');
+  const states = await getAllKnownStates();
+  const preSel = new Set(existing.locations || []);
+  box.innerHTML = states.map(s => {
+    const safe = s.replace(/"/g,'&quot;');
+    return `<label data-state="${safe}" style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" class="auth_state_cb" value="${safe}" ${preSel.has(s)?'checked':''} onchange="updateStatesCount()"/><span>${s}</span></label>`;
+  }).join('');
+  updateStatesCount();
+};
+
+// AUDIT LOG helper – writes to auditLog collection
+let __auditCache = null;
+async function logAudit(action, details, extras = {}) {
+  try {
+    const u = (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser : null;
+    await addDoc(collection(db, 'auditLog'), {
+      action, details: details || '',
+      byUid: u?.uid || 'system',
+      byName: u?.displayName || u?.email || 'Owner',
+      byRole: extras.byRole || 'Owner',
+      targetUid: extras.targetUid || '',
+      targetName: extras.targetName || '',
+      states: extras.states || [],
+      payload: extras.payload || null,
+      at: serverTimestamp()
+    });
+    __auditCache = null;
+  } catch(_){}
+}
+window.logAudit = logAudit;
 
 window.confirmPromote = async function() {
   if (!promoteUserId) return;
+  const roleSel = document.getElementById('auth_role').value;
+  const roleLabel = roleSel === 'custom' ? (document.getElementById('auth_roleCustom').value.trim() || 'Admin') : roleSel;
+  const states = Array.from(document.querySelectorAll('.auth_state_cb:checked')).map(c => c.value);
+  const targetUser = allUsers.find(u => u.id === promoteUserId) || {};
+  const wasAdmin = targetUser.role === 'Admin';
   const authorities = {
     dashboard: document.getElementById('auth_dashboard').checked,
     connectEmployer: document.getElementById('auth_connectEmployer').checked,
@@ -1035,22 +1453,49 @@ window.confirmPromote = async function() {
     contact: document.getElementById('auth_contact').checked,
     membership: document.getElementById('auth_membership').checked,
     jobPost: document.getElementById('auth_jobPost').checked,
-    jobList: document.getElementById('auth_jobList').checked
+    jobList: document.getElementById('auth_jobList').checked,
+    candidates: document.getElementById('auth_candidates').checked,
+    walletTopups: document.getElementById('auth_walletTopups').checked,
+    walletWithdrawals: document.getElementById('auth_walletWithdrawals').checked,
+    walletRecords: document.getElementById('auth_walletRecords').checked,
+    coupons: document.getElementById('auth_coupons').checked,
+    discounts: document.getElementById('auth_discounts').checked,
+    referrals: document.getElementById('auth_referrals').checked,
+    enquiries: document.getElementById('auth_enquiries').checked,
+    feedback: document.getElementById('auth_feedback').checked,
+    resumeRecords: document.getElementById('auth_resumeRecords').checked,
+    engagement: document.getElementById('auth_engagement').checked,
+    content: document.getElementById('auth_content').checked,
+    settings: document.getElementById('auth_settings').checked,
+    promote: document.getElementById('auth_promote').checked
   };
   await updateDoc(doc(db, 'users', promoteUserId), {
-    role: 'Admin', tag: 'Admin', authorities, promotedAt: serverTimestamp()
+    role: 'Admin', tag: 'Admin',
+    adminRole: roleLabel,
+    locations: states,
+    authorities,
+    promotedAt: serverTimestamp()
   });
+  await logAudit(wasAdmin ? 'Admin Updated' : 'User Promoted to Admin',
+    `${targetUser.displayName||targetUser.email} → ${roleLabel} (${states.length?states.join(', '):'All India'})`,
+    { targetUid: promoteUserId, targetName: targetUser.displayName||targetUser.email, states, payload: { role: roleLabel, authorities } });
   closeModal('promoteModal');
-  showToast('User promoted to Admin successfully!');
+  showToast(wasAdmin ? 'Admin updated successfully!' : 'User promoted to Admin successfully!');
   loadUsers();
-  loadAdminMpinList();
+  loadAdminMpinList && loadAdminMpinList();
+  loadMpinRecords && loadMpinRecords();
 };
 
 window.demoteAdmin = async function(uid) {
   if (!confirm('Are you sure you want to demote this admin?')) return;
-  await updateDoc(doc(db, 'users', uid), { role: 'User', tag: 'User', authorities: {} });
-  showToast('Admin demoted to User.');
+  const target = allUsers.find(u => u.id === uid) || {};
+  await updateDoc(doc(db, 'users', uid), { role: 'User', tag: 'User', authorities: {}, adminRole: '', locations: [] });
+  // Also delete their MPIN
+  try { await deleteDoc(doc(db, 'mpins', uid)); } catch(_){}
+  await logAudit('Admin Demoted', `${target.displayName||target.email} → User (MPIN cleared)`, { targetUid: uid, targetName: target.displayName||target.email, states: target.locations||[] });
+  showToast('Admin demoted to User & MPIN cleared.');
   loadUsers();
+  loadMpinRecords && loadMpinRecords();
 };
 
 // ADMIN WORKING
@@ -1349,20 +1794,393 @@ async function loadMembershipReqs() {
 window.approveMembership = async function(reqId, userId) {
   const expiry = new Date(); expiry.setDate(expiry.getDate() + 30);
   const userSnap = await getDoc(doc(db, 'users', userId));
-  const count = (userSnap.data()?.membershipCount || 0) + 1;
+  const userData = userSnap.data() || {};
+  const count = (userData.membershipCount || 0) + 1;
   const tag = `Prime${count > 1 ? count : ''}`;
   await Promise.all([
     updateDoc(doc(db, 'requests', reqId), { status: 'approved', approvedBy: currentUser.uid, approvedAt: serverTimestamp() }),
     updateDoc(doc(db, 'users', userId), {
       role: 'Prime', tag,
       membershipCount: count, membershipPurchasedAt: serverTimestamp(),
-      membershipExpiryAt: expiry
+      membershipExpiryAt: expiry,
+      ...(userData.activeCoupon ? { activeCoupon: null } : {})
     })
   ]);
   await sendNotification(userId, `🎉 Congratulations! Your Prime Membership has been approved. Your tag is "${tag}". Validity: 30 days.`, 'success');
+
+  // Credit referral reward (10 pts to referrer + 10 pts to new prime user)
+  await maybeCreditReferralOwner(userId, userData);
+
   showToast('Membership approved! User upgraded to Prime.');
   loadMembershipReqs();
 };
+
+async function maybeCreditReferralOwner(userId, userData) {
+  if (!userData?.referredBy || userData?.primeReferralCredited) return;
+  const referrerUid = userData.referredBy;
+  if (referrerUid === userId) return;
+  try {
+    await updateDoc(doc(db, 'users', userId), {
+      walletBalance: increment(10),
+      primeReferralCredited: true
+    });
+    await addDoc(collection(db, 'walletTransactions'), {
+      uid: userId, type: 'referral', amount: 10,
+      note: 'Welcome bonus for joining via referral', createdAt: serverTimestamp()
+    });
+    await updateDoc(doc(db, 'users', referrerUid), {
+      walletBalance: increment(10), referralPrimeCount: increment(1)
+    });
+    await addDoc(collection(db, 'walletTransactions'), {
+      uid: referrerUid, type: 'referral', amount: 10,
+      note: `Your referral ${userData.email||userId} bought Prime`,
+      ref: userId, createdAt: serverTimestamp()
+    });
+    await addDoc(collection(db, 'referralRewards'), {
+      referrerUid, referredUid: userId,
+      referredEmail: userData.email || '',
+      points: 10, createdAt: serverTimestamp()
+    });
+    await sendNotification(referrerUid, `🎁 You earned 10 HC Wallet points (₹10)! Your referral became a Prime member.`, 'success');
+  } catch(e) { console.warn('Referral credit failed', e.message); }
+}
+
+// ---------- HC WALLET TOP-UPS ----------
+async function loadWalletTopups() {
+  try {
+    const snap = await getDocs(collection(db, 'walletTopups'));
+    const tbody = document.getElementById('walletTopupsBody');
+    const items = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0));
+    let pendingCount=0, totalApproved=0, pendingAmt=0;
+    items.forEach(r => { if (r.status==='pending'){pendingCount++; pendingAmt+=r.amount||0;} if (r.status==='approved') totalApproved+=r.amount||0; });
+    document.getElementById('walletTopupStats').innerHTML = `
+      <div class="stat-card"><div class="stat-label">Pending Requests</div><div class="stat-value">${pendingCount}</div></div>
+      <div class="stat-card"><div class="stat-label">Pending Amount</div><div class="stat-value">₹${pendingAmt}</div></div>
+      <div class="stat-card"><div class="stat-label">Total Approved (₹)</div><div class="stat-value">₹${totalApproved}</div></div>
+      <div class="stat-card"><div class="stat-label">Total Records</div><div class="stat-value">${items.length}</div></div>`;
+    if (!items.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--gray);padding:20px">No top-up requests yet</td></tr>'; return; }
+    tbody.innerHTML = items.map(r => `<tr>
+      <td>${r.name||'—'}</td>
+      <td>${r.email||'—'}</td>
+      <td><b>₹${r.amount||0}</b></td>
+      <td style="font-size:11px;color:var(--gold);font-weight:600">${r.utr||'—'}</td>
+      <td>${r.createdAt?.toDate?.()?.toLocaleString()||'—'}</td>
+      <td><span class="badge badge-${r.status==='approved'?'approved':r.status==='rejected'?'rejected':'pending'}">${r.status}</span></td>
+      <td>${r.status==='pending'?`
+        <button class="btn btn-sm btn-success" onclick="approveTopup('${r.id}','${r.uid}',${r.amount||0})">Approve & Credit</button>
+        <button class="btn btn-sm btn-danger" onclick="rejectTopup('${r.id}','${r.uid}')">Reject</button>
+      `:'Done'}</td>
+    </tr>`).join('');
+  } catch(e) { console.warn(e); }
+}
+
+window.approveTopup = async function(id, uid, amount) {
+  if (!uid || !amount) return showToast('Invalid top-up data', 'error');
+  try {
+    await updateDoc(doc(db, 'walletTopups', id), { status: 'approved', approvedBy: currentUser.uid, approvedAt: serverTimestamp() });
+    await updateDoc(doc(db, 'users', uid), { walletBalance: increment(amount) });
+    await addDoc(collection(db, 'walletTransactions'), {
+      uid, type: 'topup', amount,
+      note: `Wallet top-up approved (₹${amount})`,
+      ref: id, createdAt: serverTimestamp()
+    });
+    await sendNotification(uid, `💰 Your HC Wallet has been credited with ${amount} points (₹${amount}).`, 'success');
+    showToast('Top-up approved & wallet credited!');
+    loadWalletTopups();
+  } catch(e) { showToast('Failed: '+e.message, 'error'); }
+};
+
+window.rejectTopup = async function(id, uid) {
+  try {
+    await updateDoc(doc(db, 'walletTopups', id), { status: 'rejected', approvedBy: currentUser.uid, approvedAt: serverTimestamp() });
+    if (uid) await sendNotification(uid, `❌ Your wallet top-up request was rejected. Please contact support if this is a mistake.`, 'danger');
+    showToast('Top-up rejected', 'error');
+    loadWalletTopups();
+  } catch(e) { showToast('Failed: '+e.message, 'error'); }
+};
+
+// ---------- WALLET WITHDRAWALS ----------
+async function loadWalletWithdrawals() {
+  try {
+    const snap = await getDocs(collection(db, 'walletWithdrawals'));
+    const items = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0));
+    let pendingCnt=0, pendingAmt=0, paidAmt=0, rejCnt=0;
+    items.forEach(r => {
+      if (r.status==='pending') { pendingCnt++; pendingAmt += r.amount||0; }
+      else if (r.status==='approved') paidAmt += r.amount||0;
+      else if (r.status==='rejected') rejCnt++;
+    });
+    document.getElementById('walletWdStats').innerHTML = `
+      <div class="stat-card"><div class="stat-label">Pending Withdrawals</div><div class="stat-value">${pendingCnt}</div></div>
+      <div class="stat-card"><div class="stat-label">Pending Amount</div><div class="stat-value">₹${pendingAmt}</div></div>
+      <div class="stat-card"><div class="stat-label">Total Paid Out</div><div class="stat-value">₹${paidAmt}</div></div>
+      <div class="stat-card"><div class="stat-label">Rejected</div><div class="stat-value">${rejCnt}</div></div>`;
+    const tbody = document.getElementById('walletWdBody');
+    if (!items.length) { tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--gray);padding:20px">No withdrawal requests yet</td></tr>'; return; }
+    tbody.innerHTML = items.map(r => `<tr>
+      <td>${r.name||'—'}</td>
+      <td>${r.email||'—'}</td>
+      <td><b>₹${r.amount||0}</b></td>
+      <td style="font-size:11px;color:var(--gold);font-weight:600">${r.upi||'—'}</td>
+      <td>${r.name||'—'}</td>
+      <td>${r.createdAt?.toDate?.()?.toLocaleString()||'—'}</td>
+      <td><span class="badge badge-${r.status==='approved'?'approved':r.status==='rejected'?'rejected':'pending'}">${r.status}</span></td>
+      <td>${r.status==='pending'?`
+        <button class="btn btn-sm btn-success" onclick="approveWithdrawal('${r.id}','${r.uid}',${r.amount||0},'${(r.upi||'').replace(/'/g,'')}')">Mark Paid</button>
+        <button class="btn btn-sm btn-danger" onclick="rejectWithdrawal('${r.id}','${r.uid}',${r.amount||0})">Reject (Refund)</button>
+      `:'Done'}</td>
+    </tr>`).join('');
+  } catch(e) { console.warn(e); }
+}
+
+window.approveWithdrawal = async function(id, uid, amount, upi) {
+  if (!confirm(`Confirm: You have paid ₹${amount} to ${upi}?\n\nThis marks the withdrawal as Paid. The user's wallet was already debited at request time.`)) return;
+  try {
+    await updateDoc(doc(db, 'walletWithdrawals', id), { status: 'approved', approvedBy: currentUser.uid, approvedAt: serverTimestamp() });
+    await sendNotification(uid, `✅ Your withdrawal of ₹${amount} has been paid to ${upi}. Please check your bank/UPI app.`, 'success');
+    showToast('Withdrawal marked paid');
+    loadWalletWithdrawals();
+  } catch(e) { showToast('Failed: '+e.message,'error'); }
+};
+
+window.rejectWithdrawal = async function(id, uid, amount) {
+  if (!confirm(`Reject and refund ₹${amount} back to user's wallet?`)) return;
+  try {
+    await updateDoc(doc(db, 'walletWithdrawals', id), { status: 'rejected', approvedBy: currentUser.uid, approvedAt: serverTimestamp() });
+    await updateDoc(doc(db, 'users', uid), { walletBalance: increment(amount) });
+    await addDoc(collection(db, 'walletTransactions'), {
+      uid, type: 'refund', amount,
+      note: `Withdrawal rejected — ₹${amount} refunded`, ref: id,
+      createdAt: serverTimestamp()
+    });
+    await sendNotification(uid, `❌ Your withdrawal request was rejected. ${amount} points (₹${amount}) have been refunded to your HC Wallet.`, 'danger');
+    showToast('Rejected & refunded', 'error');
+    loadWalletWithdrawals();
+  } catch(e) { showToast('Failed: '+e.message,'error'); }
+};
+
+// ---------- COUPONS ----------
+window.onCpnTypeChange = function() {
+  const t = document.getElementById('cpnType').value;
+  const lbl = document.getElementById('cpnValueLabel');
+  const wrap = document.getElementById('cpnValueWrap');
+  const val = document.getElementById('cpnValue');
+  if (t === 'discount')   { lbl.textContent = 'Discount Amount (₹)'; val.placeholder = 'e.g. 100'; wrap.style.display='block'; }
+  else if (t === 'trial') { lbl.textContent = 'Trial Duration (days)'; val.placeholder = 'e.g. 7'; wrap.style.display='block'; }
+  else                    { wrap.style.display='none'; }
+};
+window.onCpnTargetChange = function() {
+  document.getElementById('cpnEmailWrap').style.display = document.getElementById('cpnTarget').value === 'single_email' ? 'block' : 'none';
+};
+
+function genCouponCode() {
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  let s = 'HC-'; for (let i=0;i<6;i++) s += chars[Math.floor(Math.random()*chars.length)];
+  return s;
+}
+
+async function loadCouponsSection() {
+  // Populate dynamic Prime tag dropdown
+  try {
+    const usersSnap = await getDocs(collection(db, 'users'));
+    const tagSet = new Set();
+    usersSnap.forEach(d => { const t = d.data().tag; if (t && /^Prime/.test(t)) tagSet.add(t); });
+    const group = document.getElementById('cpnTagGroup');
+    const tags = Array.from(tagSet).sort((a,b) => {
+      const na = parseInt(a.replace('Prime','')) || 1;
+      const nb = parseInt(b.replace('Prime','')) || 1;
+      return na - nb;
+    });
+    group.innerHTML = tags.map(t => `<option value="tag:${t}">⭐ Only ${t} members</option>`).join('');
+  } catch {}
+
+  // Stats + table
+  try {
+    const snap = await getDocs(collection(db, 'coupons'));
+    const items = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0));
+    const total = items.length;
+    const claimed = items.filter(c => c.status==='claimed').length;
+    const available = items.filter(c => c.status==='available').length;
+    const expired = items.filter(c => c.status==='expired').length;
+    document.getElementById('couponStats').innerHTML = `
+      <div class="stat-card"><div class="stat-label">Total Coupons Sent</div><div class="stat-value">${total}</div></div>
+      <div class="stat-card"><div class="stat-label">Available</div><div class="stat-value">${available}</div></div>
+      <div class="stat-card"><div class="stat-label">Claimed</div><div class="stat-value">${claimed}</div></div>
+      <div class="stat-card"><div class="stat-label">Expired</div><div class="stat-value">${expired}</div></div>`;
+    const tbody = document.getElementById('couponsBody');
+    if (!items.length) { tbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--gray);padding:20px">No coupons created yet</td></tr>'; return; }
+    tbody.innerHTML = items.slice(0,300).map(c => {
+      const valTxt = c.type==='discount' ? `₹${c.value} OFF` : c.type==='trial' ? `${c.value} days` : '1 month';
+      const exp = c.expiresAt?.toDate?.()?.toLocaleDateString() || '—';
+      return `<tr>
+        <td style="font-family:monospace;font-weight:700;color:var(--gold)">${c.code}</td>
+        <td style="font-size:11px">${c.title||'—'}</td>
+        <td><span class="badge">${c.type}</span></td>
+        <td>${valTxt}</td>
+        <td style="font-size:11px">${c.targetEmail||'—'}</td>
+        <td><span class="badge badge-${c.status==='claimed'?'approved':c.status==='expired'?'rejected':'pending'}">${c.status}</span></td>
+        <td style="font-size:11px">${c.createdAt?.toDate?.()?.toLocaleDateString()||'—'}</td>
+        <td style="font-size:11px">${exp}</td>
+        <td>${c.status==='available'?`<button class="btn btn-sm btn-danger" onclick="deleteCoupon('${c.id}')">Cancel</button>`:'—'}</td>
+      </tr>`;
+    }).join('');
+  } catch(e) { console.warn(e); }
+}
+
+window.deleteCoupon = async function(id) {
+  if (!confirm('Cancel this coupon? User will no longer be able to claim it.')) return;
+  try { await deleteDoc(doc(db,'coupons',id)); showToast('Coupon cancelled'); loadCouponsSection(); }
+  catch(e) { showToast('Failed: '+e.message,'error'); }
+};
+
+window.createCouponBatch = async function() {
+  const type = document.getElementById('cpnType').value;
+  const valueRaw = parseInt(document.getElementById('cpnValue').value) || 0;
+  const title = (document.getElementById('cpnTitle').value || '').trim();
+  const message = (document.getElementById('cpnMsg').value || '').trim();
+  const target = document.getElementById('cpnTarget').value;
+  const expDays = parseInt(document.getElementById('cpnExpDays').value) || 30;
+  const msgBox = document.getElementById('cpnMsgBox');
+  msgBox.className = 'alert mt-8';
+
+  if (!type) return showCpnMsg('Select coupon type', 'error');
+  if (!title) return showCpnMsg('Enter a title', 'error');
+  if (!target) return showCpnMsg('Select a target audience', 'error');
+  if (type === 'discount' && valueRaw < 1) return showCpnMsg('Discount amount must be ≥ 1', 'error');
+  if (type === 'trial' && valueRaw < 1) return showCpnMsg('Trial days must be ≥ 1', 'error');
+
+  // Resolve target users
+  let users = [];
+  try {
+    const allSnap = await getDocs(collection(db, 'users'));
+    const all = allSnap.docs.map(d => ({ uid: d.id, ...d.data() }));
+    if (target === 'single_email') {
+      const email = (document.getElementById('cpnEmail').value || '').trim().toLowerCase();
+      if (!email) return showCpnMsg('Enter target email', 'error');
+      users = all.filter(u => (u.email||'').toLowerCase() === email);
+      if (!users.length) return showCpnMsg('No user found with that email', 'error');
+    } else if (target === 'all_users') {
+      users = all.filter(u => (u.email||'').toLowerCase() !== OWNER_EMAIL);
+    } else if (target === 'normal') {
+      users = all.filter(u => u.role === 'User' || (!u.role && (u.email||'').toLowerCase() !== OWNER_EMAIL));
+    } else if (target === 'all_prime') {
+      users = all.filter(u => u.role === 'Prime');
+    } else if (target.startsWith('tag:')) {
+      const tg = target.slice(4);
+      users = all.filter(u => u.tag === tg);
+    } else if (target === 'referrers') {
+      // Anyone who has at least one entry in referralRewards as referrer
+      const refSnap = await getDocs(collection(db,'referralRewards'));
+      const referrerUids = new Set();
+      refSnap.forEach(d => { const r = d.data(); if (r.referrerUid) referrerUids.add(r.referrerUid); });
+      users = all.filter(u => referrerUids.has(u.uid));
+    }
+  } catch(e) { return showCpnMsg('Failed to load users: '+e.message, 'error'); }
+
+  if (!users.length) return showCpnMsg('No users matched this target', 'error');
+  if (!confirm(`Send this coupon to ${users.length} user(s)?`)) return;
+
+  const expiresAt = new Date(); expiresAt.setDate(expiresAt.getDate() + expDays);
+  const value = type === 'freeMonth' ? 30 : valueRaw;
+  let ok=0, fail=0;
+  for (const u of users) {
+    try {
+      const code = genCouponCode();
+      await addDoc(collection(db, 'coupons'), {
+        code, type, value, title, message,
+        targetUid: u.uid, targetEmail: u.email || '',
+        targetGroup: target, status: 'available',
+        createdBy: currentUser.uid, createdAt: serverTimestamp(),
+        expiresAt
+      });
+      const noteText = type==='discount'
+        ? `🎟️ You received a coupon: ₹${value} OFF on Prime Membership! Title: "${title}". Open your dashboard → My Coupons → Claim.`
+        : type==='trial'
+        ? `🎁 You received a FREE ${value}-day Prime Trial coupon! Title: "${title}". Open your dashboard → My Coupons → Claim to activate instantly.`
+        : `🎁 You received a 1 Month FREE Prime Membership coupon! Title: "${title}". Open your dashboard → My Coupons → Claim to activate instantly.`;
+      await sendNotification(u.uid, noteText, 'success');
+      ok++;
+    } catch(e) { fail++; console.warn('coupon fail for',u.email,e.message); }
+  }
+  showCpnMsg(`✅ Coupon sent to ${ok} user(s)${fail?`, ${fail} failed`:''}.`, 'success');
+  document.getElementById('cpnTitle').value=''; document.getElementById('cpnMsg').value=''; document.getElementById('cpnValue').value='';
+  loadCouponsSection();
+};
+
+function showCpnMsg(text, type) {
+  const el = document.getElementById('cpnMsgBox');
+  el.textContent = text;
+  el.className = 'alert mt-8 alert-' + (type === 'success' ? 'success' : 'danger');
+}
+
+// ---------- WALLET RECORDS ----------
+async function loadWalletRecords() {
+  try {
+    const snap = await getDocs(collection(db, 'walletTransactions'));
+    const items = snap.docs.map(d => d.data()).sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0));
+    let totalIn=0, totalOut=0, refTotal=0, topupTotal=0;
+    items.forEach(t => { if (t.amount>0) totalIn+=t.amount; else totalOut += Math.abs(t.amount); if (t.type==='referral'&&t.amount>0) refTotal+=t.amount; if (t.type==='topup') topupTotal+=t.amount; });
+    document.getElementById('walletRecStats').innerHTML = `
+      <div class="stat-card"><div class="stat-label">Total Credit (pts)</div><div class="stat-value">${totalIn}</div></div>
+      <div class="stat-card"><div class="stat-label">Total Spent (pts)</div><div class="stat-value">${totalOut}</div></div>
+      <div class="stat-card"><div class="stat-label">Top-ups (pts)</div><div class="stat-value">${topupTotal}</div></div>
+      <div class="stat-card"><div class="stat-label">Referral Bonuses</div><div class="stat-value">${refTotal}</div></div>`;
+    const tbody = document.getElementById('walletRecBody');
+    if (!items.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">No wallet transactions yet</td></tr>'; return; }
+    tbody.innerHTML = items.slice(0, 200).map(t => `<tr>
+      <td style="font-size:10px;font-family:monospace">${t.uid||'—'}</td>
+      <td><span class="badge">${t.type||'—'}</span></td>
+      <td style="color:${t.amount>0?'#22c55e':'#ef4444'};font-weight:700">${t.amount>0?'+':''}${t.amount} pts</td>
+      <td style="font-size:11px">${t.note||''}</td>
+      <td style="font-size:11px">${t.createdAt?.toDate?.()?.toLocaleString()||'—'}</td>
+    </tr>`).join('');
+  } catch(e) { console.warn(e); }
+}
+
+// ---------- REFERRAL REWARD SETTING ----------
+async function loadReferralRewardSetting() {
+  try {
+    const s = await getDoc(doc(db,'settings','referral'));
+    if (s.exists() && s.data().rewardPoints) document.getElementById('refRewardPts').value = s.data().rewardPoints;
+  } catch(_){}
+}
+window.saveReferralReward = async function() {
+  const pts = parseInt(document.getElementById('refRewardPts').value)||10;
+  if (pts < 1) return;
+  try {
+    await setDoc(doc(db,'settings','referral'), { rewardPoints: pts, updatedAt: serverTimestamp() }, { merge: true });
+    const m = document.getElementById('refRewardMsg');
+    m.className = 'alert mt-8 alert-success'; m.textContent = '✅ Saved! New referrals will earn '+pts+' HC points each.';
+  } catch(e) {
+    const m = document.getElementById('refRewardMsg'); m.className = 'alert mt-8 alert-danger'; m.textContent = 'Failed: '+e.message;
+  }
+};
+
+// ---------- REFERRAL RECORDS ----------
+async function loadReferralRecords() {
+  loadReferralRewardSetting();
+  try {
+    const snap = await getDocs(collection(db, 'referralRewards'));
+    const items = snap.docs.map(d => d.data()).sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0));
+    const totalRewards = items.length;
+    const totalPoints = items.reduce((s,r) => s + (r.points||0)*2, 0); // both sides
+    // Count unique referrers
+    const uniqRef = new Set(items.map(r => r.referrerUid)).size;
+    document.getElementById('referralStats').innerHTML = `
+      <div class="stat-card"><div class="stat-label">Total Successful Referrals</div><div class="stat-value">${totalRewards}</div></div>
+      <div class="stat-card"><div class="stat-label">Unique Referrers</div><div class="stat-value">${uniqRef}</div></div>
+      <div class="stat-card"><div class="stat-label">Points Distributed</div><div class="stat-value">${totalPoints}</div></div>
+      <div class="stat-card"><div class="stat-label">₹ Equivalent</div><div class="stat-value">₹${totalPoints}</div></div>`;
+    const tbody = document.getElementById('referralRecBody');
+    if (!items.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--gray);padding:20px">No referrals yet</td></tr>'; return; }
+    tbody.innerHTML = items.map(r => `<tr>
+      <td style="font-size:10px;font-family:monospace">${r.referrerUid||'—'}</td>
+      <td>${r.referredEmail||r.referredUid||'—'}</td>
+      <td><b style="color:var(--gold)">${(r.points||0)*2} pts (10 each)</b></td>
+      <td style="font-size:11px">${r.createdAt?.toDate?.()?.toLocaleString()||'—'}</td>
+    </tr>`).join('');
+  } catch(e) { console.warn(e); }
+}
 
 // DISCOUNTS
 window.toggleDiscountFields = function() {
@@ -1376,7 +2194,20 @@ window.toggleDiscountUserField = function() {
 };
 const CATEGORY_LABELS = { all:'সবার জন্য', prime:'Prime Members', prime2:'Prime2 Members', prime3:'Prime3 Members', newUsers1Week:'নতুন Users (১ সপ্তাহ)', specificUser:'Specific User' };
 
+async function loadDiscountTagOptions() {
+  try {
+    const usersSnap = await getDocs(collection(db, 'users'));
+    const tagSet = new Set();
+    usersSnap.forEach(d => { const t = d.data().tag; if (t && /^Prime/.test(t)) tagSet.add(t); });
+    const group = document.getElementById('discountTagGroup');
+    if (!group) return;
+    const tags = Array.from(tagSet).sort((a,b) => (parseInt(a.replace('Prime',''))||1) - (parseInt(b.replace('Prime',''))||1));
+    group.innerHTML = tags.map(t => `<option value="tag:${t}">⭐ Only ${t} members</option>`).join('');
+  } catch {}
+}
+
 async function loadOffers() {
+  await loadDiscountTagOptions();
   try {
     const snap = await getDocs(collection(db, 'offers'));
     const tbody = document.getElementById('offersTableBody');
@@ -1444,8 +2275,10 @@ window.changeOwnerMpin = async function() {
   if (n.length !== 4 || !/^\d{4}$/.test(n)) { el.textContent='Enter 4-digit MPIN.'; el.className='alert alert-danger show'; return; }
   if (n !== c) { el.textContent='MPINs do not match.'; el.className='alert alert-danger show'; return; }
   await setDoc(doc(db, 'mpins', 'owner'), { mpin: n, updatedAt: serverTimestamp() });
+  await logAudit('Owner MPIN Changed', 'Owner MPIN was reset');
   el.textContent='Owner MPIN updated!'; el.className='alert alert-success show';
   showToast('Owner MPIN updated successfully!');
+  document.getElementById('ownerMpinNew').value = ''; document.getElementById('ownerMpinConfirm').value = '';
 };
 
 window.setAdminMpin = async function() {
@@ -1455,8 +2288,114 @@ window.setAdminMpin = async function() {
   if (!adminId) { el.textContent='Select an admin.'; el.className='alert alert-danger show'; return; }
   if (n.length !== 4 || !/^\d{4}$/.test(n)) { el.textContent='Enter 4-digit MPIN.'; el.className='alert alert-danger show'; return; }
   await setDoc(doc(db, 'mpins', adminId), { mpin: n, updatedAt: serverTimestamp() });
+  const target = allUsers.find(u => u.id === adminId) || {};
+  await logAudit('Admin MPIN Set', `${target.displayName||target.email} (${target.adminRole||'Admin'})`, { targetUid: adminId, targetName: target.displayName||target.email, states: target.locations||[] });
   el.textContent='Admin MPIN set!'; el.className='alert alert-success show';
   showToast('Admin MPIN set successfully!');
+  document.getElementById('adminMpinNew').value = '';
+  loadMpinRecords();
+};
+
+// MPIN RECORDS — full table (View / Change / Delete)
+window.loadMpinRecords = async function() {
+  const tbody = document.getElementById('mpinRecordsBody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+  try {
+    const adminsSnap = await getDocs(query(collection(db, 'users'), where('role','==','Admin')));
+    if (adminsSnap.empty) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">No admins found</td></tr>'; return; }
+    const rows = await Promise.all(adminsSnap.docs.map(async d => {
+      const a = d.data(); const adminId = d.id;
+      let mpinSet = false, updatedAt = null;
+      try { const mp = await getDoc(doc(db, 'mpins', adminId)); if (mp.exists()) { mpinSet = !!mp.data().mpin; updatedAt = mp.data().updatedAt; } } catch(_){}
+      const states = (a.locations||[]);
+      const stateBadges = states.length ? states.map(s=>`<span style="background:rgba(212,175,55,0.15);padding:2px 6px;border-radius:4px;margin:1px;display:inline-block;font-size:10px">📍 ${s}</span>`).join('') : '<span style="color:var(--gray);font-size:11px">All India</span>';
+      return `<tr>
+        <td><strong>${a.displayName||'N/A'}</strong><div style="font-size:10px;color:var(--gray)">${a.email||''}</div></td>
+        <td><span class="badge badge-rejected">${a.adminRole||'Admin'}</span></td>
+        <td>${stateBadges}</td>
+        <td>${mpinSet ? '<span class="badge badge-approved">✅ Set</span>' : '<span class="badge badge-pending">⚠ Not Set</span>'}</td>
+        <td style="font-size:11px">${updatedAt?.toDate?.()?.toLocaleString()||'—'}</td>
+        <td>
+          <button class="btn btn-sm btn-info" onclick="viewAdminMpin('${adminId}','${(a.displayName||a.email).replace(/'/g,'&#39;')}')"><i class="fas fa-eye"></i> View</button>
+          <button class="btn btn-sm btn-warning" style="background:linear-gradient(135deg,#ffc107,#e0a800);color:#000" onclick="changeAdminMpin('${adminId}','${(a.displayName||a.email).replace(/'/g,'&#39;')}')"><i class="fas fa-edit"></i> Change</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteAdminMpin('${adminId}','${(a.displayName||a.email).replace(/'/g,'&#39;')}')"><i class="fas fa-trash"></i> Delete</button>
+        </td>
+      </tr>`;
+    }));
+    tbody.innerHTML = rows.join('');
+  } catch(e) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#ef4444;padding:20px">Error: ${e.message}</td></tr>`; }
+};
+
+window.viewAdminMpin = async function(adminId, name) {
+  try {
+    const mp = await getDoc(doc(db, 'mpins', adminId));
+    if (!mp.exists() || !mp.data().mpin) { showToast(`${name} has no MPIN set yet.`,'error'); return; }
+    const m = mp.data().mpin;
+    const target = allUsers.find(u => u.id === adminId) || {};
+    await logAudit('Admin MPIN Viewed', `${name}`, { targetUid: adminId, targetName: name, states: target.locations||[] });
+    alert(`MPIN for ${name}: ${m}\n\n(This view has been logged in the Change Log.)`);
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+};
+
+window.changeAdminMpin = async function(adminId, name) {
+  const n = prompt(`Enter NEW 4-digit MPIN for ${name}:`);
+  if (!n) return;
+  if (!/^\d{4}$/.test(n)) { showToast('Must be exactly 4 digits.','error'); return; }
+  await setDoc(doc(db, 'mpins', adminId), { mpin: n, updatedAt: serverTimestamp() });
+  const target = allUsers.find(u => u.id === adminId) || {};
+  await logAudit('Admin MPIN Changed', `${name}`, { targetUid: adminId, targetName: name, states: target.locations||[] });
+  showToast(`MPIN updated for ${name}.`);
+  loadMpinRecords();
+};
+
+window.deleteAdminMpin = async function(adminId, name) {
+  if (!confirm(`Delete MPIN for ${name}? They will be locked out until you set a new MPIN.`)) return;
+  try { await deleteDoc(doc(db, 'mpins', adminId)); } catch(_){}
+  const target = allUsers.find(u => u.id === adminId) || {};
+  await logAudit('Admin MPIN Deleted', `${name} (will need a new MPIN to log in)`, { targetUid: adminId, targetName: name, states: target.locations||[] });
+  showToast(`MPIN deleted for ${name}.`);
+  loadMpinRecords();
+};
+
+// AUDIT LOG VIEWER
+let __auditAll = [];
+window.loadAuditLog = async function() {
+  const tbody = document.getElementById('auditLogBody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+  try {
+    const snap = await getDocs(collection(db, 'auditLog'));
+    __auditAll = snap.docs.map(d => ({ id:d.id, ...d.data() })).sort((a,b) => (b.at?.toMillis?.()||0) - (a.at?.toMillis?.()||0));
+    // Build filter dropdowns
+    const acts = [...new Set(__auditAll.map(a => a.action))].sort();
+    const bys = [...new Set(__auditAll.map(a => a.byName))].sort();
+    const sts = [...new Set(__auditAll.flatMap(a => a.states||[]))].sort();
+    const fa = document.getElementById('auditFilterAction'), fb = document.getElementById('auditFilterBy'), fs = document.getElementById('auditFilterState');
+    if (fa) fa.innerHTML = '<option value="">All Actions</option>' + acts.map(a=>`<option value="${a}">${a}</option>`).join('');
+    if (fb) fb.innerHTML = '<option value="">All Users</option>' + bys.map(a=>`<option value="${a}">${a}</option>`).join('');
+    if (fs) fs.innerHTML = '<option value="">All States</option>' + sts.map(a=>`<option value="${a}">${a}</option>`).join('');
+    renderAuditLog();
+  } catch(e) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#ef4444;padding:20px">Error: ${e.message}</td></tr>`; }
+};
+
+window.renderAuditLog = function() {
+  const tbody = document.getElementById('auditLogBody');
+  const fa = document.getElementById('auditFilterAction')?.value || '';
+  const fb = document.getElementById('auditFilterBy')?.value || '';
+  const fs = document.getElementById('auditFilterState')?.value || '';
+  let list = __auditAll;
+  if (fa) list = list.filter(a => a.action === fa);
+  if (fb) list = list.filter(a => a.byName === fb);
+  if (fs) list = list.filter(a => (a.states||[]).includes(fs));
+  if (!list.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">No log entries match.</td></tr>'; return; }
+  tbody.innerHTML = list.slice(0, 500).map(a => `<tr>
+    <td style="font-size:11px;white-space:nowrap">${a.at?.toDate?.()?.toLocaleString()||'—'}</td>
+    <td><strong>${(a.byName||'').replace(/[<>]/g,'')}</strong><div style="font-size:10px;color:var(--gray)">${a.byRole||''}</div></td>
+    <td><span class="badge badge-pending" style="font-size:10px">${(a.action||'').replace(/[<>]/g,'')}</span></td>
+    <td style="font-size:12px"><strong>${(a.targetName||'').replace(/[<>]/g,'')}</strong>${a.targetName?'<br/>':''}<span style="color:var(--gray)">${(a.details||'').replace(/[<>]/g,'')}</span></td>
+    <td style="font-size:10px">${(a.states||[]).map(s=>`<span style="background:rgba(212,175,55,0.15);padding:1px 5px;border-radius:3px;margin:1px;display:inline-block">📍 ${s}</span>`).join('')||'—'}</td>
+  </tr>`).join('');
 };
 
 document.querySelectorAll('.modal-overlay').forEach(el => {
@@ -1563,25 +2502,138 @@ async function loadResumeRecords() {
         <td style="font-size:11px;max-width:200px">${exp||'-'}</td>
         <td style="font-size:11px;max-width:160px">${skl||'-'}</td>
         <td style="font-size:11px">${r.createdAt?.toDate?.()?.toLocaleString()||'N/A'}</td>
-        <td><button class="btn btn-sm btn-info" onclick='viewResumeDetails(${JSON.stringify(JSON.stringify(r))})'><i class="fas fa-eye"></i></button></td>
+        <td><button class="btn btn-sm btn-info" onclick='viewResumeDetails(${JSON.stringify(JSON.stringify(r))}, "${d.id}")'><i class="fas fa-eye"></i> View</button></td>
       </tr>`;
     }).join('');
   } catch(e) { console.error('loadResumeRecords:', e); }
 }
 
-window.viewResumeDetails = function(jsonStr) {
-  const r = JSON.parse(jsonStr);
+window.viewResumeDetails = function(jsonStr, docId) {
+  let r = {};
+  try { r = JSON.parse(jsonStr); } catch(_) { r = {}; }
+  // Try to expand profile/resume JSON if present (richer data)
+  let prof = {}, res = {};
+  try { prof = r.profileJson ? JSON.parse(r.profileJson) : {}; } catch(_){}
+  try { res = r.resumeJson ? JSON.parse(r.resumeJson) : {}; } catch(_){}
+  const photo = prof.photo || r.photo || '';
+  const fullName = prof.fullName || r.name || 'N/A';
+  const jobTitle = prof.jobTitle || r.jobTitle || '';
+  const email = prof.email || r.email || '';
+  const phone = prof.phone || r.phone || '';
+  const city = prof.city || r.location || '';
+  const expArr = res.experience || [];
+  const eduArr = res.education || [];
+  const skillArr = res.skills || (r.skills ? r.skills.split(',').map(s=>s.trim()) : []);
   const html = `
-    <div style="font-family:inherit;line-height:1.7">
-      <h3 style="color:var(--gold);margin-bottom:8px">${r.name||''} — ${r.jobTitle||''}</h3>
-      <div style="color:var(--gray);font-size:12px;margin-bottom:14px">${r.email||''} · ${r.phone||''} · ${r.location||''}</div>
-      <div style="margin-bottom:10px"><strong>Experience:</strong><br/>${(r.experience||'-').replace(/\n/g,'<br/>')}</div>
-      <div style="margin-bottom:10px"><strong>Skills:</strong><br/>${r.skills||'-'}</div>
-      <div style="margin-bottom:10px"><strong>Education:</strong><br/>${r.education||'-'}</div>
-      <div style="margin-top:14px;padding:12px;background:rgba(212,175,55,0.06);border-radius:8px;white-space:pre-wrap;font-size:12px">${r.aiResume||'(AI text not stored)'}</div>
+    <div style="font-family:inherit;line-height:1.7;color:#1a1a2e">
+      <div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:14px;border-bottom:2px solid #d4af37;padding-bottom:12px">
+        ${photo?`<img src="${photo}" style="width:80px;height:80px;border-radius:10px;object-fit:cover">`:''}
+        <div style="flex:1">
+          <h2 style="color:#1a1a2e;margin:0 0 4px;font-size:20px">${fullName}</h2>
+          <div style="color:#d4af37;font-weight:700;font-size:14px">${jobTitle}</div>
+          <div style="color:#666;font-size:11px;margin-top:4px">${[email,phone,city].filter(Boolean).join(' · ')}</div>
+        </div>
+      </div>
+      ${res.summary?`<div style="margin-bottom:12px"><strong style="color:#d4af37">Summary</strong><br/>${res.summary}</div>`:''}
+      ${skillArr.length?`<div style="margin-bottom:12px"><strong style="color:#d4af37">Skills</strong><br/>${skillArr.join(' • ')}</div>`:''}
+      ${expArr.length?`<div style="margin-bottom:12px"><strong style="color:#d4af37">Experience</strong>${expArr.map(j=>`<div style="margin-top:6px"><b>${j.title||''}</b> – ${j.company||''} <span style="color:#666;font-size:11px">(${j.period||''})</span>${(j.bullets||[]).map(b=>`<div style="font-size:12px;margin-left:14px">• ${b}</div>`).join('')}</div>`).join('')}</div>`:''}
+      ${eduArr.length?`<div style="margin-bottom:12px"><strong style="color:#d4af37">Education</strong>${eduArr.map(e=>`<div style="margin-top:4px">${e.degree||''} – ${e.institution||''} <span style="color:#666;font-size:11px">(${e.period||''})</span></div>`).join('')}</div>`:''}
+      ${(r.experience && !expArr.length)?`<div style="margin-bottom:10px"><strong>Experience (raw):</strong><br/>${(r.experience).replace(/\n/g,'<br/>')}</div>`:''}
+      ${(r.education && !eduArr.length)?`<div style="margin-bottom:10px"><strong>Education (raw):</strong><br/>${r.education}</div>`:''}
+      ${r.aiResume?`<div style="margin-top:14px;padding:12px;background:rgba(212,175,55,0.08);border-radius:8px;white-space:pre-wrap;font-size:11px;color:#333">${r.aiResume}</div>`:''}
     </div>`;
-  const w = window.open('', '_blank', 'width=720,height=820');
-  w.document.write(`<title>${r.name||''} — Resume Details</title><body style="font-family:Arial;background:#0e0e1a;color:#fff;padding:24px">${html}</body>`);
+  document.getElementById('resumeDetailContent').innerHTML = html;
+  document.getElementById('resumeDetailDocId').value = docId || '';
+  document.getElementById('resumeDetailModal').classList.add('active');
+};
+
+// ========== ENQUIRIES ==========
+let __enquiriesCache = [];
+let __enquiryTab = 'all';
+
+window.setEnqTab = function(tab) {
+  __enquiryTab = tab;
+  document.querySelectorAll('.enq-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.enq === tab));
+  renderEnquiries();
+};
+
+async function loadEnquiries() {
+  try {
+    const snap = await getDocs(collection(db, 'enquiries'));
+    __enquiriesCache = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0));
+    renderEnquiries();
+  } catch(e) {
+    document.getElementById('enquiriesBody').innerHTML = '<tr><td colspan="7" style="text-align:center;color:#ef4444;padding:20px">Failed: '+e.message+'</td></tr>';
+  }
+}
+
+function renderEnquiries() {
+  const items = __enquiryTab === 'all' ? __enquiriesCache : __enquiriesCache.filter(e => (e.type||'other') === __enquiryTab);
+  const stats = document.getElementById('enquiryStats');
+  const counts = { all: __enquiriesCache.length, open: __enquiriesCache.filter(e=>e.status!=='resolved').length, deposit:0, withdraw:0, redemption:0, other:0 };
+  __enquiriesCache.forEach(e => { counts[e.type||'other'] = (counts[e.type||'other']||0)+1; });
+  stats.innerHTML = `
+    <div class="stat-card"><div class="stat-value">${counts.all}</div><div class="stat-label">Total</div></div>
+    <div class="stat-card" style="border-color:#f59e0b"><div class="stat-value" style="color:#f59e0b">${counts.open}</div><div class="stat-label">Open / Pending</div></div>
+    <div class="stat-card"><div class="stat-value">${counts.deposit||0}</div><div class="stat-label">Deposit</div></div>
+    <div class="stat-card"><div class="stat-value">${counts.withdraw||0}</div><div class="stat-label">Withdraw</div></div>
+    <div class="stat-card"><div class="stat-value">${counts.redemption||0}</div><div class="stat-label">Redemption</div></div>
+    <div class="stat-card"><div class="stat-value">${counts.other||0}</div><div class="stat-label">Other</div></div>`;
+  const tbody = document.getElementById('enquiriesBody');
+  if (!items.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--gray);padding:20px">No enquiries in this category.</td></tr>'; return; }
+  tbody.innerHTML = items.map(e => {
+    const dt = e.createdAt?.toDate?.()?.toLocaleString() || '-';
+    const statusBadge = e.status === 'resolved'
+      ? '<span style="background:rgba(34,197,94,0.15);color:#22c55e;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700">✓ Resolved</span>'
+      : '<span style="background:rgba(245,158,11,0.15);color:#f59e0b;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700">⏳ Open</span>';
+    const typeLabel = ({deposit:'💰 Deposit', withdraw:'💸 Withdraw', redemption:'🎟️ Redemption', other:'❓ Other'})[e.type||'other'] || e.type;
+    const ref = e.refAmount ? `₹${e.refAmount}` : (e.refId || '-');
+    const safeMsg = (e.message||'').replace(/[<>]/g, c => ({'<':'&lt;','>':'&gt;'}[c]));
+    return `<tr>
+      <td><strong>${e.name||'User'}</strong><br/><span style="font-size:10px;color:var(--gray)">${e.email||''}</span></td>
+      <td style="font-size:11px">${typeLabel}</td>
+      <td style="font-size:11px">${ref}</td>
+      <td style="font-size:11px;max-width:240px">${safeMsg}</td>
+      <td style="font-size:11px">${dt}</td>
+      <td>${statusBadge}</td>
+      <td>
+        ${e.status!=='resolved'?`<button class="btn btn-sm btn-success" onclick="resolveEnquiry('${e.id}')"><i class="fas fa-check"></i> Resolve</button>`:''}
+        <button class="btn btn-sm btn-danger" onclick="deleteEnquiry('${e.id}')"><i class="fas fa-trash"></i></button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+window.resolveEnquiry = async function(id) {
+  try {
+    const enq = __enquiriesCache.find(e => e.id === id);
+    await updateDoc(doc(db, 'enquiries', id), { status: 'resolved', resolvedAt: serverTimestamp() });
+    if (enq?.uid) {
+      await addDoc(collection(db, 'notifications'), {
+        userId: enq.uid, type: 'success',
+        message: `✅ আপনার "${enq.type||'enquiry'}" enquiry টি owner দেখেছেন এবং মার্ক resolved করেছেন।`,
+        createdAt: serverTimestamp(), read: false
+      });
+    }
+    showToast('Enquiry resolved.');
+    loadEnquiries();
+  } catch(e) { showToast('Failed: '+e.message, 'error'); }
+};
+
+window.deleteEnquiry = async function(id) {
+  if (!confirm('Delete this enquiry?')) return;
+  await deleteDoc(doc(db, 'enquiries', id));
+  showToast('Deleted.');
+  loadEnquiries();
+};
+
+window.downloadResumeFromOwner = async function(btn) {
+  const docId = document.getElementById('resumeDetailDocId').value;
+  if (!docId) { showToast('Resume ID missing.', 'error'); return; }
+  if (!window.__downloadMyResume) { showToast('Loading PDF builder...', 'info'); await new Promise(r => setTimeout(r, 600)); }
+  if (window.__downloadMyResume) window.__downloadMyResume(docId, btn);
+  else showToast('PDF builder not loaded. Refresh and try again.', 'error');
 };
 
 window.toggleFeedbackPublic = async function(docId, show) {
@@ -1823,6 +2875,7 @@ window.saveSiteSettings = async function() {
   };
   try {
     await setDoc(doc(db, 'siteContent', 'settings'), data, { merge: true });
+    await logAudit('Site Settings Updated', `Contact / About / FAQ / Payment settings saved`, { payload: { contactEmail: data.contactEmail, contactPhone: data.contactPhone, address: data.address, upiId: data.upiId } });
     const summary = `✅ Saved! Contact = ${data.contactEmail || '(default)'} · ${data.contactPhone || '(default)'} · ${data.address ? data.address.split('\n')[0] : '(default)'}`;
     msg.innerHTML = summary + ' &nbsp; <a href="contact.html" target="_blank" style="color:var(--gold);text-decoration:underline;font-weight:700">Open Contact Page →</a> <span style="font-size:11px;color:var(--gray);margin-left:8px">(if old value still shows, hard-refresh: Ctrl+Shift+R)</span>';
     msg.className = 'alert alert-success show';
@@ -1832,6 +2885,7 @@ window.saveSiteSettings = async function() {
   }
 };
 </script>
+<script src="js/my-resumes.js"></script>
 <script src="js/i18n.js"></script>
 <script src="js/chatbot.js"></script>
 <script src="js/pwa-install.js"></script>

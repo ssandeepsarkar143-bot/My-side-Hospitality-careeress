@@ -79,6 +79,10 @@
             <option value="notice">I have a Notice Period</option>
           </select>
         </div>
+        <div class="form-group">
+          <label>State / Location <span style="color:#ef4444">*</span></label>
+          <select id="seekerState" class="form-control state-select" required></select>
+        </div>
       </div>
 
       <!-- EMPLOYER FIELDS -->
@@ -103,6 +107,10 @@
             <option value="management">I am from Management</option>
             <option value="manager">I am a Manager</option>
           </select>
+        </div>
+        <div class="form-group">
+          <label>State / Location <span style="color:#ef4444">*</span></label>
+          <select id="empState" class="form-control state-select" required></select>
         </div>
       </div>
 
@@ -140,6 +148,12 @@ onAuthStateChanged(auth, (user) => {
 document.getElementById('userType').addEventListener('change', function() {
   document.getElementById('seekerFields').style.display = this.value === 'jobseeker' ? 'block' : 'none';
   document.getElementById('employerFields').style.display = this.value === 'employer' ? 'block' : 'none';
+});
+
+// Indian states list
+const INDIAN_STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Andaman & Nicobar','Chandigarh','Dadra & Nagar Haveli','Daman & Diu','Delhi','Jammu & Kashmir','Ladakh','Lakshadweep','Puducherry'];
+document.querySelectorAll('.state-select').forEach(sel => {
+  sel.innerHTML = '<option value="">-- Select your State --</option>' + INDIAN_STATES.map(s => `<option value="${s}">${s}</option>`).join('');
 });
 
 // Instant photo compress + preview
@@ -207,16 +221,18 @@ document.getElementById('profileForm').addEventListener('submit', async (e) => {
   if (type === 'jobseeker') {
     const name = document.getElementById('seekerName').value.trim();
     const phone = document.getElementById('seekerPhone').value.trim();
-    if (!name || !phone) { showAlert('Please fill all required fields.'); btn.innerHTML = '<i class="fas fa-check"></i> Submit Profile'; btn.disabled = false; return; }
+    const state = document.getElementById('seekerState').value;
+    if (!name || !phone || !state) { showAlert('Please fill all required fields including State.'); btn.innerHTML = '<i class="fas fa-check"></i> Submit Profile'; btn.disabled = false; return; }
     profileData = { ...profileData,
-      displayName: name, phone, position: document.getElementById('seekerPosition').value,
+      displayName: name, phone, state, position: document.getElementById('seekerPosition').value,
       experience: document.getElementById('seekerExp').value, joiningAvailability: document.getElementById('seekerJoining').value };
   } else {
     const name = document.getElementById('empName').value.trim();
     const phone = document.getElementById('empPhone').value.trim();
     const org = document.getElementById('empOrg').value.trim();
-    if (!name || !phone || !org) { showAlert('Please fill all required fields.'); btn.innerHTML = '<i class="fas fa-check"></i> Submit Profile'; btn.disabled = false; return; }
-    profileData = { ...profileData, displayName: name, phone, organisation: org, orgRole: document.getElementById('empRole').value };
+    const state = document.getElementById('empState').value;
+    if (!name || !phone || !org || !state) { showAlert('Please fill all required fields including State.'); btn.innerHTML = '<i class="fas fa-check"></i> Submit Profile'; btn.disabled = false; return; }
+    profileData = { ...profileData, displayName: name, phone, state, organisation: org, orgRole: document.getElementById('empRole').value };
   }
 
   try {

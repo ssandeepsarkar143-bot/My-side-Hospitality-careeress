@@ -52,7 +52,10 @@
       </div>
       <div class="form-group">
         <label data-i18n="login.password">Password</label>
-      <input type="password" id="loginPassword" class="form-control" placeholder="Enter your password" autocomplete="current-password" required/>
+        <div style="position:relative">
+          <input type="password" id="loginPassword" class="form-control" placeholder="Enter your password" autocomplete="current-password" required style="padding-right:42px"/>
+          <button type="button" onclick="togglePw('loginPassword',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--gray);cursor:pointer;font-size:16px;padding:6px" title="Show / Hide password"><i class="fas fa-eye"></i></button>
+        </div>
       </div>
       <div class="forgot-link">
         <a id="forgotBtn" data-i18n="login.forgot">Forgot Password?</a>
@@ -124,8 +127,12 @@
       </div>
       <div class="form-group">
         <label>Password</label>
-        <input type="password" id="signupPass" class="form-control" placeholder="Create password (min 6 chars)" autocomplete="new-password" required/>
+        <div style="position:relative">
+          <input type="password" id="signupPass" class="form-control" placeholder="Create password (min 6 chars)" autocomplete="new-password" required style="padding-right:42px"/>
+          <button type="button" onclick="togglePw('signupPass',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--gray);cursor:pointer;font-size:16px;padding:6px" title="Show / Hide password"><i class="fas fa-eye"></i></button>
+        </div>
       </div>
+      <script>window.togglePw=function(id,btn){const i=document.getElementById(id);if(!i)return;const eye=btn.querySelector('i');if(i.type==='password'){i.type='text';eye.className='fas fa-eye-slash';}else{i.type='password';eye.className='fas fa-eye';}};</script>
       <button type="submit" class="btn btn-primary w-full" id="signupSubmitBtn">
         <i class="fas fa-check"></i> Sign Up
       </button>
@@ -164,7 +171,13 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, signInWithRedirect, getRedirectResult, GoogleAuthProvider, sendPasswordResetEmail, updateProfile, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+// Capture ?ref=CODE early so it survives Google redirect-based signup
+try {
+  const _r = new URLSearchParams(location.search).get('ref');
+  if (_r) sessionStorage.setItem('hc_ref', _r);
+} catch(_) {}
 
 const firebaseConfig = {
   apiKey: "AIzaSyCuAuc9qhA7D_-Lqt-69pbG81KTIiDFVpg",
@@ -266,8 +279,31 @@ async function redirectUser(user) {
   }
 }
 
+function makeReferralCode(uid) {
+  const base = (uid || '').replace(/[^a-zA-Z0-9]/g, '').slice(-6).toUpperCase();
+  const rand = Math.random().toString(36).slice(2, 5).toUpperCase();
+  return `HC${base}${rand}`;
+}
+
+async function resolveReferrer(refCode) {
+  if (!refCode) return null;
+  try {
+    const q = query(collection(db, 'users'), where('referralCode', '==', refCode));
+    const snap = await getDocs(q);
+    if (!snap.empty) return snap.docs[0].id;
+  } catch(_) {}
+  return null;
+}
+
 async function createUserRecord(user, role) {
   try {
+    // Referral capture from URL or sessionStorage (?ref=CODE)
+    let refCode = '';
+    try {
+      refCode = new URLSearchParams(location.search).get('ref') || sessionStorage.getItem('hc_ref') || '';
+    } catch(_) {}
+    const referredBy = refCode ? await resolveReferrer(refCode) : null;
+
     await setDoc(doc(db, 'users', user.uid), {
       uid: user.uid,
       email: user.email,
@@ -277,10 +313,14 @@ async function createUserRecord(user, role) {
       createdAt: serverTimestamp(),
       profileComplete: false,
       membershipCount: 0,
-      activities: []
+      activities: [],
+      walletBalance: 0,
+      referralCode: makeReferralCode(user.uid),
+      ...(referredBy && referredBy !== user.uid ? { referredBy, referredByCode: refCode } : {})
     }, { merge: true });
+
+    if (refCode) { try { sessionStorage.removeItem('hc_ref'); } catch(_){} }
   } catch(e) {
-    // Silently fail if permission denied – user can still navigate
     console.warn('Could not create user record:', e.message);
   }
 }
