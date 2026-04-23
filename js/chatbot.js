@@ -206,6 +206,13 @@ style.textContent = `
 #hc-send{width:36px;height:36px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,#d4af37,#f5d060);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s}
 #hc-send:hover{transform:scale(1.12)}
 #hc-send svg{width:14px;height:14px;fill:#1a1a2e}
+#hc-mic,#hc-speaker{width:34px;height:34px;border-radius:50%;flex-shrink:0;background:rgba(255,255,255,.06);border:1px solid rgba(212,175,55,.2);cursor:pointer;color:#d4af37;font-size:13px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+#hc-mic:hover,#hc-speaker:hover{background:rgba(212,175,55,.18)}
+#hc-mic.recording{background:#ef4444;color:#fff;border-color:#ef4444;animation:hcRec 1s infinite}
+#hc-speaker.on{background:rgba(34,197,94,.18);border-color:rgba(34,197,94,.4);color:#22c55e}
+@keyframes hcRec{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.6)}50%{box-shadow:0 0 0 6px rgba(239,68,68,0)}}
+.hc-msg.bot.streaming::after{content:'▊';display:inline-block;animation:hcCursor .8s infinite;color:#d4af37;margin-left:2px}
+@keyframes hcCursor{0%,49%{opacity:1}50%,100%{opacity:0}}
 @media(max-width:400px){#hc-win{width:calc(100vw - 16px);right:8px;bottom:88px}#hc-btn{width:56px;height:56px}}
 `;
 document.head.appendChild(style);
@@ -230,6 +237,8 @@ win.innerHTML = `
 <div id="hc-lang-row"></div>
 <div id="hc-quick"></div>
 <div id="hc-input-row">
+  <button id="hc-speaker" title="Toggle voice reply" type="button"><i class="fas fa-volume-mute"></i></button>
+  <button id="hc-mic" title="Tap to speak" type="button"><i class="fas fa-microphone"></i></button>
   <input id="hc-input" type="text" maxlength="300"/>
   <button id="hc-send"><svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg></button>
 </div>`;
@@ -298,6 +307,27 @@ function removeTyping() { const t = document.getElementById('hc-typing'); if(t) 
 
 const HC_HISTORY = [];
 
+// Phase 6 — Gemini Live AI mix: streaming reply + optional voice
+let speakerOn = localStorage.getItem('hc_speaker') === '1';
+
+function setSpeakerUI() {
+  const sp = document.getElementById('hc-speaker'); if (!sp) return;
+  sp.classList.toggle('on', speakerOn);
+  sp.innerHTML = speakerOn ? '<i class="fas fa-volume-up"></i>' : '<i class="fas fa-volume-mute"></i>';
+  sp.title = speakerOn ? 'Voice reply ON — click to mute' : 'Voice reply OFF — click to enable';
+}
+
+function speakReply(text) {
+  if (!speakerOn || !('speechSynthesis' in window) || !text) return;
+  try {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text.replace(/[*_`#>]/g, '').slice(0, 600));
+    const langTag = currentLang === 'hi' ? 'hi-IN' : currentLang === 'bn' ? 'bn-IN' : 'en-US';
+    u.lang = langTag; u.rate = 1; u.pitch = 1;
+    window.speechSynthesis.speak(u);
+  } catch (_) {}
+}
+
 async function sendMsg(text) {
   const msg = (text || inputEl.value).trim();
   if (!msg) return;
@@ -305,6 +335,56 @@ async function sendMsg(text) {
   addMsg(msg, 'user');
   HC_HISTORY.push({ role: 'user', text: msg });
   showTyping();
+
+  // Try streaming endpoint first
+  try {
+    const res = await fetch('/api/chat-stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
+      body: JSON.stringify({ message: msg, lang: currentLang, history: HC_HISTORY.slice(-8) })
+    });
+    if (!res.ok || !res.body) throw new Error('stream not ok');
+    removeTyping();
+    const botDiv = document.createElement('div');
+    botDiv.className = 'hc-msg bot streaming';
+    botDiv.textContent = '';
+    msgsEl.appendChild(botDiv);
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '', full = '', errored = false;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split('\n');
+      buf = lines.pop() || '';
+      let curEvent = 'message';
+      for (const ln of lines) {
+        if (ln.startsWith('event:')) { curEvent = ln.slice(6).trim(); continue; }
+        if (!ln.startsWith('data:')) { if (ln === '') curEvent = 'message'; continue; }
+        const payload = ln.slice(5).trim();
+        if (!payload) continue;
+        try {
+          const j = JSON.parse(payload);
+          if (curEvent === 'error') { errored = true; break; }
+          if (j.delta) { full += j.delta; botDiv.innerHTML = formatMsg(full); msgsEl.scrollTop = msgsEl.scrollHeight; }
+          if (curEvent === 'done' && j.full) full = j.full;
+        } catch (_) {}
+        curEvent = 'message';
+      }
+      if (errored) break;
+    }
+    botDiv.classList.remove('streaming');
+    if (!full || errored) {
+      const fb = getResponse(msg);
+      botDiv.innerHTML = formatMsg(fb); full = fb;
+    } else {
+      botDiv.innerHTML = formatMsg(full);
+    }
+    HC_HISTORY.push({ role: 'bot', text: full });
+    speakReply(full);
+    return;
+  } catch (_) { /* fall back to non-stream */ }
 
   try {
     const res = await fetch('/api/chat', {
@@ -317,14 +397,65 @@ async function sendMsg(text) {
     if (res.ok && data.reply) {
       addMsg(data.reply, 'bot');
       HC_HISTORY.push({ role: 'bot', text: data.reply });
+      speakReply(data.reply);
     } else {
-      addMsg(getResponse(msg), 'bot');
+      const fb = getResponse(msg);
+      addMsg(fb, 'bot'); speakReply(fb);
     }
   } catch (e) {
     removeTyping();
-    addMsg(getResponse(msg), 'bot');
+    const fb = getResponse(msg);
+    addMsg(fb, 'bot'); speakReply(fb);
   }
 }
+
+// Voice input — Web Speech Recognition
+let recognition = null, isRecording = false;
+function initVoice() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const micBtn = document.getElementById('hc-mic');
+  const spBtn = document.getElementById('hc-speaker');
+  if (spBtn) {
+    spBtn.addEventListener('click', () => {
+      speakerOn = !speakerOn;
+      localStorage.setItem('hc_speaker', speakerOn ? '1' : '0');
+      setSpeakerUI();
+      if (!speakerOn) try { window.speechSynthesis?.cancel(); } catch (_) {}
+    });
+    setSpeakerUI();
+  }
+  if (!SR) {
+    if (micBtn) { micBtn.style.opacity = '0.4'; micBtn.title = 'Voice input not supported in this browser'; micBtn.disabled = true; }
+    return;
+  }
+  if (!micBtn) return;
+  micBtn.addEventListener('click', () => {
+    if (isRecording) { try { recognition.stop(); } catch (_) {} return; }
+    try {
+      recognition = new SR();
+      recognition.lang = currentLang === 'hi' ? 'hi-IN' : currentLang === 'bn' ? 'bn-IN' : 'en-US';
+      recognition.interimResults = true;
+      recognition.maxAlternatives = 1;
+      recognition.continuous = false;
+      recognition.onstart = () => { isRecording = true; micBtn.classList.add('recording'); inputEl.placeholder = '🎙 Listening…'; };
+      recognition.onresult = (ev) => {
+        let txt = '';
+        for (let i = ev.resultIndex; i < ev.results.length; i++) txt += ev.results[i][0].transcript;
+        inputEl.value = txt;
+        if (ev.results[ev.results.length - 1].isFinal && txt.trim()) {
+          setTimeout(() => sendMsg(txt.trim()), 200);
+        }
+      };
+      recognition.onerror = () => { isRecording = false; micBtn.classList.remove('recording'); updatePlaceholder(); };
+      recognition.onend = () => { isRecording = false; micBtn.classList.remove('recording'); updatePlaceholder(); };
+      recognition.start();
+    } catch (e) {
+      isRecording = false; micBtn.classList.remove('recording');
+      addMsg('🎙 Microphone error: ' + e.message, 'bot');
+    }
+  });
+}
+setTimeout(initVoice, 100);
 
 function ensureOpen() {
   if (win.style.display !== 'flex') btn.click();

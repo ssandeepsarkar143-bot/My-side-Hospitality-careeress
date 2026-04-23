@@ -180,6 +180,95 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
+// Phase 6 — Gemini Live AI mix: Server-Sent Events streaming chat endpoint
+function streamGeminiSSE(res, model, contents, systemInstruction) {
+  return new Promise((resolve, reject) => {
+    if (!GEMINI_API_KEY) return reject(new Error('GEMINI_API_KEY missing'));
+    const body = JSON.stringify({
+      contents,
+      ...(systemInstruction ? { systemInstruction: { parts: [{ text: systemInstruction }] } } : {}),
+      generationConfig: { temperature: 0.7, maxOutputTokens: 1024 }
+    });
+    const req2 = https.request({
+      hostname: 'generativelanguage.googleapis.com',
+      path: `/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${GEMINI_API_KEY}`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) }
+    }, (r) => {
+      let buf = '';
+      let total = '';
+      r.on('data', (chunk) => {
+        buf += chunk.toString('utf8');
+        const lines = buf.split('\n');
+        buf = lines.pop() || '';
+        for (const line of lines) {
+          if (!line.startsWith('data:')) continue;
+          const payload = line.slice(5).trim();
+          if (!payload || payload === '[DONE]') continue;
+          try {
+            const j = JSON.parse(payload);
+            if (j.error) { res.write(`event: error\ndata: ${JSON.stringify({ message: j.error.message })}\n\n`); continue; }
+            const text = j.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            if (text) {
+              total += text;
+              res.write(`data: ${JSON.stringify({ delta: text })}\n\n`);
+            }
+          } catch (_) {}
+        }
+      });
+      r.on('end', () => { res.write(`event: done\ndata: ${JSON.stringify({ full: total })}\n\n`); resolve(total); });
+    });
+    req2.on('error', reject);
+    req2.write(body); req2.end();
+  });
+}
+
+app.post('/api/chat-stream', async (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders?.();
+  try {
+    const { message, history = [], lang = 'en' } = req.body || {};
+    if (!message || typeof message !== 'string') {
+      res.write(`event: error\ndata: ${JSON.stringify({ message: 'message required' })}\n\n`);
+      return res.end();
+    }
+    if (!GEMINI_API_KEY) {
+      res.write(`event: error\ndata: ${JSON.stringify({ message: 'AI not configured' })}\n\n`);
+      return res.end();
+    }
+    const trimmedHistory = history.slice(-8).filter(m => m && m.role && m.text).map(m => ({
+      role: m.role === 'bot' ? 'model' : 'user',
+      parts: [{ text: String(m.text).slice(0, 2000) }]
+    }));
+    const langMap = { en: 'English', hi: 'Hindi', bn: 'Bangla' };
+    const sys = `${ASSISTANT_SYSTEM}\nUser preferred language: ${langMap[lang] || 'English'}.`;
+    const contents = [...trimmedHistory, { role: 'user', parts: [{ text: message.slice(0, 1000) }] }];
+    // Try streaming with first available model from fallbacks
+    const fallbacks = [GEMINI_MODEL, 'gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.0-flash'];
+    const tried = new Set();
+    let success = false;
+    for (const m of fallbacks) {
+      if (!m || tried.has(m)) continue;
+      tried.add(m);
+      try {
+        await streamGeminiSSE(res, m, contents, sys);
+        success = true; break;
+      } catch (e) {
+        if (m === fallbacks[fallbacks.length - 1]) {
+          res.write(`event: error\ndata: ${JSON.stringify({ message: e.message })}\n\n`);
+        }
+      }
+    }
+    res.end();
+  } catch (e) {
+    console.error('chat-stream error', e.message);
+    try { res.write(`event: error\ndata: ${JSON.stringify({ message: e.message })}\n\n`); res.end(); } catch (_) {}
+  }
+});
+
 app.post('/api/resume', async (req, res) => {
   try {
     const { profile = {} } = req.body || {};

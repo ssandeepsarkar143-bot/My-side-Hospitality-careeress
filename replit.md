@@ -154,3 +154,45 @@ Port: 5000
   - Auto-applies on auth state change based on user's role
 - **Firestore rules** — added `connectGroups` + `connectGroups/{id}/messages` (members read/write own; owner full; messages immutable except by owner) + `auditLog` rules
 - **Safety fix**: `js/firebase-config.js` now uses `getApps().length ? getApp() : initializeApp(...)` to avoid double-init when both inline scripts and the shared module load
+
+## Phase 5 + Phase 6 Update (2026-04-23)
+### Phase 5 — Switch Admin View (Owner Preview Mode)
+- "Switch View" blue button on every admin row in `Admin Working` table (owner-feed)
+- Opens `admin-feed.html?previewAs=<UID>&previewName=<name>` in new tab
+- admin-feed.html detects `previewAs` query param + verifies signed-in user is the owner
+- Loads target admin's user doc → uses their `adminData` (authorities, locations, role) for the entire dashboard
+- Skips MPIN screen entirely (owner already authenticated)
+- Red banner pinned at top: "PREVIEW MODE — Viewing as <Name> · Read-only · Exit Preview"
+- All write controls (`btn-primary`, `btn-success`, `btn-danger`, `btn-warning`, submit inputs) auto-disabled after 600ms (excludes preview banner + group chat panel)
+- Owner sees the dashboard exactly as that admin sees it — same sidebar items, same data scope
+
+### Phase 6 — Gemini Live AI mix
+- **Server** (`server.js`):
+  - New `/api/chat-stream` Server-Sent Events endpoint
+  - Calls Gemini's `streamGenerateContent?alt=sse` for token-by-token streaming
+  - Same model fallback chain as `/api/chat`
+  - Returns SSE: `data: {delta:...}` per chunk, `event: done` final
+- **Chatbot** (`js/chatbot.js`):
+  - Streams replies live (typing-cursor `▊` shown during stream)
+  - Mic button (🎙) for voice input via Web Speech Recognition (auto-language: en-US/hi-IN/bn-IN)
+  - Speaker toggle (🔊/🔇) — when ON, AI replies spoken via Web Speech Synthesis
+  - Settings persist in `localStorage` (`hc_speaker`)
+  - Graceful fallback: stream fails → non-stream `/api/chat` → static KB
+  - Recording state: red pulsing ring around mic button + "🎙 Listening…" placeholder
+
+### Project Status Summary (all phases)
+| Phase | Feature | Status |
+|---|---|---|
+| 1 | Owner Dashboard foundation (auth categories, audit log, Op Mgr role) | ✅ |
+| 2 | mPIN system upgrade (View/Change/Delete, state-filtered records, restrictions) | ✅ |
+| 3 | Promoted admin user control + state filter | ✅ |
+| 4 | Connect Hub + group chats + help audience filter | ✅ |
+| 5 | Switch Admin View preview mode | ✅ |
+| 6 | Firebase deploy + i18n + Gemini Live mix | ✅ |
+
+### Deploy
+1. `firebase login`
+2. `firebase functions:secrets:set GEMINI_API_KEY`
+3. `firebase deploy`
+
+Note: SSE streaming (`/api/chat-stream`) works in dev (Express). On Firebase Hosting the client gracefully falls back to non-stream `/api/chat` Cloud Function. Voice in/out works in any modern browser regardless of backend.
