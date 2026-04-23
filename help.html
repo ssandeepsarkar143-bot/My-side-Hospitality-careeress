@@ -467,6 +467,56 @@ body { background: var(--dark); color: #fff; font-family: 'Poppins', sans-serif;
       </div>
     </div>
 
+    <div class="faq-item" data-category="account">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span><i class="fas fa-eye" style="color:var(--gold);margin-right:8px"></i> Can I see my password while typing?</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        Yes — both the Login form and the Sign Up form now show a small <b>👁️ eye icon</b> inside the password field. Click it once to <b>show</b> your password, click again to <b>hide</b> it. Helpful when typing on mobile to avoid mistakes.
+      </div>
+    </div>
+
+    <div class="faq-item" data-category="account">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span><i class="fas fa-map-marker-alt" style="color:var(--gold);margin-right:8px"></i> Why do I have to select a State during profile completion?</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        Your State helps us show you <b>jobs nearest to you</b> and lets the right local Admin / Branch Head help you faster. Pick any state from the dropdown — you can update it later from your profile.
+      </div>
+    </div>
+
+    <div class="faq-item" data-category="referral">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span><i class="fas fa-coins" style="color:var(--gold);margin-right:8px"></i> Is the referral reward always 10 HC points?</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        10 HC points is the default, but the owner can change it anytime from the dashboard. Whatever value is currently set will be shown live on your <b>Refer & Earn</b> card — both you and your friend always get the same number of points when they buy Prime.
+      </div>
+    </div>
+
+    <div class="faq-item" data-category="coupon">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span><i class="fas fa-gift" style="color:var(--gold);margin-right:8px"></i> Can referrers get special coupons too?</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        Yes! Owner can target a coupon to <b>"🎁 Referrers"</b> — meaning everyone who has referred at least one Prime member. They'll get the coupon as a notification automatically; click the notification → My Coupons → Claim.
+      </div>
+    </div>
+
+    <div class="faq-item" data-category="account">
+      <div class="faq-question" onclick="toggleFaq(this)">
+        <span><i class="fas fa-user-shield" style="color:var(--gold);margin-right:8px"></i> What can an Admin / Branch Head do?</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+      <div class="faq-answer">
+        Admins are promoted by the Owner with a <b>specific role</b> (Branch Head, Team Leader, Accountant, Recruiter, etc.) and assigned to <b>one or more states</b>. The Owner gives them only the permissions they need — like approving job posts, wallet top-ups, withdrawals, sending coupons, handling enquiries, etc. So your local admin only sees & manages users / jobs from their assigned state.
+      </div>
+    </div>
+
   </div>
 
   <!-- DYNAMIC FAQs FROM FIRESTORE -->

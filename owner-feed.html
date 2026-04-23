@@ -129,7 +129,11 @@
             <option value="lowest_prime">Sort: Lowest Prime Tag → Highest</option>
           </select>
           <input type="text" id="userTableSearch" class="form-control" placeholder="🔍 Search by name or email..." oninput="filterUserTable(this.value)" style="max-width:280px;padding:6px 10px;font-size:12px"/>
+          <select id="userStateFilter" class="form-control" style="max-width:200px;padding:6px 10px;font-size:12px" onchange="applyUserTab()">
+            <option value="">📍 All States</option>
+          </select>
         </div>
+        <div id="stateAdminInfo" style="margin-bottom:10px;font-size:12px;color:var(--gold-light)"></div>
         <div class="table-wrapper">
           <table>
             <thead><tr><th>Name</th><th>Email</th><th>Role / Tag</th><th>Joined</th><th>Membership</th><th>Actions</th></tr></thead>
@@ -316,6 +320,7 @@
               <option value="all_users">📢 All Users (everyone)</option>
               <option value="normal">👤 Normal Users only (role = User)</option>
               <option value="all_prime">👑 All Prime Members (any tier)</option>
+              <option value="referrers">🎁 Referrers (users who referred ≥1)</option>
               <optgroup id="cpnTagGroup" label="By Prime Tier"></optgroup>
               <option value="single_email">✉️ Specific User (by email)</option>
             </select>
@@ -343,7 +348,17 @@
         <div class="section-title"><i class="fas fa-gift"></i> Refer & Earn Records</div>
         <div class="stats-grid" id="referralStats" style="margin-bottom:16px"></div>
         <div class="card mb-16">
-          <p style="font-size:12px;color:var(--gray);margin-bottom:0">Tracks every successful referral. Both the referrer and the new Prime user receive 10 HC Wallet points (₹10) automatically when the referral becomes Prime.</p>
+          <div class="card-title"><i class="fas fa-edit"></i> Referral Reward Settings</div>
+          <p style="font-size:12px;color:var(--gray);margin-bottom:10px">Set how many HC points (1 pt = ₹1) <b>both</b> the referrer and new Prime user get when the referral converts to Prime. Default: 10 pts.</p>
+          <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+            <div class="form-group" style="flex:1;min-width:160px;margin-bottom:0">
+              <label>Reward Points (per referral)</label>
+              <input type="number" id="refRewardPts" class="form-control" placeholder="10" min="1" value="10"/>
+            </div>
+            <button class="btn btn-primary" onclick="saveReferralReward()" style="height:44px;white-space:nowrap"><i class="fas fa-save"></i> Save</button>
+          </div>
+          <div id="refRewardMsg" class="alert mt-8"></div>
+          <p style="font-size:12px;color:var(--gray);margin-top:10px;margin-bottom:0">Tracks every successful referral. Both parties receive the reward automatically when the referral becomes Prime.</p>
         </div>
         <div class="table-wrapper">
           <table>
@@ -660,6 +675,34 @@
       <button class="modal-close" onclick="closeModal('promoteModal')">&times;</button>
     </div>
     <div id="promoteUserName" style="font-size:14px;color:var(--gold-light);margin-bottom:16px;font-weight:600"></div>
+
+    <!-- ROLE -->
+    <div class="form-group">
+      <label style="font-weight:700"><i class="fas fa-id-badge" style="color:var(--gold)"></i> Admin Role / Designation</label>
+      <select id="auth_role" class="form-control">
+        <option value="Admin">Admin (Default)</option>
+        <option value="Branch Head">Branch Head</option>
+        <option value="Team Leader">Team Leader</option>
+        <option value="Accountant">Accountant</option>
+        <option value="Recruiter">Recruiter</option>
+        <option value="Support Executive">Support Executive</option>
+        <option value="Marketing Manager">Marketing Manager</option>
+        <option value="Operations Manager">Operations Manager</option>
+        <option value="custom">✏️ Custom (type below)</option>
+      </select>
+      <input type="text" id="auth_roleCustom" class="form-control mt-8" placeholder="Type custom role..." style="display:none"/>
+    </div>
+
+    <!-- LOCATION / STATE ASSIGNMENT -->
+    <div class="form-group">
+      <label style="font-weight:700"><i class="fas fa-map-marker-alt" style="color:var(--gold)"></i> Assign Location / States <span style="color:var(--gray);font-weight:400;font-size:11px">(leave empty = All India)</span></label>
+      <div id="auth_statesBox" style="max-height:140px;overflow-y:auto;background:rgba(255,255,255,0.04);border:1px solid rgba(212,175,55,0.2);border-radius:8px;padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px">
+        <div style="color:var(--gray)">Loading states...</div>
+      </div>
+      <p style="font-size:11px;color:var(--gray);margin-top:6px;margin-bottom:0">✓ Selected = admin will only see jobs / users from those states based on permissions below.</p>
+    </div>
+
+    <div style="font-weight:700;color:var(--gold);font-size:13px;margin:14px 0 8px">🛡️ Permissions Checklist (mirrors your owner controls)</div>
     <div class="authority-grid" id="authorityGrid">
       <label class="authority-item"><input type="checkbox" id="auth_dashboard" checked/><div class="authority-label"><strong>Small User Control Dashboard</strong>View basic user information</div></label>
       <label class="authority-item"><input type="checkbox" id="auth_connectEmployer"/><div class="authority-label"><strong>Approve Connect Employer Requests</strong>Can approve/reject employer connections</div></label>
@@ -668,10 +711,20 @@
       <label class="authority-item"><input type="checkbox" id="auth_membership"/><div class="authority-label"><strong>Approve Membership Requests</strong>Can approve membership upgrades</div></label>
       <label class="authority-item"><input type="checkbox" id="auth_jobPost"/><div class="authority-label"><strong>Approve Job Post Requests</strong>Can publish pending job posts</div></label>
       <label class="authority-item"><input type="checkbox" id="auth_jobList"/><div class="authority-label"><strong>Manage Job List</strong>Can edit and delete job listings</div></label>
+      <label class="authority-item"><input type="checkbox" id="auth_candidates"/><div class="authority-label"><strong>Candidate List & Hiring</strong>View candidates and mark Hired</div></label>
       <label class="authority-item"><input type="checkbox" id="auth_walletTopups"/><div class="authority-label"><strong>Approve HC Wallet Top-ups</strong>Verify UTR & credit user wallets</div></label>
       <label class="authority-item"><input type="checkbox" id="auth_walletWithdrawals"/><div class="authority-label"><strong>Approve Wallet Withdrawals</strong>Pay & mark withdrawals, or refund on reject</div></label>
-      <label class="authority-item"><input type="checkbox" id="auth_coupons"/><div class="authority-label"><strong>Create & Send Coupons</strong>Send discount / trial / free-month coupons</div></label>
+      <label class="authority-item"><input type="checkbox" id="auth_walletRecords"/><div class="authority-label"><strong>View Wallet Transaction Records</strong>Read-only ledger access</div></label>
+      <label class="authority-item"><input type="checkbox" id="auth_coupons"/><div class="authority-label"><strong>Create & Send Coupons</strong>Send discount / trial / free-month / referral coupons</div></label>
+      <label class="authority-item"><input type="checkbox" id="auth_discounts"/><div class="authority-label"><strong>Discounts & Offers</strong>Create membership offers + base price upgrade</div></label>
+      <label class="authority-item"><input type="checkbox" id="auth_referrals"/><div class="authority-label"><strong>Refer & Earn Records</strong>View referrals + edit reward points</div></label>
       <label class="authority-item"><input type="checkbox" id="auth_enquiries"/><div class="authority-label"><strong>Handle Enquiries</strong>Respond to user deposit/withdraw/coupon enquiries</div></label>
+      <label class="authority-item"><input type="checkbox" id="auth_feedback"/><div class="authority-label"><strong>Manage Feedback</strong>Read user feedback & toggle public display</div></label>
+      <label class="authority-item"><input type="checkbox" id="auth_resumeRecords"/><div class="authority-label"><strong>AI Resume Records</strong>View & download user resumes (PDF)</div></label>
+      <label class="authority-item"><input type="checkbox" id="auth_engagement"/><div class="authority-label"><strong>Engagement Tools</strong>Send notifications / push messages to users</div></label>
+      <label class="authority-item"><input type="checkbox" id="auth_content"/><div class="authority-label"><strong>Site Content</strong>Edit About / Contact / Help / Banners</div></label>
+      <label class="authority-item"><input type="checkbox" id="auth_settings"/><div class="authority-label"><strong>Settings</strong>Manage UPI / app links / general config</div></label>
+      <label class="authority-item"><input type="checkbox" id="auth_promote"/><div class="authority-label"><strong>Promote / Demote Admins</strong>Sub-admin management (use carefully)</div></label>
     </div>
     <button class="btn btn-success w-full mt-16" onclick="confirmPromote()"><i class="fas fa-check"></i> Promote to Admin</button>
   </div>
@@ -1107,9 +1160,33 @@ window.setUserTab = function(tab) {
 };
 
 function applyUserTab() {
+  // Populate state filter once
+  const stateSel = document.getElementById('userStateFilter');
+  if (stateSel && stateSel.options.length <= 1) {
+    const set = new Set();
+    allUsers.forEach(u => { if (u.state) set.add(u.state); (u.locations||[]).forEach(s => set.add(s)); });
+    INDIAN_STATES.forEach(s => set.add(s));
+    stateSel.innerHTML = '<option value="">📍 All States</option>' + Array.from(set).sort().map(s => `<option value="${s}">${s}</option>`).join('');
+  }
   let filtered = [...allUsers];
   if (currentUserTab === 'membership') filtered = filtered.filter(u => u.role === 'Prime');
   else if (currentUserTab === 'admin') filtered = filtered.filter(u => u.role === 'Admin');
+  const stateVal = stateSel?.value || '';
+  const infoEl = document.getElementById('stateAdminInfo');
+  if (stateVal) {
+    if (currentUserTab === 'admin') {
+      filtered = filtered.filter(u => (u.locations||[]).includes(stateVal) || !(u.locations||[]).length);
+    } else {
+      filtered = filtered.filter(u => u.state === stateVal);
+    }
+    // Show admin assigned to this state + work record
+    const stateAdmins = allUsers.filter(u => u.role==='Admin' && (u.locations||[]).includes(stateVal));
+    if (stateAdmins.length && infoEl) {
+      infoEl.innerHTML = '<i class="fas fa-user-shield"></i> Admins assigned to <b>'+stateVal+'</b>: ' + stateAdmins.map(a => `<span style="background:rgba(212,175,55,0.15);padding:3px 8px;border-radius:6px;margin:0 4px;cursor:pointer" onclick="viewUserDetails('${a.id}')" title="${a.adminRole||'Admin'} — Click to view work record"><b>${a.displayName||a.email}</b> <span style="color:var(--gray);font-size:11px">(${a.adminRole||'Admin'})</span></span>`).join('');
+    } else if (infoEl) {
+      infoEl.innerHTML = '<span style="color:var(--gray)">⚠️ No admin assigned to <b>'+stateVal+'</b> yet — promote one for local control.</span>';
+    }
+  } else if (infoEl) { infoEl.innerHTML = ''; }
   filtered = applySortToUsers(filtered);
   const searchVal = document.getElementById('userTableSearch')?.value || '';
   if (searchVal) {
@@ -1146,14 +1223,15 @@ function renderUsersTable(users, tab) {
   }
   if (tab === 'admin') {
     tbody.innerHTML = users.map(u => `<tr>
-      <td style="cursor:pointer;color:var(--gold)" onclick="viewUserDetails('${u.id}')">${u.displayName || 'N/A'}</td>
+      <td style="cursor:pointer;color:var(--gold)" onclick="viewUserDetails('${u.id}')">${u.displayName || 'N/A'}<div style="font-size:10px;color:var(--gray);margin-top:2px">${u.adminRole?('🎖️ '+u.adminRole):''}</div></td>
       <td>${u.email}</td>
-      <td><span class="badge badge-rejected">Admin</span></td>
+      <td><span class="badge badge-rejected">${u.adminRole||'Admin'}</span><div style="margin-top:4px;font-size:10px">${(u.locations||[]).length ? (u.locations||[]).map(s=>`<span style=\"background:rgba(212,175,55,0.15);padding:2px 6px;border-radius:4px;margin:1px;display:inline-block\">📍 ${s}</span>`).join('') : '<span style="color:var(--gray)">All India</span>'}</div></td>
       <td>${u.createdAt?.toDate?.()?.toLocaleDateString() || 'N/A'}</td>
       <td>—</td>
       <td>
         <button class="btn btn-sm btn-info" onclick="viewUserDetails('${u.id}')">Details</button>
-        <button class="btn btn-sm btn-danger" onclick="demoteAdmin('${u.id}')"><i class="fas fa-user-minus"></i> Remove Admin</button>
+        <button class="btn btn-sm btn-warning" style="background:linear-gradient(135deg,#ffc107,#e0a800);color:#000" onclick="openPromote('${u.id}','${(u.displayName||u.email).replace(/'/g,'&#39;')}')"><i class="fas fa-edit"></i> Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="demoteAdmin('${u.id}')"><i class="fas fa-user-minus"></i> Remove</button>
       </td>
     </tr>`).join('');
     return;
@@ -1202,14 +1280,43 @@ window.viewUserDetails = async function(uid) {
   document.getElementById('userDetailsModal').classList.add('active');
 };
 
-window.openPromote = function(uid, name) {
+const INDIAN_STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Andaman & Nicobar','Chandigarh','Dadra & Nagar Haveli','Daman & Diu','Delhi','Jammu & Kashmir','Ladakh','Lakshadweep','Puducherry'];
+
+async function getAllKnownStates() {
+  const set = new Set(INDIAN_STATES);
+  try {
+    const [jobsSnap, usersSnap] = await Promise.all([
+      getDocs(collection(db,'jobPosts')),
+      getDocs(collection(db,'users'))
+    ]);
+    jobsSnap.forEach(d => { const j = d.data(); const loc = (j.location||j.state||'').trim(); if (loc) loc.split(/[,/]/).forEach(s => { const t=s.trim(); if (t && t.length<40) set.add(t); }); });
+    usersSnap.forEach(d => { const u = d.data(); if (u.state) set.add(u.state); });
+  } catch(_){}
+  return Array.from(set).sort();
+}
+
+window.openPromote = async function(uid, name) {
   promoteUserId = uid;
   document.getElementById('promoteUserName').textContent = 'Promoting: ' + name;
+  // Reset role custom
+  document.getElementById('auth_role').value = 'Admin';
+  document.getElementById('auth_roleCustom').style.display = 'none';
+  document.getElementById('auth_roleCustom').value = '';
+  // Toggle custom role input
+  document.getElementById('auth_role').onchange = function(){ document.getElementById('auth_roleCustom').style.display = this.value==='custom' ? 'block' : 'none'; };
+  // Load states
+  const box = document.getElementById('auth_statesBox');
+  box.innerHTML = '<div style="color:var(--gray)">Loading...</div>';
   document.getElementById('promoteModal').classList.add('active');
+  const states = await getAllKnownStates();
+  box.innerHTML = states.map(s => `<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" class="auth_state_cb" value="${s.replace(/"/g,'&quot;')}"/><span>${s}</span></label>`).join('');
 };
 
 window.confirmPromote = async function() {
   if (!promoteUserId) return;
+  const roleSel = document.getElementById('auth_role').value;
+  const roleLabel = roleSel === 'custom' ? (document.getElementById('auth_roleCustom').value.trim() || 'Admin') : roleSel;
+  const states = Array.from(document.querySelectorAll('.auth_state_cb:checked')).map(c => c.value);
   const authorities = {
     dashboard: document.getElementById('auth_dashboard').checked,
     connectEmployer: document.getElementById('auth_connectEmployer').checked,
@@ -1218,18 +1325,32 @@ window.confirmPromote = async function() {
     membership: document.getElementById('auth_membership').checked,
     jobPost: document.getElementById('auth_jobPost').checked,
     jobList: document.getElementById('auth_jobList').checked,
+    candidates: document.getElementById('auth_candidates').checked,
     walletTopups: document.getElementById('auth_walletTopups').checked,
     walletWithdrawals: document.getElementById('auth_walletWithdrawals').checked,
+    walletRecords: document.getElementById('auth_walletRecords').checked,
     coupons: document.getElementById('auth_coupons').checked,
-    enquiries: document.getElementById('auth_enquiries').checked
+    discounts: document.getElementById('auth_discounts').checked,
+    referrals: document.getElementById('auth_referrals').checked,
+    enquiries: document.getElementById('auth_enquiries').checked,
+    feedback: document.getElementById('auth_feedback').checked,
+    resumeRecords: document.getElementById('auth_resumeRecords').checked,
+    engagement: document.getElementById('auth_engagement').checked,
+    content: document.getElementById('auth_content').checked,
+    settings: document.getElementById('auth_settings').checked,
+    promote: document.getElementById('auth_promote').checked
   };
   await updateDoc(doc(db, 'users', promoteUserId), {
-    role: 'Admin', tag: 'Admin', authorities, promotedAt: serverTimestamp()
+    role: 'Admin', tag: 'Admin',
+    adminRole: roleLabel,
+    locations: states,
+    authorities,
+    promotedAt: serverTimestamp()
   });
   closeModal('promoteModal');
   showToast('User promoted to Admin successfully!');
   loadUsers();
-  loadAdminMpinList();
+  loadAdminMpinList && loadAdminMpinList();
 };
 
 window.demoteAdmin = async function(uid) {
@@ -1809,6 +1930,12 @@ window.createCouponBatch = async function() {
     } else if (target.startsWith('tag:')) {
       const tg = target.slice(4);
       users = all.filter(u => u.tag === tg);
+    } else if (target === 'referrers') {
+      // Anyone who has at least one entry in referralRewards as referrer
+      const refSnap = await getDocs(collection(db,'referralRewards'));
+      const referrerUids = new Set();
+      refSnap.forEach(d => { const r = d.data(); if (r.referrerUid) referrerUids.add(r.referrerUid); });
+      users = all.filter(u => referrerUids.has(u.uid));
     }
   } catch(e) { return showCpnMsg('Failed to load users: '+e.message, 'error'); }
 
@@ -1872,8 +1999,28 @@ async function loadWalletRecords() {
   } catch(e) { console.warn(e); }
 }
 
+// ---------- REFERRAL REWARD SETTING ----------
+async function loadReferralRewardSetting() {
+  try {
+    const s = await getDoc(doc(db,'settings','referral'));
+    if (s.exists() && s.data().rewardPoints) document.getElementById('refRewardPts').value = s.data().rewardPoints;
+  } catch(_){}
+}
+window.saveReferralReward = async function() {
+  const pts = parseInt(document.getElementById('refRewardPts').value)||10;
+  if (pts < 1) return;
+  try {
+    await setDoc(doc(db,'settings','referral'), { rewardPoints: pts, updatedAt: serverTimestamp() }, { merge: true });
+    const m = document.getElementById('refRewardMsg');
+    m.className = 'alert mt-8 alert-success'; m.textContent = '✅ Saved! New referrals will earn '+pts+' HC points each.';
+  } catch(e) {
+    const m = document.getElementById('refRewardMsg'); m.className = 'alert mt-8 alert-danger'; m.textContent = 'Failed: '+e.message;
+  }
+};
+
 // ---------- REFERRAL RECORDS ----------
 async function loadReferralRecords() {
+  loadReferralRewardSetting();
   try {
     const snap = await getDocs(collection(db, 'referralRewards'));
     const items = snap.docs.map(d => d.data()).sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0));

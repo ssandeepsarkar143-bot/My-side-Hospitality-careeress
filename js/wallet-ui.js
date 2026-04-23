@@ -8,7 +8,10 @@ import {
   getDocs, orderBy, limit, serverTimestamp, runTransaction, increment
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-const REFERRAL_REWARD_POINTS = 10;
+let REFERRAL_REWARD_POINTS = 10;
+async function loadReferralRewardConfig(db, getDoc, doc) {
+  try { const s = await getDoc(doc(db,'settings','referral')); if (s.exists() && s.data().rewardPoints) REFERRAL_REWARD_POINTS = s.data().rewardPoints; } catch(_){}
+}
 
 function makeReferralCode(uid) {
   const base = (uid || '').replace(/[^a-zA-Z0-9]/g, '').slice(-6).toUpperCase();
@@ -140,7 +143,7 @@ function buildHTML(accent) {
     <div class="hcw-row">
       <div>
         <div class="hcw-sub"><i class="fas fa-gift"></i> Refer & Earn</div>
-        <div style="font-size:16px;font-weight:800;margin-top:2px">Get <span style="color:${accent}">10 HC points</span> when your friend buys Prime</div>
+        <div style="font-size:16px;font-weight:800;margin-top:2px">Get <span class="hcw-ref-pts" style="color:${accent}">10 HC points</span> when your friend buys Prime</div>
         <div class="hcw-sub">Both you & your friend get 10 points (₹10) credited automatically.</div>
       </div>
       <div style="text-align:right">
@@ -188,6 +191,9 @@ export async function attachWallet({ db, auth, user, userData, mountId = 'hcWall
   if (!mount || !user) return;
   mount.innerHTML = buildHTML(accent);
 
+  await loadReferralRewardConfig(db, getDoc, doc);
+  // Update displayed reward points
+  mount.querySelectorAll('.hcw-ref-pts').forEach(el => el.textContent = REFERRAL_REWARD_POINTS + ' HC points');
   let ud = await ensureWalletDoc(db, user, userData);
 
   // Load UPI id from settings
