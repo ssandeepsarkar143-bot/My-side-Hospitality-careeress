@@ -359,6 +359,10 @@ function unlockDashboard() {
   loadDashboard();
   checkAdminNotifBadge();
   loadAdminAppButtons();
+  // Init group chat (Phase 4)
+  import('./js/group-chat.js').then(m => {
+    m.default.init({ user: currentUser });
+  }).catch(e => console.warn('GroupChat init failed:', e));
 }
 
 function setupAuthority() {

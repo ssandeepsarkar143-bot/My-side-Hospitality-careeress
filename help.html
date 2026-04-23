@@ -560,8 +560,26 @@ window.filterByCategory = function(cat) {
   document.querySelectorAll('.help-cat-btn').forEach(b => b.classList.remove('active'));
   event.currentTarget.classList.add('active');
   document.querySelectorAll('.faq-item').forEach(item => {
+    if (item.dataset.audienceHidden === '1') { item.style.display = 'none'; return; }
     if (cat === 'all' || item.dataset.category === cat) item.style.display = 'block';
     else item.style.display = 'none';
+  });
+};
+
+// Phase 4 — Help section role-based "official" visibility filter.
+// FAQ items can be tagged with: data-audience="all" (default) | "user" | "admin" | "owner"
+// Items tagged "admin" only show to admins; "owner" only to the owner; "user" hidden from staff.
+window.applyHelpAudienceFilter = function(role) {
+  const r = (role || 'guest').toLowerCase();
+  document.querySelectorAll('.faq-item').forEach(item => {
+    const aud = (item.dataset.audience || 'all').toLowerCase();
+    let visible = true;
+    if (aud === 'all') visible = true;
+    else if (aud === 'admin') visible = (r === 'admin' || r === 'owner');
+    else if (aud === 'owner') visible = (r === 'owner');
+    else if (aud === 'user')  visible = (r === 'user' || r === 'guest' || r === 'prime');
+    item.dataset.audienceHidden = visible ? '0' : '1';
+    if (!visible) item.style.display = 'none';
   });
 };
 
@@ -574,10 +592,26 @@ window.filterFaq = function(val) {
 };
 </script>
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-const app = initializeApp({ apiKey:"AIzaSyCuAuc9qhA7D_-Lqt-69pbG81KTIiDFVpg", authDomain:"hospitality-careers-e662f.firebaseapp.com", projectId:"hospitality-careers-e662f", storageBucket:"hospitality-careers-e662f.firebasestorage.app", messagingSenderId:"45029895717", appId:"1:45029895717:web:f54f86f608b98751cad9cc" });
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+const cfg = { apiKey:"AIzaSyCuAuc9qhA7D_-Lqt-69pbG81KTIiDFVpg", authDomain:"hospitality-careers-e662f.firebaseapp.com", projectId:"hospitality-careers-e662f", storageBucket:"hospitality-careers-e662f.firebasestorage.app", messagingSenderId:"45029895717", appId:"1:45029895717:web:f54f86f608b98751cad9cc" };
+const app = getApps().length ? getApp() : initializeApp(cfg);
 const db = getFirestore(app);
+// Phase 4 — auto-apply help audience filter based on signed-in user role
+onAuthStateChanged(getAuth(app), async (u) => {
+  let role = 'guest';
+  if (u) {
+    try {
+      if (u.email?.toLowerCase() === 'ssandeepsarkar143@gmail.com') role = 'owner';
+      else {
+        const us = await getDoc(doc(db, 'users', u.uid));
+        if (us.exists()) role = (us.data().role || 'user').toLowerCase();
+      }
+    } catch(_) {}
+  }
+  if (typeof window.applyHelpAudienceFilter === 'function') window.applyHelpAudienceFilter(role);
+});
 try {
   const snap = await getDoc(doc(db, 'siteContent', 'settings'));
   if (snap.exists()) {
