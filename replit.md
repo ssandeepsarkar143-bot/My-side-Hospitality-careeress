@@ -189,6 +189,18 @@ Port: 5000
 | 4 | Connect Hub + group chats + help audience filter | ✅ |
 | 5 | Switch Admin View preview mode | ✅ |
 | 6 | Firebase deploy + i18n + Gemini Live mix | ✅ |
+| 7 | Promotion Delegation fix + Switch View admin filter broadened | ✅ |
+| 8 | MPIN Rotation Reminders, User Credentials issuance, Reports Center, Group Chat overhaul (presence, read-receipts, screenshot upload, meeting link, notifications, PDF reports) | ✅ |
+
+### Phase 8 — New collections / paths
+- `presence/{uid}` — heartbeat docs (lastSeen serverTimestamp; online window 90s)
+- `chatReports/{id}` — PDF metadata for daily/monthly/yearly chat reports (PDF in Storage at `chatReports/{groupId}/`)
+- `userCredentials/{uid}` — owner-issued Email + Password records for promoted users
+- `mpinReminderConfig/default` — owner-configured rotation threshold (days)
+- `connectGroups/{id}.meetingLink` — owner-set Zoom/Meet/Teams URL surfaced as Join button
+- `connectGroups/{id}/messages/*.readBy[]` — per-message read receipts (members can update only this field)
+
+Group chat (`js/group-chat.js`) is initialised on owner-feed, user-feed, and prime-feed pages.
 
 ### Deploy
 1. `firebase login`
