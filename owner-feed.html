@@ -96,6 +96,7 @@
       <div class="sidebar-item" onclick="showSection('siteSettings')"><i class="fas fa-cog"></i> Edit Site Content</div>
       <div class="sidebar-section">Settings</div>
       <div class="sidebar-item" onclick="showSection('manageMpin')"><i class="fas fa-key"></i> Manage MPINs</div>
+      <div class="sidebar-item" onclick="showSection('auditLog')"><i class="fas fa-history"></i> Change & Modification Log</div>
     </div>
 
     <!-- CONTENT -->
@@ -617,14 +618,47 @@
             <div id="ownerMpinMsg" class="alert mt-8"></div>
           </div>
           <div class="card">
-            <div class="card-title"><i class="fas fa-users-cog"></i> Set Admin MPIN</div>
+            <div class="card-title"><i class="fas fa-users-cog"></i> Set / Reset Admin MPIN</div>
             <div class="form-group"><label>Select Admin</label>
               <select id="adminMpinSelect" class="form-control"><option value="">Loading admins...</option></select>
             </div>
             <div class="form-group"><label>New MPIN (4 digits)</label><input type="password" id="adminMpinNew" class="form-control" maxlength="4" inputmode="numeric" placeholder="Enter 4-digit MPIN"/></div>
-            <button class="btn btn-primary" onclick="setAdminMpin()"><i class="fas fa-save"></i> Set Admin MPIN</button>
+            <button class="btn btn-primary" onclick="setAdminMpin()"><i class="fas fa-save"></i> Save Admin MPIN</button>
             <div id="adminMpinMsg" class="alert mt-8"></div>
           </div>
+        </div>
+        <!-- MPIN RECORDS TABLE -->
+        <div class="card" style="margin-top:16px">
+          <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+            <span><i class="fas fa-list"></i> All Admin MPIN Records</span>
+            <button class="btn btn-sm" onclick="loadMpinRecords()" style="background:rgba(255,255,255,0.08)"><i class="fas fa-sync"></i> Refresh</button>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Admin</th><th>Role</th><th>Allocated States</th><th>MPIN Status</th><th>Last Updated</th><th>Actions</th></tr></thead>
+              <tbody id="mpinRecordsBody"><tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- AUDIT / CHANGE LOG -->
+      <div id="sec-auditLog" class="page-section">
+        <div class="section-title"><i class="fas fa-history"></i> Change &amp; Modification Log</div>
+        <div class="card">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:end">
+            <div style="flex:1;min-width:160px"><label style="font-size:12px;color:var(--gray)">Filter by Action</label><select id="auditFilterAction" class="form-control" onchange="renderAuditLog()"><option value="">All Actions</option></select></div>
+            <div style="flex:1;min-width:160px"><label style="font-size:12px;color:var(--gray)">Filter by User</label><select id="auditFilterBy" class="form-control" onchange="renderAuditLog()"><option value="">All Users</option></select></div>
+            <div style="flex:1;min-width:160px"><label style="font-size:12px;color:var(--gray)">Filter by State</label><select id="auditFilterState" class="form-control" onchange="renderAuditLog()"><option value="">All States</option></select></div>
+            <button class="btn btn-sm" onclick="loadAuditLog()" style="background:rgba(255,255,255,0.08)"><i class="fas fa-sync"></i> Refresh</button>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>When</th><th>Who</th><th>Action</th><th>Target / Details</th><th>State</th></tr></thead>
+              <tbody id="auditLogBody"><tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
+            </table>
+          </div>
+          <p style="font-size:11px;color:var(--gray);margin-top:10px"><i class="fas fa-info-circle"></i> Every Owner / Operations Manager / Branch Head action (settings change, promote/demote, MPIN set/reset, role edit, etc.) is logged here.</p>
         </div>
       </div>
 
@@ -695,14 +729,28 @@
 
     <!-- LOCATION / STATE ASSIGNMENT -->
     <div class="form-group">
-      <label style="font-weight:700"><i class="fas fa-map-marker-alt" style="color:var(--gold)"></i> Assign Location / States <span style="color:var(--gray);font-weight:400;font-size:11px">(leave empty = All India)</span></label>
-      <div id="auth_statesBox" style="max-height:140px;overflow-y:auto;background:rgba(255,255,255,0.04);border:1px solid rgba(212,175,55,0.2);border-radius:8px;padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px">
+      <label style="font-weight:700;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <span><i class="fas fa-map-marker-alt" style="color:var(--gold)"></i> Assign Location / States <span style="color:var(--gray);font-weight:400;font-size:11px">(leave empty = All India)</span></span>
+        <span style="display:flex;gap:6px">
+          <button type="button" class="btn btn-sm" onclick="toggleSelectAllStates(true)" style="background:rgba(34,197,94,0.15);color:#22c55e;border:1px solid rgba(34,197,94,0.3);padding:3px 10px;font-size:11px"><i class="fas fa-check-double"></i> Select All</button>
+          <button type="button" class="btn btn-sm" onclick="toggleSelectAllStates(false)" style="background:rgba(239,68,68,0.12);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:3px 10px;font-size:11px"><i class="fas fa-times"></i> Clear</button>
+        </span>
+      </label>
+      <input type="text" id="auth_statesSearch" class="form-control" placeholder="🔍 Search state..." oninput="filterStatesBox(this.value)" style="margin-bottom:6px;font-size:12px;padding:6px 10px"/>
+      <div id="auth_statesBox" style="max-height:160px;overflow-y:auto;background:rgba(255,255,255,0.04);border:1px solid rgba(212,175,55,0.2);border-radius:8px;padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px">
         <div style="color:var(--gray)">Loading states...</div>
       </div>
-      <p style="font-size:11px;color:var(--gray);margin-top:6px;margin-bottom:0">✓ Selected = admin will only see jobs / users from those states based on permissions below.</p>
+      <p style="font-size:11px;color:var(--gray);margin-top:6px;margin-bottom:0" id="auth_statesCount">✓ Selected = admin will only see jobs / users from those states.</p>
     </div>
 
-    <div style="font-weight:700;color:var(--gold);font-size:13px;margin:14px 0 8px">🛡️ Permissions Checklist (mirrors your owner controls)</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0 8px;flex-wrap:wrap;gap:8px">
+      <div style="font-weight:700;color:var(--gold);font-size:13px">🛡️ Permissions Checklist <span style="color:var(--gray);font-size:11px;font-weight:400">(role-based suggestions auto-tick — you can override)</span></div>
+      <div style="display:flex;gap:6px">
+        <button type="button" class="btn btn-sm" onclick="applyRolePreset()" style="background:rgba(212,175,55,0.15);color:var(--gold);border:1px solid rgba(212,175,55,0.3);padding:3px 10px;font-size:11px"><i class="fas fa-magic"></i> Re-apply Role Preset</button>
+        <button type="button" class="btn btn-sm" onclick="toggleSelectAllAuth(true)" style="background:rgba(34,197,94,0.12);color:#22c55e;border:1px solid rgba(34,197,94,0.3);padding:3px 10px;font-size:11px">All</button>
+        <button type="button" class="btn btn-sm" onclick="toggleSelectAllAuth(false)" style="background:rgba(239,68,68,0.12);color:#ef4444;border:1px solid rgba(239,68,68,0.3);padding:3px 10px;font-size:11px">None</button>
+      </div>
+    </div>
     <div class="authority-grid" id="authorityGrid">
       <label class="authority-item"><input type="checkbox" id="auth_dashboard" checked/><div class="authority-label"><strong>Small User Control Dashboard</strong>View basic user information</div></label>
       <label class="authority-item"><input type="checkbox" id="auth_connectEmployer"/><div class="authority-label"><strong>Approve Connect Employer Requests</strong>Can approve/reject employer connections</div></label>
@@ -839,7 +887,8 @@ function loadSectionData(name) {
     case 'referralRecords': loadReferralRecords(); break;
     case 'coupons': loadCouponsSection(); break;
     case 'discounts': loadOffers(); break;
-    case 'manageMpin': loadAdminMpinList(); break;
+    case 'manageMpin': loadAdminMpinList(); loadMpinRecords(); break;
+    case 'auditLog': loadAuditLog(); break;
     case 'notifications': loadNotifications(); break;
     case 'feedbackRecords': loadFeedbackRecords(); break;
     case 'resumeRecords': loadResumeRecords(); break;
@@ -1295,28 +1344,108 @@ async function getAllKnownStates() {
   return Array.from(set).sort();
 }
 
-window.openPromote = async function(uid, name) {
+// Role-based authority presets
+const ROLE_PRESETS = {
+  'Admin': ['dashboard'],
+  'Branch Head': ['dashboard','connectEmployer','resumeDownload','contact','membership','jobPost','jobList','candidates','walletTopups','walletWithdrawals','walletRecords','enquiries','feedback','resumeRecords'],
+  'Team Leader': ['dashboard','candidates','jobList','jobPost','contact'],
+  'Accountant': ['dashboard','walletTopups','walletWithdrawals','walletRecords','membership','enquiries'],
+  'Recruiter': ['dashboard','candidates','contact','resumeDownload','jobPost','resumeRecords'],
+  'Support Executive': ['dashboard','enquiries','feedback','contact'],
+  'Marketing Manager': ['dashboard','coupons','discounts','referrals','engagement','content'],
+  'Operations Manager': ['dashboard','connectEmployer','resumeDownload','contact','membership','jobPost','jobList','candidates','walletTopups','walletWithdrawals','walletRecords','coupons','discounts','referrals','enquiries','feedback','resumeRecords','engagement','content','settings','promote']
+};
+const ALL_AUTH_KEYS = ['dashboard','connectEmployer','resumeDownload','contact','membership','jobPost','jobList','candidates','walletTopups','walletWithdrawals','walletRecords','coupons','discounts','referrals','enquiries','feedback','resumeRecords','engagement','content','settings','promote'];
+
+window.applyRolePreset = function() {
+  const role = document.getElementById('auth_role').value;
+  const preset = ROLE_PRESETS[role];
+  if (!preset) return;
+  ALL_AUTH_KEYS.forEach(k => { const el = document.getElementById('auth_'+k); if (el) el.checked = preset.includes(k); });
+  showToast(`Preset applied for ${role} (${preset.length} permissions). You can override.`);
+};
+window.toggleSelectAllAuth = function(state) {
+  ALL_AUTH_KEYS.forEach(k => { const el = document.getElementById('auth_'+k); if (el) el.checked = state; });
+};
+window.toggleSelectAllStates = function(state) {
+  document.querySelectorAll('#auth_statesBox .auth_state_cb').forEach(cb => { cb.checked = state; });
+  updateStatesCount();
+};
+window.filterStatesBox = function(q) {
+  const ql = (q||'').toLowerCase();
+  document.querySelectorAll('#auth_statesBox label[data-state]').forEach(lbl => {
+    lbl.style.display = lbl.dataset.state.toLowerCase().includes(ql) ? '' : 'none';
+  });
+};
+function updateStatesCount() {
+  const total = document.querySelectorAll('#auth_statesBox .auth_state_cb').length;
+  const sel = document.querySelectorAll('#auth_statesBox .auth_state_cb:checked').length;
+  const el = document.getElementById('auth_statesCount');
+  if (el) el.innerHTML = sel === 0 ? '<span style="color:var(--gold)">⚠ All India access (no state restriction)</span>' : `✓ <strong>${sel}</strong>/${total} states selected`;
+}
+
+window.openPromote = async function(uid, name, existingData) {
   promoteUserId = uid;
-  document.getElementById('promoteUserName').textContent = 'Promoting: ' + name;
-  // Reset role custom
-  document.getElementById('auth_role').value = 'Admin';
-  document.getElementById('auth_roleCustom').style.display = 'none';
-  document.getElementById('auth_roleCustom').value = '';
-  // Toggle custom role input
-  document.getElementById('auth_role').onchange = function(){ document.getElementById('auth_roleCustom').style.display = this.value==='custom' ? 'block' : 'none'; };
+  document.getElementById('promoteUserName').textContent = (existingData?'Editing: ':'Promoting: ') + name;
+  const existing = existingData || (allUsers.find(u => u.id === uid) || {});
+  const existingRole = existing.adminRole || 'Admin';
+  const isPreset = ROLE_PRESETS.hasOwnProperty(existingRole);
+  document.getElementById('auth_role').value = isPreset ? existingRole : 'custom';
+  document.getElementById('auth_roleCustom').style.display = isPreset ? 'none' : 'block';
+  document.getElementById('auth_roleCustom').value = isPreset ? '' : existingRole;
+  document.getElementById('auth_role').onchange = function(){
+    document.getElementById('auth_roleCustom').style.display = this.value==='custom' ? 'block' : 'none';
+    if (this.value !== 'custom') applyRolePreset();
+  };
+  // Apply existing authorities OR preset
+  const existingAuths = existing.authorities;
+  ALL_AUTH_KEYS.forEach(k => {
+    const el = document.getElementById('auth_'+k); if (!el) return;
+    if (existingAuths && Object.keys(existingAuths).length) el.checked = !!existingAuths[k];
+    else el.checked = (ROLE_PRESETS[existingRole]||['dashboard']).includes(k);
+  });
   // Load states
   const box = document.getElementById('auth_statesBox');
   box.innerHTML = '<div style="color:var(--gray)">Loading...</div>';
+  document.getElementById('auth_statesSearch').value = '';
   document.getElementById('promoteModal').classList.add('active');
   const states = await getAllKnownStates();
-  box.innerHTML = states.map(s => `<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" class="auth_state_cb" value="${s.replace(/"/g,'&quot;')}"/><span>${s}</span></label>`).join('');
+  const preSel = new Set(existing.locations || []);
+  box.innerHTML = states.map(s => {
+    const safe = s.replace(/"/g,'&quot;');
+    return `<label data-state="${safe}" style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" class="auth_state_cb" value="${safe}" ${preSel.has(s)?'checked':''} onchange="updateStatesCount()"/><span>${s}</span></label>`;
+  }).join('');
+  updateStatesCount();
 };
+
+// AUDIT LOG helper – writes to auditLog collection
+let __auditCache = null;
+async function logAudit(action, details, extras = {}) {
+  try {
+    const u = (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser : null;
+    await addDoc(collection(db, 'auditLog'), {
+      action, details: details || '',
+      byUid: u?.uid || 'system',
+      byName: u?.displayName || u?.email || 'Owner',
+      byRole: extras.byRole || 'Owner',
+      targetUid: extras.targetUid || '',
+      targetName: extras.targetName || '',
+      states: extras.states || [],
+      payload: extras.payload || null,
+      at: serverTimestamp()
+    });
+    __auditCache = null;
+  } catch(_){}
+}
+window.logAudit = logAudit;
 
 window.confirmPromote = async function() {
   if (!promoteUserId) return;
   const roleSel = document.getElementById('auth_role').value;
   const roleLabel = roleSel === 'custom' ? (document.getElementById('auth_roleCustom').value.trim() || 'Admin') : roleSel;
   const states = Array.from(document.querySelectorAll('.auth_state_cb:checked')).map(c => c.value);
+  const targetUser = allUsers.find(u => u.id === promoteUserId) || {};
+  const wasAdmin = targetUser.role === 'Admin';
   const authorities = {
     dashboard: document.getElementById('auth_dashboard').checked,
     connectEmployer: document.getElementById('auth_connectEmployer').checked,
@@ -1347,17 +1476,26 @@ window.confirmPromote = async function() {
     authorities,
     promotedAt: serverTimestamp()
   });
+  await logAudit(wasAdmin ? 'Admin Updated' : 'User Promoted to Admin',
+    `${targetUser.displayName||targetUser.email} → ${roleLabel} (${states.length?states.join(', '):'All India'})`,
+    { targetUid: promoteUserId, targetName: targetUser.displayName||targetUser.email, states, payload: { role: roleLabel, authorities } });
   closeModal('promoteModal');
-  showToast('User promoted to Admin successfully!');
+  showToast(wasAdmin ? 'Admin updated successfully!' : 'User promoted to Admin successfully!');
   loadUsers();
   loadAdminMpinList && loadAdminMpinList();
+  loadMpinRecords && loadMpinRecords();
 };
 
 window.demoteAdmin = async function(uid) {
   if (!confirm('Are you sure you want to demote this admin?')) return;
-  await updateDoc(doc(db, 'users', uid), { role: 'User', tag: 'User', authorities: {} });
-  showToast('Admin demoted to User.');
+  const target = allUsers.find(u => u.id === uid) || {};
+  await updateDoc(doc(db, 'users', uid), { role: 'User', tag: 'User', authorities: {}, adminRole: '', locations: [] });
+  // Also delete their MPIN
+  try { await deleteDoc(doc(db, 'mpins', uid)); } catch(_){}
+  await logAudit('Admin Demoted', `${target.displayName||target.email} → User (MPIN cleared)`, { targetUid: uid, targetName: target.displayName||target.email, states: target.locations||[] });
+  showToast('Admin demoted to User & MPIN cleared.');
   loadUsers();
+  loadMpinRecords && loadMpinRecords();
 };
 
 // ADMIN WORKING
@@ -2137,8 +2275,10 @@ window.changeOwnerMpin = async function() {
   if (n.length !== 4 || !/^\d{4}$/.test(n)) { el.textContent='Enter 4-digit MPIN.'; el.className='alert alert-danger show'; return; }
   if (n !== c) { el.textContent='MPINs do not match.'; el.className='alert alert-danger show'; return; }
   await setDoc(doc(db, 'mpins', 'owner'), { mpin: n, updatedAt: serverTimestamp() });
+  await logAudit('Owner MPIN Changed', 'Owner MPIN was reset');
   el.textContent='Owner MPIN updated!'; el.className='alert alert-success show';
   showToast('Owner MPIN updated successfully!');
+  document.getElementById('ownerMpinNew').value = ''; document.getElementById('ownerMpinConfirm').value = '';
 };
 
 window.setAdminMpin = async function() {
@@ -2148,8 +2288,114 @@ window.setAdminMpin = async function() {
   if (!adminId) { el.textContent='Select an admin.'; el.className='alert alert-danger show'; return; }
   if (n.length !== 4 || !/^\d{4}$/.test(n)) { el.textContent='Enter 4-digit MPIN.'; el.className='alert alert-danger show'; return; }
   await setDoc(doc(db, 'mpins', adminId), { mpin: n, updatedAt: serverTimestamp() });
+  const target = allUsers.find(u => u.id === adminId) || {};
+  await logAudit('Admin MPIN Set', `${target.displayName||target.email} (${target.adminRole||'Admin'})`, { targetUid: adminId, targetName: target.displayName||target.email, states: target.locations||[] });
   el.textContent='Admin MPIN set!'; el.className='alert alert-success show';
   showToast('Admin MPIN set successfully!');
+  document.getElementById('adminMpinNew').value = '';
+  loadMpinRecords();
+};
+
+// MPIN RECORDS — full table (View / Change / Delete)
+window.loadMpinRecords = async function() {
+  const tbody = document.getElementById('mpinRecordsBody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+  try {
+    const adminsSnap = await getDocs(query(collection(db, 'users'), where('role','==','Admin')));
+    if (adminsSnap.empty) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">No admins found</td></tr>'; return; }
+    const rows = await Promise.all(adminsSnap.docs.map(async d => {
+      const a = d.data(); const adminId = d.id;
+      let mpinSet = false, updatedAt = null;
+      try { const mp = await getDoc(doc(db, 'mpins', adminId)); if (mp.exists()) { mpinSet = !!mp.data().mpin; updatedAt = mp.data().updatedAt; } } catch(_){}
+      const states = (a.locations||[]);
+      const stateBadges = states.length ? states.map(s=>`<span style="background:rgba(212,175,55,0.15);padding:2px 6px;border-radius:4px;margin:1px;display:inline-block;font-size:10px">📍 ${s}</span>`).join('') : '<span style="color:var(--gray);font-size:11px">All India</span>';
+      return `<tr>
+        <td><strong>${a.displayName||'N/A'}</strong><div style="font-size:10px;color:var(--gray)">${a.email||''}</div></td>
+        <td><span class="badge badge-rejected">${a.adminRole||'Admin'}</span></td>
+        <td>${stateBadges}</td>
+        <td>${mpinSet ? '<span class="badge badge-approved">✅ Set</span>' : '<span class="badge badge-pending">⚠ Not Set</span>'}</td>
+        <td style="font-size:11px">${updatedAt?.toDate?.()?.toLocaleString()||'—'}</td>
+        <td>
+          <button class="btn btn-sm btn-info" onclick="viewAdminMpin('${adminId}','${(a.displayName||a.email).replace(/'/g,'&#39;')}')"><i class="fas fa-eye"></i> View</button>
+          <button class="btn btn-sm btn-warning" style="background:linear-gradient(135deg,#ffc107,#e0a800);color:#000" onclick="changeAdminMpin('${adminId}','${(a.displayName||a.email).replace(/'/g,'&#39;')}')"><i class="fas fa-edit"></i> Change</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteAdminMpin('${adminId}','${(a.displayName||a.email).replace(/'/g,'&#39;')}')"><i class="fas fa-trash"></i> Delete</button>
+        </td>
+      </tr>`;
+    }));
+    tbody.innerHTML = rows.join('');
+  } catch(e) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#ef4444;padding:20px">Error: ${e.message}</td></tr>`; }
+};
+
+window.viewAdminMpin = async function(adminId, name) {
+  try {
+    const mp = await getDoc(doc(db, 'mpins', adminId));
+    if (!mp.exists() || !mp.data().mpin) { showToast(`${name} has no MPIN set yet.`,'error'); return; }
+    const m = mp.data().mpin;
+    const target = allUsers.find(u => u.id === adminId) || {};
+    await logAudit('Admin MPIN Viewed', `${name}`, { targetUid: adminId, targetName: name, states: target.locations||[] });
+    alert(`MPIN for ${name}: ${m}\n\n(This view has been logged in the Change Log.)`);
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+};
+
+window.changeAdminMpin = async function(adminId, name) {
+  const n = prompt(`Enter NEW 4-digit MPIN for ${name}:`);
+  if (!n) return;
+  if (!/^\d{4}$/.test(n)) { showToast('Must be exactly 4 digits.','error'); return; }
+  await setDoc(doc(db, 'mpins', adminId), { mpin: n, updatedAt: serverTimestamp() });
+  const target = allUsers.find(u => u.id === adminId) || {};
+  await logAudit('Admin MPIN Changed', `${name}`, { targetUid: adminId, targetName: name, states: target.locations||[] });
+  showToast(`MPIN updated for ${name}.`);
+  loadMpinRecords();
+};
+
+window.deleteAdminMpin = async function(adminId, name) {
+  if (!confirm(`Delete MPIN for ${name}? They will be locked out until you set a new MPIN.`)) return;
+  try { await deleteDoc(doc(db, 'mpins', adminId)); } catch(_){}
+  const target = allUsers.find(u => u.id === adminId) || {};
+  await logAudit('Admin MPIN Deleted', `${name} (will need a new MPIN to log in)`, { targetUid: adminId, targetName: name, states: target.locations||[] });
+  showToast(`MPIN deleted for ${name}.`);
+  loadMpinRecords();
+};
+
+// AUDIT LOG VIEWER
+let __auditAll = [];
+window.loadAuditLog = async function() {
+  const tbody = document.getElementById('auditLogBody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+  try {
+    const snap = await getDocs(collection(db, 'auditLog'));
+    __auditAll = snap.docs.map(d => ({ id:d.id, ...d.data() })).sort((a,b) => (b.at?.toMillis?.()||0) - (a.at?.toMillis?.()||0));
+    // Build filter dropdowns
+    const acts = [...new Set(__auditAll.map(a => a.action))].sort();
+    const bys = [...new Set(__auditAll.map(a => a.byName))].sort();
+    const sts = [...new Set(__auditAll.flatMap(a => a.states||[]))].sort();
+    const fa = document.getElementById('auditFilterAction'), fb = document.getElementById('auditFilterBy'), fs = document.getElementById('auditFilterState');
+    if (fa) fa.innerHTML = '<option value="">All Actions</option>' + acts.map(a=>`<option value="${a}">${a}</option>`).join('');
+    if (fb) fb.innerHTML = '<option value="">All Users</option>' + bys.map(a=>`<option value="${a}">${a}</option>`).join('');
+    if (fs) fs.innerHTML = '<option value="">All States</option>' + sts.map(a=>`<option value="${a}">${a}</option>`).join('');
+    renderAuditLog();
+  } catch(e) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#ef4444;padding:20px">Error: ${e.message}</td></tr>`; }
+};
+
+window.renderAuditLog = function() {
+  const tbody = document.getElementById('auditLogBody');
+  const fa = document.getElementById('auditFilterAction')?.value || '';
+  const fb = document.getElementById('auditFilterBy')?.value || '';
+  const fs = document.getElementById('auditFilterState')?.value || '';
+  let list = __auditAll;
+  if (fa) list = list.filter(a => a.action === fa);
+  if (fb) list = list.filter(a => a.byName === fb);
+  if (fs) list = list.filter(a => (a.states||[]).includes(fs));
+  if (!list.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">No log entries match.</td></tr>'; return; }
+  tbody.innerHTML = list.slice(0, 500).map(a => `<tr>
+    <td style="font-size:11px;white-space:nowrap">${a.at?.toDate?.()?.toLocaleString()||'—'}</td>
+    <td><strong>${(a.byName||'').replace(/[<>]/g,'')}</strong><div style="font-size:10px;color:var(--gray)">${a.byRole||''}</div></td>
+    <td><span class="badge badge-pending" style="font-size:10px">${(a.action||'').replace(/[<>]/g,'')}</span></td>
+    <td style="font-size:12px"><strong>${(a.targetName||'').replace(/[<>]/g,'')}</strong>${a.targetName?'<br/>':''}<span style="color:var(--gray)">${(a.details||'').replace(/[<>]/g,'')}</span></td>
+    <td style="font-size:10px">${(a.states||[]).map(s=>`<span style="background:rgba(212,175,55,0.15);padding:1px 5px;border-radius:3px;margin:1px;display:inline-block">📍 ${s}</span>`).join('')||'—'}</td>
+  </tr>`).join('');
 };
 
 document.querySelectorAll('.modal-overlay').forEach(el => {
@@ -2629,6 +2875,7 @@ window.saveSiteSettings = async function() {
   };
   try {
     await setDoc(doc(db, 'siteContent', 'settings'), data, { merge: true });
+    await logAudit('Site Settings Updated', `Contact / About / FAQ / Payment settings saved`, { payload: { contactEmail: data.contactEmail, contactPhone: data.contactPhone, address: data.address, upiId: data.upiId } });
     const summary = `✅ Saved! Contact = ${data.contactEmail || '(default)'} · ${data.contactPhone || '(default)'} · ${data.address ? data.address.split('\n')[0] : '(default)'}`;
     msg.innerHTML = summary + ' &nbsp; <a href="contact.html" target="_blank" style="color:var(--gold);text-decoration:underline;font-weight:700">Open Contact Page →</a> <span style="font-size:11px;color:var(--gray);margin-left:8px">(if old value still shows, hard-refresh: Ctrl+Shift+R)</span>';
     msg.className = 'alert alert-success show';

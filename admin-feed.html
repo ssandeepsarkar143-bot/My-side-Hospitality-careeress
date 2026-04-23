@@ -81,6 +81,10 @@
       <div class="sidebar-item hidden" id="nav_membershipReqs" onclick="showSection('membershipReqs')"><i class="fas fa-crown"></i> Membership</div>
       <div class="sidebar-item hidden" id="nav_jobRequests" onclick="showSection('jobRequests')"><i class="fas fa-inbox"></i> Job Post Requests</div>
       <div class="sidebar-item hidden" id="nav_jobList" onclick="showSection('jobList')"><i class="fas fa-list"></i> Manage Jobs</div>
+      <div class="sidebar-section hidden" id="nav_management_header">Management (Ops/Branch Head)</div>
+      <div class="sidebar-item hidden" id="nav_managePromoted" onclick="showSection('managePromoted')"><i class="fas fa-user-shield"></i> Promoted Admins</div>
+      <div class="sidebar-item hidden" id="nav_manageMpin" onclick="showSection('manageMpin')"><i class="fas fa-key"></i> Manage MPINs</div>
+      <div class="sidebar-item hidden" id="nav_auditLog" onclick="showSection('auditLog')"><i class="fas fa-history"></i> Change Log</div>
       <div class="sidebar-section">Job</div>
       <div class="sidebar-item" onclick="window.open('job-post-from.html','_self')"><i class="fas fa-plus-circle"></i> Add Job (Live)</div>
     </div>
@@ -173,6 +177,92 @@
         </div>
       </div>
 
+      <!-- PROMOTED ADMINS (Op Mgr / Branch Head) -->
+      <div id="sec-managePromoted" class="page-section">
+        <div class="section-title" style="color:#e94560"><i class="fas fa-user-shield" style="-webkit-text-fill-color:#e94560"></i> Promoted Admins (Your Allocated States)</div>
+        <div id="mp_stateFilterWrap" style="margin-bottom:12px;display:none">
+          <label style="font-size:12px;color:var(--gray)">Filter by State</label>
+          <select id="mp_stateFilter" class="form-control" style="max-width:280px" onchange="renderManagePromoted()"></select>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>States</th><th>Joined</th><th>Action</th></tr></thead>
+            <tbody id="managePromotedBody"><tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+        <p style="font-size:11px;color:var(--gray);margin-top:8px"><i class="fas fa-info-circle"></i> You can only manage admins inside your allocated state(s). Operations Manager / Branch Head roles cannot be assigned from here, and you cannot edit your own role.</p>
+      </div>
+
+      <!-- MANAGE MPIN (Op Mgr / Branch Head) -->
+      <div id="sec-manageMpin" class="page-section">
+        <div class="section-title" style="color:#e94560"><i class="fas fa-key" style="-webkit-text-fill-color:#e94560"></i> MPIN Management (Your Allocated States)</div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title" style="color:#e94560"><i class="fas fa-user-lock"></i> Set Your Own MPIN</div>
+            <div class="form-group"><label>New MPIN (4 digits)</label><input type="password" id="myMpinNew" class="form-control" maxlength="4" inputmode="numeric"/></div>
+            <div class="form-group"><label>Confirm MPIN</label><input type="password" id="myMpinConfirm" class="form-control" maxlength="4" inputmode="numeric"/></div>
+            <button class="btn btn-primary" onclick="changeMyMpin()" style="background:#e94560"><i class="fas fa-save"></i> Save My MPIN</button>
+            <div id="myMpinMsg" class="alert mt-8"></div>
+          </div>
+          <div class="card">
+            <div class="card-title" style="color:#e94560"><i class="fas fa-users-cog"></i> Set Admin MPIN (Your State)</div>
+            <div class="form-group"><label>Select Admin</label><select id="otherMpinSelect" class="form-control"><option value="">Loading...</option></select></div>
+            <div class="form-group"><label>New MPIN (4 digits)</label><input type="password" id="otherMpinNew" class="form-control" maxlength="4" inputmode="numeric"/></div>
+            <button class="btn btn-primary" onclick="setOtherMpin()" style="background:#e94560"><i class="fas fa-save"></i> Save Admin MPIN</button>
+            <div id="otherMpinMsg" class="alert mt-8"></div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:16px">
+          <div class="card-title" style="color:#e94560;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+            <span><i class="fas fa-list"></i> MPIN Records (Your State Admins)</span>
+            <button class="btn btn-sm" onclick="loadMpinRecordsAdmin()" style="background:rgba(255,255,255,0.08)"><i class="fas fa-sync"></i> Refresh</button>
+          </div>
+          <div class="table-wrapper">
+            <table><thead><tr><th>Admin</th><th>Role</th><th>States</th><th>MPIN</th><th>Updated</th><th>Action</th></tr></thead>
+            <tbody id="mpinRecordsAdminBody"><tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- AUDIT LOG (Op Mgr only) -->
+      <div id="sec-auditLog" class="page-section">
+        <div class="section-title" style="color:#e94560"><i class="fas fa-history" style="-webkit-text-fill-color:#e94560"></i> Change &amp; Modification Log (Your States)</div>
+        <div class="card">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:end">
+            <div style="flex:1;min-width:160px"><label style="font-size:12px;color:var(--gray)">Filter by Action</label><select id="adAuditAction" class="form-control" onchange="renderAdminAuditLog()"><option value="">All</option></select></div>
+            <div style="flex:1;min-width:160px"><label style="font-size:12px;color:var(--gray)">Filter by User</label><select id="adAuditBy" class="form-control" onchange="renderAdminAuditLog()"><option value="">All</option></select></div>
+            <button class="btn btn-sm" onclick="loadAdminAuditLog()" style="background:rgba(255,255,255,0.08)"><i class="fas fa-sync"></i> Refresh</button>
+          </div>
+          <div class="table-wrapper">
+            <table><thead><tr><th>When</th><th>Who</th><th>Action</th><th>Target / Details</th><th>State</th></tr></thead>
+            <tbody id="adAuditBody"><tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ROLE EDIT MODAL (no Op Mgr / Branch Head options) -->
+    </div>
+
+    <!-- Edit Role Modal -->
+    <div class="modal-overlay" id="editRoleModal">
+      <div class="modal-box" style="max-width:520px;max-height:85vh;overflow-y:auto">
+        <div class="modal-header"><div class="modal-title" style="color:#e94560"><i class="fas fa-edit"></i> Edit Admin Role</div><button class="modal-close" onclick="document.getElementById('editRoleModal').classList.remove('active')">&times;</button></div>
+        <div id="editRoleUserName" style="font-size:14px;color:#e94560;margin-bottom:14px;font-weight:600"></div>
+        <div class="form-group"><label>Role / Designation</label>
+          <select id="er_role" class="form-control">
+            <option value="Admin">Admin</option>
+            <option value="Team Leader">Team Leader</option>
+            <option value="Accountant">Accountant</option>
+            <option value="Recruiter">Recruiter</option>
+            <option value="Support Executive">Support Executive</option>
+            <option value="Marketing Manager">Marketing Manager</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Allocated States <span style="font-size:11px;color:var(--gray)">(only your states can be assigned)</span></label>
+          <div id="er_statesBox" style="max-height:140px;overflow-y:auto;background:rgba(255,255,255,0.04);border:1px solid rgba(233,69,96,0.2);border-radius:8px;padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px"></div>
+        </div>
+        <button class="btn btn-primary w-full" style="background:#e94560" onclick="confirmEditRole()"><i class="fas fa-save"></i> Save Changes</button>
+      </div>
     </div>
   </div>
 </div>
@@ -208,7 +298,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, doc, getDoc, getDocs, collection, query, where, updateDoc, deleteDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, getDoc, getDocs, setDoc, collection, query, where, updateDoc, deleteDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCuAuc9qhA7D_-Lqt-69pbG81KTIiDFVpg",
@@ -285,6 +375,18 @@ function setupAuthority() {
   if (auth_perms.membership) { document.getElementById('nav_membershipReqs').classList.remove('hidden'); document.getElementById('auth_sections_header').style.display='block'; }
   if (auth_perms.jobPost) { document.getElementById('nav_jobRequests').classList.remove('hidden'); }
   if (auth_perms.jobList) { document.getElementById('nav_jobList').classList.remove('hidden'); }
+  // Operations Manager / Branch Head extras
+  const adminRole = adminData?.adminRole || '';
+  const isOpMgr = adminRole === 'Operations Manager';
+  const isBranchHead = adminRole === 'Branch Head';
+  if (isOpMgr || isBranchHead) {
+    document.getElementById('nav_management_header').classList.remove('hidden');
+    document.getElementById('nav_managePromoted').classList.remove('hidden');
+    document.getElementById('nav_manageMpin').classList.remove('hidden');
+    if (isOpMgr) document.getElementById('nav_auditLog').classList.remove('hidden');
+  }
+  // User Control state filter
+  setupUserControlFilter();
 }
 
 window.showSection = function(name) {
@@ -299,26 +401,301 @@ window.showSection = function(name) {
     case 'membershipReqs': loadMembershipReqs(); break;
     case 'jobRequests': loadJobRequests(); break;
     case 'jobList': loadJobList(); break;
+    case 'managePromoted': loadManagePromoted(); break;
+    case 'manageMpin': loadOtherMpinList(); loadMpinRecordsAdmin(); break;
+    case 'auditLog': loadAdminAuditLog(); break;
   }
+};
+
+// AUDIT LOG helper for admin actions
+async function logAdminAudit(action, details, extras = {}) {
+  try {
+    await addDoc(collection(db, 'auditLog'), {
+      action, details: details || '',
+      byUid: currentUser?.uid || 'admin',
+      byName: currentUser?.displayName || currentUser?.email || 'Admin',
+      byRole: adminData?.adminRole || 'Admin',
+      targetUid: extras.targetUid || '',
+      targetName: extras.targetName || '',
+      states: extras.states || (adminData?.locations || []),
+      payload: extras.payload || null,
+      at: serverTimestamp()
+    });
+  } catch(_){}
+}
+
+// USER CONTROL — state filter
+function adminAllocatedStates() { return adminData?.locations || []; }
+
+function setupUserControlFilter() {
+  const states = adminAllocatedStates();
+  // Inject filter into User Control tables (works for both adminUsersBody + adminUsersBody2)
+  ['sec-userControl','sec-dashboard'].forEach(secId => {
+    const sec = document.getElementById(secId);
+    if (!sec || sec.querySelector('.uc-state-filter')) return;
+    if (states.length === 0) return; // all-india: no filter UI needed
+    const wrap = document.createElement('div');
+    wrap.className = 'uc-state-filter';
+    wrap.style.cssText = 'margin:8px 0 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap';
+    if (states.length === 1) {
+      wrap.innerHTML = `<span style="font-size:12px;color:var(--gray)">📍 Locked to your state:</span> <span style="background:rgba(233,69,96,0.15);padding:4px 10px;border-radius:6px;font-weight:700;color:#e94560">${states[0]}</span>`;
+    } else {
+      wrap.innerHTML = `<label style="font-size:12px;color:var(--gray)">📍 Filter by your states:</label>
+        <select class="form-control uc-state-select" style="max-width:240px;font-size:13px" onchange="renderAdminUsers()">
+          <option value="">All my states (${states.length})</option>
+          ${states.map(s => `<option value="${s}">${s}</option>`).join('')}
+        </select>`;
+    }
+    const tableWrap = sec.querySelector('.table-wrapper');
+    if (tableWrap) sec.insertBefore(wrap, tableWrap);
+  });
+}
+
+let __cachedUsers = [];
+async function loadAdminUsers() {
+  try {
+    const snap = await getDocs(collection(db, 'users'));
+    __cachedUsers = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+    renderAdminUsers();
+  } catch(e) {}
+}
+window.renderAdminUsers = function() {
+  const states = adminAllocatedStates();
+  let users = __cachedUsers;
+  if (states.length > 0) {
+    const filterSel = document.querySelector('.uc-state-select');
+    const target = filterSel?.value ? [filterSel.value] : states;
+    users = users.filter(u => {
+      if (!u.state) return false;
+      return target.some(t => (u.state||'').toLowerCase().includes(t.toLowerCase()) || t.toLowerCase().includes((u.state||'').toLowerCase()));
+    });
+  }
+  const html = users.map(u => `<tr>
+    <td>${u.displayName||'N/A'}</td><td>${u.email}</td>
+    <td><span class="badge badge-pending">${u.role}</span></td>
+    <td>${u.createdAt?.toDate?.()?.toLocaleDateString()||'N/A'}</td>
+    <td>${u.membershipCount||0}x</td>
+  </tr>`).join('');
+  const empty = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">No users in your allocated state(s)</td></tr>';
+  if (document.getElementById('adminUsersBody')) document.getElementById('adminUsersBody').innerHTML = html || empty;
+  if (document.getElementById('adminUsersBody2')) document.getElementById('adminUsersBody2').innerHTML = html || empty;
+};
+
+// MY MPIN
+window.changeMyMpin = async function() {
+  const n = document.getElementById('myMpinNew').value;
+  const c = document.getElementById('myMpinConfirm').value;
+  const el = document.getElementById('myMpinMsg');
+  if (n.length !== 4 || !/^\d{4}$/.test(n)) { el.textContent='Enter 4-digit MPIN.'; el.className='alert alert-danger show'; return; }
+  if (n !== c) { el.textContent='MPINs do not match.'; el.className='alert alert-danger show'; return; }
+  await setDoc(doc(db, 'mpins', currentUser.uid), { mpin: n, updatedAt: serverTimestamp() });
+  await logAdminAudit('Self MPIN Changed', `${currentUser.displayName||currentUser.email} reset their own MPIN`);
+  el.textContent='Your MPIN updated!'; el.className='alert alert-success show';
+  showToast('Your MPIN updated successfully!');
+  document.getElementById('myMpinNew').value=''; document.getElementById('myMpinConfirm').value='';
+  loadMpinRecordsAdmin();
+};
+
+// OTHER ADMIN MPIN (state-filtered)
+function isAdminInMyStates(adminUserData) {
+  const myStates = adminAllocatedStates();
+  if (myStates.length === 0) return true;
+  const theirStates = adminUserData.locations || [];
+  if (theirStates.length === 0) return false;
+  return theirStates.some(s => myStates.includes(s));
+}
+
+let __cachedAdmins = [];
+async function loadOtherMpinList() {
+  try {
+    const snap = await getDocs(query(collection(db, 'users'), where('role','==','Admin')));
+    __cachedAdmins = snap.docs.map(d => ({ id:d.id, ...d.data() })).filter(a => a.id !== currentUser.uid && isAdminInMyStates(a));
+    const sel = document.getElementById('otherMpinSelect');
+    if (!__cachedAdmins.length) { sel.innerHTML = '<option value="">No admins in your state(s)</option>'; return; }
+    sel.innerHTML = '<option value="">-- Select Admin --</option>' + __cachedAdmins.map(a => `<option value="${a.id}">${a.displayName||a.email} – ${a.adminRole||'Admin'}</option>`).join('');
+  } catch(e) {}
+}
+
+window.setOtherMpin = async function() {
+  const adminId = document.getElementById('otherMpinSelect').value;
+  const n = document.getElementById('otherMpinNew').value;
+  const el = document.getElementById('otherMpinMsg');
+  if (!adminId) { el.textContent='Select an admin.'; el.className='alert alert-danger show'; return; }
+  if (n.length !== 4 || !/^\d{4}$/.test(n)) { el.textContent='Enter 4-digit MPIN.'; el.className='alert alert-danger show'; return; }
+  const target = __cachedAdmins.find(a => a.id === adminId);
+  if (!target || !isAdminInMyStates(target)) { el.textContent='Not allowed.'; el.className='alert alert-danger show'; return; }
+  await setDoc(doc(db, 'mpins', adminId), { mpin: n, updatedAt: serverTimestamp() });
+  await logAdminAudit('Admin MPIN Set', `${target.displayName||target.email} (${target.adminRole||'Admin'})`, { targetUid: adminId, targetName: target.displayName||target.email, states: target.locations||[] });
+  el.textContent='Admin MPIN saved!'; el.className='alert alert-success show';
+  showToast('Admin MPIN set successfully!');
+  document.getElementById('otherMpinNew').value='';
+  loadMpinRecordsAdmin();
+};
+
+window.loadMpinRecordsAdmin = async function() {
+  const tbody = document.getElementById('mpinRecordsAdminBody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+  try {
+    const snap = await getDocs(query(collection(db, 'users'), where('role','==','Admin')));
+    const list = snap.docs.map(d => ({ id:d.id, ...d.data() })).filter(a => isAdminInMyStates(a));
+    if (!list.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">No admins in your state(s)</td></tr>'; return; }
+    const rows = await Promise.all(list.map(async a => {
+      let mpinSet=false, updatedAt=null;
+      try { const m = await getDoc(doc(db, 'mpins', a.id)); if (m.exists()) { mpinSet = !!m.data().mpin; updatedAt = m.data().updatedAt; } } catch(_){}
+      const states = (a.locations||[]);
+      const isSelf = a.id === currentUser.uid;
+      return `<tr>
+        <td><strong>${a.displayName||'N/A'}${isSelf?' <span style="color:#e94560;font-size:10px">(You)</span>':''}</strong><div style="font-size:10px;color:var(--gray)">${a.email||''}</div></td>
+        <td><span class="badge badge-pending">${a.adminRole||'Admin'}</span></td>
+        <td>${states.map(s=>`<span style="background:rgba(233,69,96,0.15);padding:2px 6px;border-radius:4px;font-size:10px;margin:1px;display:inline-block">📍 ${s}</span>`).join('')||'<span style="color:var(--gray);font-size:11px">All India</span>'}</td>
+        <td>${mpinSet?'<span class="badge badge-approved">✅ Set</span>':'<span class="badge badge-pending">⚠ Not Set</span>'}</td>
+        <td style="font-size:11px">${updatedAt?.toDate?.()?.toLocaleString()||'—'}</td>
+        <td>${isSelf ? '<span style="color:var(--gray);font-size:11px">Use "Set Your Own MPIN" above</span>' : `
+          <button class="btn btn-sm btn-info" onclick="adminViewMpin('${a.id}','${(a.displayName||a.email).replace(/'/g,'&#39;')}')"><i class="fas fa-eye"></i> View</button>
+          <button class="btn btn-sm btn-warning" style="background:#ffc107;color:#000" onclick="adminChangeMpin('${a.id}','${(a.displayName||a.email).replace(/'/g,'&#39;')}')"><i class="fas fa-edit"></i> Change</button>
+          <button class="btn btn-sm btn-danger" onclick="adminDeleteMpin('${a.id}','${(a.displayName||a.email).replace(/'/g,'&#39;')}')"><i class="fas fa-trash"></i></button>
+        `}</td>
+      </tr>`;
+    }));
+    tbody.innerHTML = rows.join('');
+  } catch(e) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#ef4444;padding:20px">Error: ${e.message}</td></tr>`; }
+};
+
+window.adminViewMpin = async function(adminId, name) {
+  try {
+    const m = await getDoc(doc(db, 'mpins', adminId));
+    if (!m.exists() || !m.data().mpin) { showToast(`${name} has no MPIN.`,'error'); return; }
+    const target = __cachedAdmins.find(a => a.id === adminId) || {};
+    await logAdminAudit('Admin MPIN Viewed', name, { targetUid: adminId, targetName: name, states: target.locations||[] });
+    alert(`MPIN for ${name}: ${m.data().mpin}\n\n(Logged in Change Log.)`);
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+};
+window.adminChangeMpin = async function(adminId, name) {
+  const n = prompt(`Enter NEW 4-digit MPIN for ${name}:`); if (!n) return;
+  if (!/^\d{4}$/.test(n)) { showToast('Must be 4 digits.','error'); return; }
+  await setDoc(doc(db, 'mpins', adminId), { mpin: n, updatedAt: serverTimestamp() });
+  const target = __cachedAdmins.find(a => a.id === adminId) || {};
+  await logAdminAudit('Admin MPIN Changed', name, { targetUid: adminId, targetName: name, states: target.locations||[] });
+  showToast(`MPIN updated for ${name}.`); loadMpinRecordsAdmin();
+};
+window.adminDeleteMpin = async function(adminId, name) {
+  if (!confirm(`Delete MPIN for ${name}?`)) return;
+  try { await deleteDoc(doc(db, 'mpins', adminId)); } catch(_){}
+  const target = __cachedAdmins.find(a => a.id === adminId) || {};
+  await logAdminAudit('Admin MPIN Deleted', name, { targetUid: adminId, targetName: name, states: target.locations||[] });
+  showToast(`MPIN deleted for ${name}.`); loadMpinRecordsAdmin();
+};
+
+// PROMOTED ADMINS (state-filtered, with role edit)
+let __mpAll = [];
+async function loadManagePromoted() {
+  const tbody = document.getElementById('managePromotedBody');
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px"><i class="fas fa-spinner fa-spin"></i></td></tr>';
+  try {
+    const snap = await getDocs(query(collection(db, 'users'), where('role','==','Admin')));
+    __mpAll = snap.docs.map(d => ({ id:d.id, ...d.data() })).filter(a => isAdminInMyStates(a));
+    const states = adminAllocatedStates();
+    const filterWrap = document.getElementById('mp_stateFilterWrap');
+    if (states.length > 1) {
+      filterWrap.style.display = 'block';
+      document.getElementById('mp_stateFilter').innerHTML = `<option value="">All my states (${states.length})</option>` + states.map(s=>`<option value="${s}">${s}</option>`).join('');
+    } else filterWrap.style.display = 'none';
+    renderManagePromoted();
+  } catch(e) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#ef4444">Error: ${e.message}</td></tr>`; }
+}
+window.renderManagePromoted = function() {
+  const tbody = document.getElementById('managePromotedBody');
+  const filt = document.getElementById('mp_stateFilter')?.value || '';
+  let list = __mpAll;
+  if (filt) list = list.filter(a => (a.locations||[]).includes(filt));
+  if (!list.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">No promoted admins</td></tr>'; return; }
+  tbody.innerHTML = list.map(a => {
+    const isSelf = a.id === currentUser.uid;
+    const isOpsOrBranch = a.adminRole === 'Operations Manager' || a.adminRole === 'Branch Head';
+    const canEdit = !isSelf && !isOpsOrBranch;
+    return `<tr>
+      <td><strong>${a.displayName||'N/A'}${isSelf?' <span style="color:#e94560;font-size:10px">(You)</span>':''}</strong></td>
+      <td style="font-size:11px">${a.email}</td>
+      <td><span class="badge badge-pending">${a.adminRole||'Admin'}</span></td>
+      <td style="font-size:10px">${(a.locations||[]).map(s=>`<span style="background:rgba(233,69,96,0.15);padding:1px 5px;border-radius:3px;margin:1px;display:inline-block">📍 ${s}</span>`).join('')||'All India'}</td>
+      <td style="font-size:11px">${a.promotedAt?.toDate?.()?.toLocaleDateString()||'—'}</td>
+      <td>${canEdit ? `<button class="btn btn-sm btn-warning" style="background:#ffc107;color:#000" onclick="openAdminEditRole('${a.id}')"><i class="fas fa-edit"></i> Edit Role</button>` : `<span style="color:var(--gray);font-size:11px">${isSelf?'Cannot edit self':'Locked (higher role)'}</span>`}</td>
+    </tr>`;
+  }).join('');
+};
+
+window.openAdminEditRole = function(adminId) {
+  const a = __mpAll.find(x => x.id === adminId); if (!a) return;
+  window.__editingAdminId = adminId;
+  document.getElementById('editRoleUserName').textContent = `Editing: ${a.displayName||a.email}`;
+  // Op Manager + Branch Head are intentionally NOT in the dropdown
+  const cur = a.adminRole;
+  const allowedRoles = ['Admin','Team Leader','Accountant','Recruiter','Support Executive','Marketing Manager'];
+  document.getElementById('er_role').value = allowedRoles.includes(cur) ? cur : 'Admin';
+  // Build state checkboxes — only my own states
+  const myStates = adminAllocatedStates();
+  const preSel = new Set(a.locations || []);
+  document.getElementById('er_statesBox').innerHTML = myStates.map(s => {
+    const safe = s.replace(/"/g,'&quot;');
+    return `<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" class="er_state_cb" value="${safe}" ${preSel.has(s)?'checked':''}/><span>${s}</span></label>`;
+  }).join('') || '<div style="color:var(--gray)">You have no allocated states</div>';
+  document.getElementById('editRoleModal').classList.add('active');
+};
+
+window.confirmEditRole = async function() {
+  const adminId = window.__editingAdminId; if (!adminId) return;
+  const a = __mpAll.find(x => x.id === adminId); if (!a) return;
+  const newRole = document.getElementById('er_role').value;
+  const newStates = Array.from(document.querySelectorAll('.er_state_cb:checked')).map(c => c.value);
+  // Defensive — block editing self / higher role even if UI bypassed
+  if (a.id === currentUser.uid) { showToast('Cannot edit your own role.','error'); return; }
+  if (a.adminRole === 'Operations Manager' || a.adminRole === 'Branch Head') { showToast('Cannot edit higher role.','error'); return; }
+  if (newRole === 'Operations Manager' || newRole === 'Branch Head') { showToast('Not allowed to assign that role.','error'); return; }
+  await updateDoc(doc(db, 'users', adminId), { adminRole: newRole, locations: newStates, updatedAt: serverTimestamp() });
+  await logAdminAudit('Admin Role Edited', `${a.displayName||a.email} → ${newRole} (${newStates.join(', ')||'no states'})`, { targetUid: adminId, targetName: a.displayName||a.email, states: newStates });
+  showToast('Admin role updated!');
+  document.getElementById('editRoleModal').classList.remove('active');
+  loadManagePromoted();
+};
+
+// AUDIT LOG VIEW (Op Mgr only, filtered to their states)
+let __adAuditAll = [];
+window.loadAdminAuditLog = async function() {
+  const tbody = document.getElementById('adAuditBody');
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px"><i class="fas fa-spinner fa-spin"></i></td></tr>';
+  try {
+    const snap = await getDocs(collection(db, 'auditLog'));
+    const myStates = adminAllocatedStates();
+    __adAuditAll = snap.docs.map(d => ({ id:d.id, ...d.data() }))
+      .filter(a => myStates.length === 0 || (a.states||[]).some(s => myStates.includes(s)) || a.byUid === currentUser.uid)
+      .sort((a,b) => (b.at?.toMillis?.()||0) - (a.at?.toMillis?.()||0));
+    const acts = [...new Set(__adAuditAll.map(a => a.action))].sort();
+    const bys = [...new Set(__adAuditAll.map(a => a.byName))].sort();
+    document.getElementById('adAuditAction').innerHTML = '<option value="">All</option>' + acts.map(a=>`<option value="${a}">${a}</option>`).join('');
+    document.getElementById('adAuditBy').innerHTML = '<option value="">All</option>' + bys.map(a=>`<option value="${a}">${a}</option>`).join('');
+    renderAdminAuditLog();
+  } catch(e) { tbody.innerHTML = `<tr><td colspan="5" style="color:#ef4444;text-align:center">Error: ${e.message}</td></tr>`; }
+};
+window.renderAdminAuditLog = function() {
+  const tbody = document.getElementById('adAuditBody');
+  const fa = document.getElementById('adAuditAction')?.value || '';
+  const fb = document.getElementById('adAuditBy')?.value || '';
+  let list = __adAuditAll;
+  if (fa) list = list.filter(a => a.action === fa);
+  if (fb) list = list.filter(a => a.byName === fb);
+  if (!list.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">No log entries.</td></tr>'; return; }
+  tbody.innerHTML = list.slice(0, 500).map(a => `<tr>
+    <td style="font-size:11px;white-space:nowrap">${a.at?.toDate?.()?.toLocaleString()||'—'}</td>
+    <td><strong>${(a.byName||'').replace(/[<>]/g,'')}</strong><div style="font-size:10px;color:var(--gray)">${a.byRole||''}</div></td>
+    <td><span class="badge badge-pending" style="font-size:10px">${(a.action||'').replace(/[<>]/g,'')}</span></td>
+    <td style="font-size:12px"><strong>${(a.targetName||'').replace(/[<>]/g,'')}</strong>${a.targetName?'<br/>':''}<span style="color:var(--gray)">${(a.details||'').replace(/[<>]/g,'')}</span></td>
+    <td style="font-size:10px">${(a.states||[]).map(s=>`<span style="background:rgba(233,69,96,0.15);padding:1px 5px;border-radius:3px;margin:1px;display:inline-block">📍 ${s}</span>`).join('')||'—'}</td>
+  </tr>`).join('');
 };
 
 async function loadDashboard() {
   if (adminData?.authorities?.dashboard) loadAdminUsers();
-}
-
-async function loadAdminUsers() {
-  try {
-    const snap = await getDocs(collection(db, 'users'));
-    const users = snap.docs.map(d => d.data());
-    const html = users.map(u => `<tr>
-      <td>${u.displayName||'N/A'}</td><td>${u.email}</td>
-      <td><span class="badge badge-pending">${u.role}</span></td>
-      <td>${u.createdAt?.toDate?.()?.toLocaleDateString()||'N/A'}</td>
-      <td>${u.membershipCount||0}x</td>
-    </tr>`).join('');
-    if (document.getElementById('adminUsersBody')) document.getElementById('adminUsersBody').innerHTML = html || '<tr><td colspan="5" style="text-align:center;color:var(--gray)">No users</td></tr>';
-    if (document.getElementById('adminUsersBody2')) document.getElementById('adminUsersBody2').innerHTML = html || '<tr><td colspan="5" style="text-align:center;color:var(--gray)">No users</td></tr>';
-  } catch(e) {}
 }
 
 async function loadMyWork() {
