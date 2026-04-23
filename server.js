@@ -161,6 +161,9 @@ Site facts you MUST use:
 For job/career/interview/CV questions answer expertly.
 Never invent prices, phone numbers, or emails. If unsure, suggest visiting the Contact page.`;
 
+// Phase 7 — preview session end beacon (best-effort, no auth needed; client-side rules govern Firestore writes)
+app.post('/api/preview-end', (req, res) => { res.status(204).end(); });
+
 app.post('/api/chat', async (req, res) => {
   try {
     const { message, history = [], lang = 'en' } = req.body || {};
