@@ -138,7 +138,7 @@ service cloud.firestore {
           && request.resource.data.ownerUid == resource.data.ownerUid);
       allow delete: if isOwner();
 
-      // MESSAGES — only group members can read/post; nobody updates or deletes
+      // MESSAGES — only group members can read/post; updates only for read receipts
       match /messages/{msgId} {
         allow read: if isSignedIn() && (
           isOwner() ||
@@ -148,9 +148,36 @@ service cloud.firestore {
           isOwner() ||
           request.auth.uid in get(/databases/$(database)/documents/connectGroups/$(groupId)).data.memberUids
         );
-        allow update: if false;
+        // Members can update only the readBy list (mark themselves as read)
+        allow update: if isSignedIn() && (
+          isOwner() ||
+          (request.auth.uid in get(/databases/$(database)/documents/connectGroups/$(groupId)).data.memberUids
+            && request.resource.data.diff(resource.data).changedKeys().hasOnly(['readBy']))
+        );
         allow delete: if isOwner();
       }
+    }
+
+    // PRESENCE (Phase 8) — anyone can write/read own presence; signed-in can read all
+    match /presence/{uid} {
+      allow read: if isSignedIn();
+      allow write: if isSelf(uid);
+    }
+
+    // CHAT REPORTS (Phase 8) — owner only
+    match /chatReports/{id} {
+      allow read, write: if isOwner();
+    }
+
+    // USER CREDENTIALS (Phase 8) — owner-only Email/Password issuance ledger
+    match /userCredentials/{uid} {
+      allow read, write: if isOwner();
+    }
+
+    // MPIN REMINDER CONFIG (Phase 8)
+    match /mpinReminderConfig/{id} {
+      allow read: if isSignedIn();
+      allow write: if isOwner();
     }
   }
 }
