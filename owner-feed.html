@@ -100,6 +100,9 @@
       <div class="sidebar-item" onclick="showSection('previewCenter')"><i class="fas fa-eye"></i> Switch View Center</div>
       <div class="sidebar-item" onclick="showSection('previewLog')"><i class="fas fa-stopwatch"></i> Preview Activity Log</div>
       <div class="sidebar-item" onclick="showSection('delegationCfg')"><i class="fas fa-user-tag"></i> Promotion Delegation</div>
+      <div class="sidebar-item" onclick="showSection('mpinReminders')"><i class="fas fa-bell"></i> MPIN Rotation Reminders</div>
+      <div class="sidebar-item" onclick="showSection('userCredentials')"><i class="fas fa-id-card"></i> User Credentials</div>
+      <div class="sidebar-item" onclick="showSection('reportsCenter')"><i class="fas fa-file-pdf"></i> Reports Center</div>
       <div class="sidebar-item" onclick="showSection('auditLog')"><i class="fas fa-history"></i> Change & Modification Log</div>
     </div>
 
@@ -750,6 +753,79 @@
         </div>
       </div>
 
+      <!-- ============ MPIN ROTATION REMINDERS ============ -->
+      <div id="sec-mpinReminders" class="page-section">
+        <div class="section-title"><i class="fas fa-bell"></i> MPIN Rotation Reminders</div>
+        <div class="card" style="background:linear-gradient(135deg,rgba(59,130,246,0.06),rgba(59,130,246,0.02));border:1px solid rgba(59,130,246,0.25)">
+          <p style="color:rgba(255,255,255,0.85);font-size:13px;margin-bottom:14px">
+            <i class="fas fa-info-circle" style="color:#3b82f6"></i>
+            When an admin's MPIN hasn't been changed in <strong>N days</strong>, they'll automatically receive a notification asking them to rotate it. Run the check below or schedule it from your routine.
+          </p>
+          <div style="display:flex;gap:14px;align-items:end;flex-wrap:wrap;margin-bottom:14px">
+            <div style="flex:1;min-width:160px">
+              <label style="font-size:12px;color:var(--gray)">Reminder threshold (days)</label>
+              <input type="number" id="mpinReminderDays" class="form-control" min="1" max="365" value="30"/>
+            </div>
+            <button class="btn btn-primary" onclick="saveMpinReminderConfig()"><i class="fas fa-save"></i> Save</button>
+            <button class="btn btn-warning" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#000" onclick="runMpinReminderCheck()"><i class="fas fa-paper-plane"></i> Check & Notify Now</button>
+          </div>
+          <div id="mpinReminderMsg" class="alert"></div>
+          <div class="table-wrapper" style="margin-top:14px">
+            <table>
+              <thead><tr><th>Admin</th><th>Role</th><th>MPIN Last Changed</th><th>Days Old</th><th>Status</th></tr></thead>
+              <tbody id="mpinReminderBody"><tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">Click "Check & Notify Now" to scan.</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ USER CREDENTIALS ISSUANCE ============ -->
+      <div id="sec-userCredentials" class="page-section">
+        <div class="section-title"><i class="fas fa-id-card"></i> User Credentials — Issue Email & Password</div>
+        <div class="card" style="background:linear-gradient(135deg,rgba(34,197,94,0.06),rgba(34,197,94,0.02));border:1px solid rgba(34,197,94,0.25)">
+          <p style="color:rgba(255,255,255,0.85);font-size:13px;margin-bottom:14px">
+            <i class="fas fa-info-circle" style="color:#22c55e"></i>
+            Issue an official platform Email and Password to each promoted user. Records are kept here so you can see who got which credentials and who is still pending.
+          </p>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:14px;align-items:end">
+            <div><label style="font-size:12px;color:var(--gray)">Promoted User</label><select id="ucUserSelect" class="form-control"><option value="">-- Loading --</option></select></div>
+            <div><label style="font-size:12px;color:var(--gray)">Official Email</label><input type="email" id="ucEmail" class="form-control" placeholder="name@hospitalitycareers.in"/></div>
+            <div><label style="font-size:12px;color:var(--gray)">Password</label><input type="text" id="ucPassword" class="form-control" placeholder="set a strong password"/></div>
+            <button class="btn btn-primary" onclick="issueUserCredential()"><i class="fas fa-paper-plane"></i> Issue / Update</button>
+          </div>
+          <div id="ucMsg" class="alert"></div>
+          <div class="table-wrapper" style="margin-top:14px">
+            <table>
+              <thead><tr><th>Promoted User</th><th>Role</th><th>Issued Email</th><th>Password</th><th>Issued At</th><th>Action</th></tr></thead>
+              <tbody id="ucBody"><tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ REPORTS CENTER ============ -->
+      <div id="sec-reportsCenter" class="page-section">
+        <div class="section-title"><i class="fas fa-file-pdf"></i> Reports Center</div>
+        <div class="card">
+          <p style="color:rgba(255,255,255,0.85);font-size:13px;margin-bottom:14px">
+            Auto-generated reports per Group Chat. Owner can also trigger a one-click batch generation across <strong>all groups</strong> for daily, monthly, or yearly periods.
+          </p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+            <button class="btn btn-sm" style="background:#3b82f6;color:#fff" onclick="generateAllReports('daily')"><i class="fas fa-bolt"></i> Generate Daily — All Groups</button>
+            <button class="btn btn-sm" style="background:#a855f7;color:#fff" onclick="generateAllReports('monthly')"><i class="fas fa-calendar-alt"></i> Generate Monthly — All Groups</button>
+            <button class="btn btn-sm" style="background:#22c55e;color:#fff" onclick="generateAllReports('yearly')"><i class="fas fa-calendar"></i> Generate Yearly — All Groups</button>
+            <button class="btn btn-sm" onclick="loadReportsCenter()" style="background:rgba(255,255,255,0.08)"><i class="fas fa-sync"></i> Refresh</button>
+          </div>
+          <div id="reportsMsg" class="alert"></div>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>When</th><th>Group</th><th>Period</th><th>Messages</th><th>Members</th><th>Download</th></tr></thead>
+              <tbody id="reportsBody"><tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <div id="sec-auditLog" class="page-section">
         <div class="section-title"><i class="fas fa-history"></i> Change &amp; Modification Log</div>
         <div class="card">
@@ -1142,6 +1218,9 @@ function loadSectionData(name) {
     case 'previewCenter': loadPreviewCenter(); break;
     case 'previewLog': loadPreviewLog(); break;
     case 'delegationCfg': loadDelegationConfig(); break;
+    case 'mpinReminders': loadMpinReminderConfig(); break;
+    case 'userCredentials': loadUserCredentials(); break;
+    case 'reportsCenter': loadReportsCenter(); break;
     case 'auditLog': loadAuditLog(); break;
     case 'notifications': loadNotifications(); break;
     case 'feedbackRecords': loadFeedbackRecords(); break;
@@ -2575,10 +2654,17 @@ window.upgradePrice = async function() {
 // MPIN MANAGEMENT
 async function loadAdminMpinList() {
   try {
-    const snap = await getDocs(query(collection(db, 'users'), where('role','==','Admin')));
+    const snap = await getDocs(collection(db, 'users'));
+    const admins = snap.docs.filter(d => {
+      const x = d.data();
+      return x.role === 'Admin' || (x.adminRole && x.adminRole.trim() !== '');
+    });
     const sel = document.getElementById('adminMpinSelect');
-    if (snap.empty) { sel.innerHTML = '<option>No admins found</option>'; return; }
-    sel.innerHTML = '<option value="">-- Select Admin --</option>' + snap.docs.map(d => `<option value="${d.id}">${d.data().displayName||d.data().email}</option>`).join('');
+    if (!admins.length) { sel.innerHTML = '<option>No admins found</option>'; return; }
+    sel.innerHTML = '<option value="">-- Select Admin --</option>' + admins.map(d => {
+      const x = d.data();
+      return `<option value="${d.id}">${x.displayName||x.email} — ${x.adminRole||'Admin'}</option>`;
+    }).join('');
   } catch(e) {}
 }
 
@@ -2616,9 +2702,13 @@ window.loadMpinRecords = async function() {
   if (!tbody) return;
   tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
   try {
-    const adminsSnap = await getDocs(query(collection(db, 'users'), where('role','==','Admin')));
-    if (adminsSnap.empty) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">No admins found</td></tr>'; return; }
-    const rows = await Promise.all(adminsSnap.docs.map(async d => {
+    const allSnap = await getDocs(collection(db, 'users'));
+    const adminDocs = allSnap.docs.filter(d => {
+      const x = d.data();
+      return x.role === 'Admin' || (x.adminRole && x.adminRole.trim() !== '');
+    });
+    if (!adminDocs.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">No admins found</td></tr>'; return; }
+    const rows = await Promise.all(adminDocs.map(async d => {
       const a = d.data(); const adminId = d.id;
       let mpinSet = false, updatedAt = null;
       try { const mp = await getDoc(doc(db, 'mpins', adminId)); if (mp.exists()) { mpinSet = !!mp.data().mpin; updatedAt = mp.data().updatedAt; } } catch(_){}
@@ -3413,8 +3503,10 @@ window.loadPreviewCenter = async function() {
   const tbody = document.getElementById('previewCenterBody'); if (!tbody) return;
   tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px"><i class="fas fa-spinner fa-spin"></i></td></tr>';
   try {
-    const snap = await getDocs(query(collection(db, 'users'), where('role','==','Admin')));
-    __pcAdmins = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+    const snap = await getDocs(collection(db, 'users'));
+    __pcAdmins = snap.docs
+      .map(d => ({ id:d.id, ...d.data() }))
+      .filter(x => x.role === 'Admin' || (x.adminRole && x.adminRole.trim() !== ''));
     // Fetch last preview per admin
     const plSnap = await getDocs(collection(db, 'previewLog'));
     const lastByUid = {};
@@ -3548,6 +3640,202 @@ window.saveDelegationConfig = async function() {
   } catch(e) {
     el.textContent = 'Failed: ' + e.message; el.className = 'alert alert-danger show';
   }
+};
+
+// ============== PHASE 8: MPIN ROTATION REMINDERS ==============
+window.loadMpinReminderConfig = async function() {
+  try {
+    const s = await getDoc(doc(db, 'mpinReminderConfig', 'default'));
+    const days = s.exists() ? (s.data().days || 30) : 30;
+    const inp = document.getElementById('mpinReminderDays');
+    if (inp) inp.value = days;
+  } catch(_){}
+};
+
+window.saveMpinReminderConfig = async function() {
+  const days = parseInt(document.getElementById('mpinReminderDays').value, 10);
+  const el = document.getElementById('mpinReminderMsg');
+  if (!days || days < 1) { el.textContent = 'Enter a valid number of days.'; el.className = 'alert alert-danger show'; return; }
+  try {
+    await setDoc(doc(db, 'mpinReminderConfig', 'default'), { days, updatedAt: serverTimestamp() }, { merge: true });
+    el.textContent = `✓ Reminder threshold saved at ${days} days.`; el.className = 'alert alert-success show';
+  } catch(e) { el.textContent = 'Failed: ' + e.message; el.className = 'alert alert-danger show'; }
+};
+
+window.runMpinReminderCheck = async function() {
+  const days = parseInt(document.getElementById('mpinReminderDays').value, 10) || 30;
+  const tbody = document.getElementById('mpinReminderBody');
+  const el = document.getElementById('mpinReminderMsg');
+  el.textContent = ''; el.className = 'alert';
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px"><i class="fas fa-spinner fa-spin"></i> Scanning...</td></tr>';
+  try {
+    const allUsers = await getDocs(collection(db, 'users'));
+    const admins = allUsers.docs.filter(d => {
+      const x = d.data();
+      return x.role === 'Admin' || (x.adminRole && x.adminRole.trim() !== '');
+    });
+    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+    let notified = 0;
+    const rows = await Promise.all(admins.map(async (d) => {
+      const a = d.data(); const uid = d.id;
+      let updatedAt = null;
+      try { const mp = await getDoc(doc(db, 'mpins', uid)); if (mp.exists()) updatedAt = mp.data().updatedAt?.toMillis?.() || null; } catch(_){}
+      let status, daysOld = '—';
+      if (!updatedAt) { status = '<span class="badge badge-pending">⚠ No MPIN</span>'; }
+      else {
+        daysOld = Math.floor((Date.now() - updatedAt) / (24*60*60*1000));
+        if (updatedAt < cutoff) {
+          status = '<span class="badge badge-rejected">⏰ Overdue — Notified</span>';
+          // Send a notification doc to this admin
+          try {
+            await addDoc(collection(db, 'notifications'), {
+              userId: uid,
+              title: 'MPIN Rotation Reminder',
+              message: `Your MPIN was last changed ${daysOld} days ago. Please update it for security.`,
+              type: 'mpin_reminder',
+              read: false,
+              createdAt: serverTimestamp()
+            });
+            notified++;
+          } catch(_){}
+        } else {
+          status = '<span class="badge badge-approved">✓ Current</span>';
+        }
+      }
+      return `<tr>
+        <td><strong>${a.displayName||'N/A'}</strong><div style="font-size:10px;color:var(--gray)">${a.email||''}</div></td>
+        <td><span class="badge badge-pending">${a.adminRole||'Admin'}</span></td>
+        <td style="font-size:11px">${updatedAt ? new Date(updatedAt).toLocaleString() : '—'}</td>
+        <td>${daysOld}</td>
+        <td>${status}</td>
+      </tr>`;
+    }));
+    tbody.innerHTML = rows.join('') || '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">No admins found.</td></tr>';
+    el.textContent = `✓ Scan complete. ${notified} admin(s) notified to rotate their MPIN.`;
+    el.className = 'alert alert-success show';
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#ef4444">Error: ${e.message}</td></tr>`;
+  }
+};
+
+// ============== PHASE 8: USER CREDENTIALS (Email & Password) ==============
+window.loadUserCredentials = async function() {
+  const sel = document.getElementById('ucUserSelect');
+  const tbody = document.getElementById('ucBody');
+  if (!sel || !tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+  try {
+    const usersSnap = await getDocs(collection(db, 'users'));
+    const promoted = usersSnap.docs.filter(d => {
+      const x = d.data();
+      return x.role === 'Admin' || x.role === 'Prime' || (x.adminRole && x.adminRole.trim() !== '');
+    });
+    sel.innerHTML = '<option value="">-- Select User --</option>' + promoted.map(d => {
+      const x = d.data();
+      return `<option value="${d.id}" data-name="${(x.displayName||x.email||'').replace(/"/g,'&quot;')}" data-role="${x.adminRole||x.role||''}">${x.displayName||x.email} — ${x.adminRole||x.role||''}</option>`;
+    }).join('');
+
+    const credsSnap = await getDocs(collection(db, 'userCredentials'));
+    const credByUid = {}; credsSnap.docs.forEach(d => credByUid[d.id] = d.data());
+
+    const rows = promoted.map(d => {
+      const x = d.data(); const c = credByUid[d.id];
+      const issued = c ? `<span style="color:#22c55e">${c.email||'—'}</span>` : '<span class="badge badge-pending">Pending</span>';
+      const pwd = c ? `<code style="background:rgba(0,0,0,0.4);padding:2px 6px;border-radius:4px">${(c.password||'').replace(/[<>]/g,'')}</code>` : '—';
+      const when = c?.issuedAt?.toDate?.()?.toLocaleString() || '—';
+      return `<tr>
+        <td><strong>${x.displayName||'N/A'}</strong><div style="font-size:10px;color:var(--gray)">${x.email||''}</div></td>
+        <td><span class="badge badge-rejected">${x.adminRole||x.role||''}</span></td>
+        <td>${issued}</td>
+        <td>${pwd}</td>
+        <td style="font-size:11px">${when}</td>
+        <td>
+          ${c ? `<button class="btn btn-sm btn-danger" onclick="deleteUserCredential('${d.id}','${(x.displayName||x.email||'').replace(/'/g,'&#39;')}')"><i class="fas fa-trash"></i> Revoke</button>` : ''}
+        </td>
+      </tr>`;
+    }).join('');
+    tbody.innerHTML = rows || '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">No promoted users yet.</td></tr>';
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#ef4444">Error: ${e.message}</td></tr>`;
+  }
+};
+
+window.issueUserCredential = async function() {
+  const sel = document.getElementById('ucUserSelect');
+  const uid = sel.value;
+  const email = document.getElementById('ucEmail').value.trim();
+  const password = document.getElementById('ucPassword').value.trim();
+  const el = document.getElementById('ucMsg');
+  if (!uid) { el.textContent = 'Select a promoted user.'; el.className='alert alert-danger show'; return; }
+  if (!email || !password) { el.textContent = 'Email and password are required.'; el.className='alert alert-danger show'; return; }
+  const opt = sel.options[sel.selectedIndex];
+  const targetName = opt.dataset.name; const targetRole = opt.dataset.role;
+  try {
+    await setDoc(doc(db, 'userCredentials', uid), {
+      uid, email, password, role: targetRole, name: targetName,
+      issuedBy: auth.currentUser?.email || 'owner',
+      issuedAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+    // Notify the user
+    try {
+      await addDoc(collection(db, 'notifications'), {
+        userId: uid,
+        title: 'Official Credentials Issued',
+        message: `Your official platform email and password have been issued by the Owner. Please check with administration.`,
+        type: 'credential_issued',
+        read: false,
+        createdAt: serverTimestamp()
+      });
+    } catch(_){}
+    el.textContent = `✓ Credentials issued to ${targetName}.`; el.className='alert alert-success show';
+    document.getElementById('ucEmail').value=''; document.getElementById('ucPassword').value='';
+    loadUserCredentials();
+  } catch(e) { el.textContent = 'Failed: '+e.message; el.className='alert alert-danger show'; }
+};
+
+window.deleteUserCredential = async function(uid, name) {
+  if (!confirm(`Revoke credentials for ${name}?`)) return;
+  try { await fbDeleteDoc(doc(db, 'userCredentials', uid)); loadUserCredentials(); }
+  catch(e) { alert('Failed: '+e.message); }
+};
+
+// ============== PHASE 8: REPORTS CENTER ==============
+window.loadReportsCenter = async function() {
+  const tbody = document.getElementById('reportsBody'); if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+  try {
+    const snap = await getDocs(collection(db, 'chatReports'));
+    const list = snap.docs.map(d => ({ id:d.id, ...d.data() }))
+      .sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0));
+    if (!list.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">No reports yet. Click "Generate" to create one.</td></tr>'; return; }
+    tbody.innerHTML = list.map(r => `<tr>
+      <td style="font-size:11px">${r.createdAt?.toDate?.()?.toLocaleString()||'—'}</td>
+      <td>${(r.groupName||'').replace(/[<>]/g,'')}</td>
+      <td><span class="badge badge-pending">${r.period}</span></td>
+      <td>${r.totalMessages||0}</td>
+      <td>${r.memberCount||0}</td>
+      <td>${r.pdfUrl ? `<a href="${r.pdfUrl}" target="_blank" rel="noopener" class="btn btn-sm" style="background:#3b82f6;color:#fff"><i class="fas fa-download"></i> PDF</a>` : '—'}</td>
+    </tr>`).join('');
+  } catch(e) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#ef4444">Error: ${e.message}</td></tr>`; }
+};
+
+window.generateAllReports = async function(period) {
+  const el = document.getElementById('reportsMsg');
+  el.textContent = `Generating ${period} reports for all groups…`; el.className='alert alert-success show';
+  try {
+    if (!window.GroupChat) { const m = await import('./js/group-chat.js'); m.default.init({ user: auth.currentUser }); }
+    // Wait a moment for groups subscription
+    await new Promise(r => setTimeout(r, 800));
+    const groups = window.GroupChat.groups || [];
+    if (!groups.length) { el.textContent = 'No groups to report on.'; el.className='alert alert-danger show'; return; }
+    let ok = 0;
+    for (const g of groups) {
+      try { await window.GroupChat.generateReports(g.id, period); ok++; } catch(_){}
+    }
+    el.textContent = `✓ Generated ${ok}/${groups.length} ${period} reports.`;
+    loadReportsCenter();
+  } catch(e) { el.textContent = 'Failed: '+e.message; el.className='alert alert-danger show'; }
 };
 
 window.ch_deleteGroup = async function(id, name) {
