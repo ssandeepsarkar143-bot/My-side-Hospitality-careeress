@@ -86,6 +86,9 @@
       <div class="sidebar-item hidden" id="nav_managePromoted" onclick="showSection('managePromoted')"><i class="fas fa-user-shield"></i> Promoted Admins</div>
       <div class="sidebar-item hidden" id="nav_manageMpin" onclick="showSection('manageMpin')"><i class="fas fa-key"></i> Manage MPINs</div>
       <div class="sidebar-item hidden" id="nav_auditLog" onclick="showSection('auditLog')"><i class="fas fa-history"></i> Change Log</div>
+      <div class="sidebar-section">Communication</div>
+      <div class="sidebar-item" id="nav_chatbox" onclick="showSection('chatbox')"><i class="fas fa-comments"></i> Chatbox <span id="chatboxBadge" style="display:none;background:#ef4444;color:#fff;font-size:10px;padding:2px 7px;border-radius:10px;margin-left:6px">0</span></div>
+      <div class="sidebar-item hidden" id="nav_reportsCenter" onclick="showSection('reportsCenter')"><i class="fas fa-file-pdf"></i> Reports Center</div>
       <div class="sidebar-section">Job</div>
       <div class="sidebar-item" onclick="window.open('job-post-from.html','_self')"><i class="fas fa-plus-circle"></i> Add Job (Live)</div>
     </div>
@@ -252,6 +255,44 @@
           <div class="table-wrapper">
             <table><thead><tr><th>When</th><th>Who</th><th>Action</th><th>Target / Details</th><th>State</th></tr></thead>
             <tbody id="adAuditBody"><tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ CHATBOX (Inbox of Group Chats — for ALL promoted admins) ============ -->
+      <div id="sec-chatbox" class="page-section">
+        <div class="section-title" style="color:#e94560"><i class="fas fa-comments" style="-webkit-text-fill-color:#e94560"></i> Chatbox</div>
+        <div class="card" style="padding:0;overflow:hidden">
+          <div style="padding:14px 16px;border-bottom:1px solid rgba(233,69,96,0.18);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+            <div style="font-size:13px;color:rgba(255,255,255,0.85)"><i class="fas fa-info-circle" style="color:#e94560"></i> Group chats you are a member of. Click any conversation to reply.</div>
+            <button class="btn btn-sm" style="background:rgba(233,69,96,0.18);color:#e94560;border:1px solid rgba(233,69,96,0.3)" onclick="refreshChatboxInbox()"><i class="fas fa-sync"></i> Refresh</button>
+          </div>
+          <div id="chatboxInbox" style="min-height:340px"><div style="text-align:center;color:var(--gray);padding:40px"><i class="fas fa-spinner fa-spin"></i> Loading…</div></div>
+        </div>
+      </div>
+
+      <!-- ============ REPORTS CENTER (Branch Head / Op Mgr — generate location reports) ============ -->
+      <div id="sec-reportsCenter" class="page-section">
+        <div class="section-title" style="color:#e94560"><i class="fas fa-file-pdf" style="-webkit-text-fill-color:#e94560"></i> Reports Center — My Locations</div>
+        <div class="card">
+          <p style="color:rgba(255,255,255,0.85);font-size:13px;margin-bottom:14px"><i class="fas fa-info-circle" style="color:#e94560"></i> Generate one-click work activity reports for your allocated location(s). All actions (jobs approved, contacts handled, memberships verified, role changes, etc.) are auto-collected.</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+            <button class="btn btn-sm" style="background:#3b82f6;color:#fff" onclick="generateBranchReport('daily')"><i class="fas fa-bolt"></i> Today (Daily)</button>
+            <button class="btn btn-sm" style="background:#a855f7;color:#fff" onclick="generateBranchReport('monthly')"><i class="fas fa-calendar-alt"></i> This Month</button>
+            <button class="btn btn-sm" style="background:#22c55e;color:#fff" onclick="generateBranchReport('yearly')"><i class="fas fa-calendar"></i> This Year</button>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end;background:rgba(255,255,255,0.04);padding:12px;border-radius:10px;margin-bottom:14px">
+            <div style="flex:1;min-width:140px"><label style="font-size:12px;color:var(--gray)">From</label><input type="date" id="brFrom" class="form-control"/></div>
+            <div style="flex:1;min-width:140px"><label style="font-size:12px;color:var(--gray)">To</label><input type="date" id="brTo" class="form-control"/></div>
+            <button class="btn btn-sm" style="background:#e94560;color:#fff;height:42px" onclick="generateBranchReport('custom')"><i class="fas fa-file-export"></i> Generate Custom Report</button>
+          </div>
+          <div id="brStatus" style="font-size:12px;color:var(--gray);margin-bottom:10px"></div>
+          <div class="card-title" style="font-size:14px;color:#e94560;margin-bottom:10px"><i class="fas fa-history"></i> My Past Reports</div>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Generated</th><th>Period</th><th>Range</th><th>States</th><th>Total Actions</th><th>Download</th></tr></thead>
+              <tbody id="branchReportsBody"><tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">Loading…</td></tr></tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -424,6 +465,8 @@ function setupAuthority() {
   if (isOpMgr || isBranchHead) {
     document.getElementById('nav_managePromoted').classList.remove('hidden');
     if (isOpMgr) document.getElementById('nav_auditLog').classList.remove('hidden');
+    // Reports Center for Branch Head + Op Mgr
+    document.getElementById('nav_reportsCenter').classList.remove('hidden');
   }
   // User Control state filter
   setupUserControlFilter();
@@ -445,6 +488,8 @@ window.showSection = function(name) {
     case 'manageMpin': loadOtherMpinList(); loadMpinRecordsAdmin(); break;
     case 'auditLog': loadAdminAuditLog(); break;
     case 'resumeRecords': loadAdResumeRecords(); break;
+    case 'chatbox': refreshChatboxInbox(); break;
+    case 'reportsCenter': loadMyBranchReports(); break;
   }
 };
 
@@ -1194,6 +1239,271 @@ window.adDownloadResume = async function(docId) {
   }
   // Fallback — open print dialog
   window.adViewResume && (function(){ const r = __adRrCache.find(x=>x.id===docId); if(r){ adViewResume(JSON.stringify(r)); setTimeout(()=>{ try{ window.print(); }catch(_){} }, 800); } })();
+};
+
+// =================== CHATBOX (inbox view of group chats) ===================
+function escapeHtml(s){return String(s||'').replace(/[<>&"']/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":"&#39;"}[c]));}
+
+window.refreshChatboxInbox = async function() {
+  const box = document.getElementById('chatboxInbox');
+  if (!box) return;
+  // Ensure GroupChat is initialised
+  if (!window.GroupChat || !window.GroupChat.currentUser) {
+    try {
+      const m = await import('./js/group-chat.js');
+      m.default.init({ user: currentUser });
+      // wait briefly for first snapshot
+      await new Promise(r => setTimeout(r, 800));
+    } catch(e) {
+      box.innerHTML = '<div style="text-align:center;color:#ef4444;padding:40px"><i class="fas fa-exclamation-triangle"></i> Could not load chats: ' + escapeHtml(e.message) + '</div>';
+      return;
+    }
+  }
+  renderChatboxInboxNow();
+  // Auto re-render on group updates (poll every 4s while panel visible)
+  if (window.__chatboxPoll) clearInterval(window.__chatboxPoll);
+  window.__chatboxPoll = setInterval(() => {
+    const sec = document.getElementById('sec-chatbox');
+    if (!sec || !sec.classList.contains('active')) { clearInterval(window.__chatboxPoll); window.__chatboxPoll = null; return; }
+    renderChatboxInboxNow();
+  }, 4000);
+};
+
+function renderChatboxInboxNow() {
+  const box = document.getElementById('chatboxInbox');
+  if (!box) return;
+  const groups = (window.GroupChat?.groups) || [];
+  if (!groups.length) {
+    box.innerHTML = '<div style="text-align:center;color:var(--gray);padding:60px 20px"><i class="fas fa-inbox" style="font-size:42px;color:#444;display:block;margin-bottom:14px"></i><div style="font-size:14px;font-weight:600;color:rgba(255,255,255,0.85)">No group chats yet</div><div style="font-size:12px;margin-top:6px">When the Owner creates a group with you, conversations will appear here.</div></div>';
+    updateChatboxBadge(0);
+    return;
+  }
+  let unreadTotal = 0;
+  const lastSeenMap = window.GroupChat.lastSeenByGroup || {};
+  const myUid = window.GroupChat.currentUser?.uid;
+  const html = groups.map(g => {
+    const lastT = g.lastMessageAt?.toMillis?.() || 0;
+    const seen = lastSeenMap[g.id] || 0;
+    const unread = (lastT > seen && g.lastMessageBy !== myUid) ? 1 : 0;
+    if (unread) unreadTotal++;
+    const initials = (g.name || 'G').split(/\s+/).map(s=>s[0]||'').join('').slice(0,2).toUpperCase();
+    const time = g.lastMessageAt?.toDate?.()?.toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) || '';
+    const lastMsg = g.lastMessage || 'No messages yet';
+    const lastBy = g.lastMessageByName ? escapeHtml(g.lastMessageByName) + ': ' : '';
+    const onlineCount = (g.memberUids||[]).filter(uid => window.GroupChat.isOnline?.(uid)).length;
+    const dismissed = g.dismissedAt ? '<span style="color:#ef4444;font-size:10px;background:rgba(239,68,68,0.15);padding:2px 6px;border-radius:6px;margin-left:6px">Closed</span> ' : '';
+    return `<div onclick="openChatFromInbox('${g.id}')" style="padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.06);cursor:pointer;display:flex;gap:14px;align-items:center;transition:background .15s" onmouseover="this.style.background='rgba(233,69,96,0.06)'" onmouseout="this.style.background='transparent'">
+      <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#e94560,#b91c3c);color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;position:relative">${initials}${onlineCount>0?'<span style="position:absolute;bottom:2px;right:2px;width:11px;height:11px;background:#22c55e;border-radius:50%;border:2px solid #1a1a2e"></span>':''}</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <div style="color:#fff;font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${dismissed}${escapeHtml(g.name||'Group')} ${unread?'<span style="background:#ef4444;color:#fff;font-size:10px;padding:2px 7px;border-radius:10px;margin-left:4px">NEW</span>':''}</div>
+          <div style="font-size:11px;color:#888;flex-shrink:0">${time}</div>
+        </div>
+        <div style="font-size:12px;color:#aaa;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${lastBy}${escapeHtml(lastMsg).slice(0,90)}</div>
+        <div style="font-size:11px;color:#666;margin-top:3px"><i class="fas fa-users" style="font-size:10px"></i> ${(g.memberUids||[]).length} members · <span style="color:#22c55e">${onlineCount} online</span></div>
+      </div>
+    </div>`;
+  }).join('');
+  box.innerHTML = html;
+  updateChatboxBadge(unreadTotal);
+}
+
+function updateChatboxBadge(n) {
+  const b = document.getElementById('chatboxBadge');
+  if (!b) return;
+  if (n > 0) { b.style.display = 'inline-block'; b.textContent = n; }
+  else b.style.display = 'none';
+}
+
+window.openChatFromInbox = async function(groupId) {
+  if (!window.GroupChat) {
+    const m = await import('./js/group-chat.js');
+    m.default.init({ user: currentUser });
+  }
+  const panel = document.getElementById('gc-panel');
+  if (panel && !panel.classList.contains('open')) window.GroupChat.togglePanel();
+  window.GroupChat.openThread(groupId);
+};
+
+// Periodically check for unread chats so the sidebar badge updates even when not on Chatbox tab
+setInterval(() => {
+  if (!window.GroupChat?.groups) return;
+  const groups = window.GroupChat.groups;
+  const lastSeenMap = window.GroupChat.lastSeenByGroup || {};
+  const myUid = window.GroupChat.currentUser?.uid;
+  let unread = 0;
+  groups.forEach(g => {
+    const lastT = g.lastMessageAt?.toMillis?.() || 0;
+    const seen = lastSeenMap[g.id] || 0;
+    if (lastT > seen && g.lastMessageBy !== myUid) unread++;
+  });
+  updateChatboxBadge(unread);
+}, 5000);
+
+// =================== REPORTS CENTER (Branch Head / Op Mgr) ===================
+window.generateBranchReport = async function(period) {
+  const states = adminAllocatedStates();
+  const role = adminData?.adminRole || '';
+  const isOpMgr = role === 'Operations Manager';
+  if (!isOpMgr && (!states || !states.length)) {
+    alert('You have no allocated locations. Ask the Owner to assign states first.');
+    return;
+  }
+  const status = document.getElementById('brStatus');
+  const now = new Date();
+  let from, to = now;
+  if (period === 'daily') { from = new Date(now); from.setHours(0,0,0,0); }
+  else if (period === 'monthly') { from = new Date(now.getFullYear(), now.getMonth(), 1); }
+  else if (period === 'yearly') { from = new Date(now.getFullYear(), 0, 1); }
+  else if (period === 'custom') {
+    const fv = document.getElementById('brFrom').value;
+    const tv = document.getElementById('brTo').value;
+    if (!fv || !tv) { alert('Please pick both From and To dates.'); return; }
+    from = new Date(fv + 'T00:00:00');
+    to = new Date(tv + 'T23:59:59');
+  } else { return; }
+  if (status) status.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Collecting activity from your locations…';
+  try {
+    // Pull auditLog (broad), then filter by overlap of states
+    const [allAudit, allJobs, allReqs] = await Promise.all([
+      getDocs(query(collection(db, 'auditLog'), orderBy('at', 'desc'), limit(1500))),
+      getDocs(collection(db, 'jobPosts')),
+      getDocs(collection(db, 'requests'))
+    ]);
+    const inStates = (arr) => {
+      if (isOpMgr && (!states || !states.length)) return true;
+      if (!arr) return false;
+      const a = Array.isArray(arr) ? arr : [arr];
+      return a.some(x => states.includes(x));
+    };
+    const audit = allAudit.docs.map(d => ({ id: d.id, ...d.data() }))
+      .filter(a => {
+        const t = a.at?.toMillis?.() || a.at?.seconds * 1000 || 0;
+        if (t < from.getTime() || t > to.getTime()) return false;
+        return inStates(a.states) || (isOpMgr && (!a.states || !a.states.length));
+      });
+    const jobs = allJobs.docs.map(d => ({ id: d.id, ...d.data() }))
+      .filter(j => {
+        const t = j.approvedAt?.toMillis?.() || j.createdAt?.toMillis?.() || 0;
+        if (t < from.getTime() || t > to.getTime()) return false;
+        return inStates([j.state]);
+      });
+    const reqs = allReqs.docs.map(d => ({ id: d.id, ...d.data() }))
+      .filter(r => {
+        const t = r.approvedAt?.toMillis?.() || r.createdAt?.toMillis?.() || 0;
+        if (t < from.getTime() || t > to.getTime()) return false;
+        return inStates([r.state]) || inStates([r.location]) || (isOpMgr);
+      });
+    // Per-actor aggregation (from audit log)
+    const perActor = {};
+    audit.forEach(a => {
+      const k = a.byUid || 'unknown';
+      if (!perActor[k]) perActor[k] = { name: a.byName || 'Unknown', role: a.byRole || 'Admin', count: 0, actions: {} };
+      perActor[k].count++;
+      perActor[k].actions[a.action || 'Other'] = (perActor[k].actions[a.action || 'Other'] || 0) + 1;
+    });
+    // Per-state aggregation
+    const perState = {};
+    [...audit, ...jobs.map(j=>({states:[j.state],action:'Job Posted'})), ...reqs.map(r=>({states:[r.state||r.location],action:r.type||'Request'}))].forEach(x => {
+      const ss = Array.isArray(x.states) ? x.states : [x.states];
+      ss.filter(Boolean).forEach(s => { if (!perState[s]) perState[s] = 0; perState[s]++; });
+    });
+    const totalActions = audit.length + jobs.length + reqs.length;
+
+    // Build PDF
+    if (!window.jspdf) {
+      await new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
+    }
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF();
+    pdf.setFontSize(16); pdf.text(`Branch Activity Report — ${period.toUpperCase()}`, 14, 18);
+    pdf.setFontSize(10);
+    pdf.text(`Generated by: ${currentUser?.displayName || currentUser?.email || ''}  (${role})`, 14, 26);
+    pdf.text(`Locations: ${(states && states.length) ? states.join(', ') : 'All India'}`, 14, 32);
+    pdf.text(`Range: ${from.toLocaleString()} → ${to.toLocaleString()}`, 14, 38);
+    pdf.text(`Total actions: ${totalActions}  ·  Audit: ${audit.length}  ·  Jobs: ${jobs.length}  ·  Requests: ${reqs.length}`, 14, 44);
+    let y = 56;
+    pdf.setFontSize(12); pdf.text('Per-Member Activity', 14, y); y += 6;
+    pdf.setFontSize(9);
+    pdf.text('Name', 14, y); pdf.text('Role', 80, y); pdf.text('Actions', 140, y); pdf.text('Top Action', 165, y); y += 4;
+    pdf.line(14, y, 196, y); y += 5;
+    Object.values(perActor).sort((a,b)=>b.count-a.count).forEach(p => {
+      if (y > 280) { pdf.addPage(); y = 20; }
+      const top = Object.entries(p.actions).sort((a,b)=>b[1]-a[1])[0];
+      pdf.text(String(p.name).slice(0,32), 14, y);
+      pdf.text(String(p.role).slice(0,28), 80, y);
+      pdf.text(String(p.count), 140, y);
+      pdf.text(top ? `${top[0]} (${top[1]})`.slice(0,32) : '-', 165, y);
+      y += 5;
+    });
+    if (y > 250) { pdf.addPage(); y = 20; }
+    y += 8;
+    pdf.setFontSize(12); pdf.text('Per-State Activity', 14, y); y += 6;
+    pdf.setFontSize(9);
+    Object.entries(perState).sort((a,b)=>b[1]-a[1]).forEach(([s, c]) => {
+      if (y > 280) { pdf.addPage(); y = 20; }
+      pdf.text(String(s).slice(0,40), 14, y); pdf.text(String(c), 100, y); y += 5;
+    });
+    if (y > 240) { pdf.addPage(); y = 20; }
+    y += 8;
+    pdf.setFontSize(12); pdf.text('Action Timeline (latest 80)', 14, y); y += 6;
+    pdf.setFontSize(8);
+    audit.slice(0, 80).forEach(a => {
+      if (y > 285) { pdf.addPage(); y = 20; }
+      const t = a.at?.toDate?.()?.toLocaleString() || '';
+      const line = `${t.slice(0,16)}  ·  ${(a.byName||'').slice(0,18)}  ·  ${(a.action||'').slice(0,22)}  ·  ${(a.details||'').slice(0,40)}`;
+      pdf.text(line, 14, y); y += 4;
+    });
+
+    const blob = pdf.output('blob');
+    const dataUrl = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(blob); });
+
+    // Save record (data URL kept under 1MB; if larger, fall back to summary only)
+    const summary = {
+      period, from, to,
+      states: states || [],
+      generatedByUid: currentUser?.uid || '',
+      generatedByName: currentUser?.displayName || currentUser?.email || '',
+      generatedByRole: role,
+      totalActions, auditCount: audit.length, jobsCount: jobs.length, reqsCount: reqs.length,
+      perActor: Object.values(perActor).slice(0, 25),
+      perState: Object.entries(perState).map(([s,c])=>({state:s,count:c})).slice(0, 30),
+      pdfDataUrl: (dataUrl.length < 900000) ? dataUrl : '',
+      createdAt: serverTimestamp()
+    };
+    await addDoc(collection(db, 'branchReports'), summary);
+
+    // Trigger download immediately
+    const a = document.createElement('a');
+    a.href = dataUrl; a.download = `branch_report_${period}_${Date.now()}.pdf`; a.click();
+
+    if (status) status.innerHTML = `<span style="color:#22c55e"><i class="fas fa-check-circle"></i> Report generated — ${totalActions} actions captured. Saved & downloaded.</span>`;
+    showToast('Report generated successfully', 'success');
+    loadMyBranchReports();
+  } catch(e) {
+    console.error('Report failed:', e);
+    if (status) status.innerHTML = `<span style="color:#ef4444"><i class="fas fa-exclamation-circle"></i> Failed: ${escapeHtml(e.message)}</span>`;
+  }
+};
+
+window.loadMyBranchReports = async function() {
+  const tb = document.getElementById('branchReportsBody');
+  if (!tb) return;
+  try {
+    const snap = await getDocs(query(collection(db, 'branchReports'), where('generatedByUid', '==', currentUser.uid), orderBy('createdAt','desc'), limit(50)));
+    if (snap.empty) { tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">No reports yet. Generate one above.</td></tr>'; return; }
+    tb.innerHTML = snap.docs.map(d => {
+      const r = d.data();
+      const when = r.createdAt?.toDate?.()?.toLocaleString() || '';
+      const fromS = r.from?.toDate?.()?.toLocaleDateString() || '';
+      const toS = r.to?.toDate?.()?.toLocaleDateString() || '';
+      const states = (r.states||[]).join(', ') || 'All India';
+      const dl = r.pdfDataUrl ? `<a href="${r.pdfDataUrl}" download="report_${r.period}_${d.id}.pdf" class="btn btn-sm" style="background:#e94560;color:#fff"><i class="fas fa-download"></i> PDF</a>` : '<span style="color:#888;font-size:11px">No PDF</span>';
+      return `<tr><td style="font-size:12px">${when}</td><td><span class="badge badge-pending">${r.period||''}</span></td><td style="font-size:12px">${fromS} → ${toS}</td><td style="font-size:12px">${escapeHtml(states)}</td><td><strong>${r.totalActions||0}</strong></td><td>${dl}</td></tr>`;
+    }).join('');
+  } catch(e) {
+    tb.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#ef4444;padding:20px">Could not load: ${escapeHtml(e.message)}</td></tr>`;
+  }
 };
 
 </script>
