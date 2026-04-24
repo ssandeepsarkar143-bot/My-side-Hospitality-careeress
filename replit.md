@@ -244,7 +244,36 @@ Note: SSE streaming (`/api/chat-stream`) works in dev (Express). On Firebase Hos
 - `resume-builder.html` now loads `js/i18n.js` so the language switcher appears on it too.
 - `DEPLOY_GUIDE.md` (new) — step-by-step Firebase deploy: rules, Gemini secret, functions, hosting, rollback, common-issue table.
 
+### Phase 10 — Polish batch (Apr 2026)
+**Bug fixes:**
+- Admin Switch View `insertBefore` crash fixed in `setupUserControlFilter` (uses `tableWrap.parentNode`).
+- Op Mgr Branch Reports Firestore composite-index error eliminated: `loadMyBranchReports` queries by `uid` only, sorts client-side.
+- Promoted-admin authority not reflecting → added `onSnapshot` live sync on `users/{uid}` in admin-feed (`startLiveAdminDataSync`); sidebar nav re-renders instantly when Owner changes authorities/role/locations and a "access updated" toast fires.
+
+**UX upgrades:**
+- Owner-feed Location Comparison: replaced broken native `<select multiple>` with a pro checkbox dropdown driven by full INDIA_STATES list (Select All, search filter, persisted in `window.__lcSelectedLocs`).
+- Branch Reports: both Op-Mgr generator and Owner viewer now open a **preview overlay first** (red-gradient header, KPI cards, per-actor + per-state tables); PDF is built **only when Download PDF is clicked** — no auto-download.
+- Group Chat overhaul (`js/group-chat.js`):
+  - Floating panel + FAB are now **fully draggable**; position persisted to `localStorage`.
+  - Minimize button collapses panel to a draggable pill icon.
+  - Screenshot/file uploads now show **preview-before-send** (`_stagePendingImage` / `_cancelPendingImage`); upload to Storage runs only on Send.
+  - "Add Members" allowed for chat-admins (not only owner).
+  - Members list shows only **CEO** crown title (no extra ranks bleeding through).
+  - "Send Report" button removed from chat toolbar (reports live in Reports Center instead).
+
+**Full trilingual coverage (EN / HI / BN — every word):**
+- New server endpoint `POST /api/translate` in `server.js`: batches up to 80 strings to Gemini, returns same-order JSON array, in-memory LRU-style cache (5000-entry cap) so repeat strings are free.
+- New auto-translate engine in `js/i18n.js`:
+  - DOM TreeWalker collects every visible text node (skips `script`, `style`, `code`, `pre`, chat message bubbles, code editors, anything with `data-no-i18n`).
+  - Also translates `placeholder`, `title`, `aria-label` attributes.
+  - Filters out URLs, emails, pure numbers, single chars.
+  - Caches translations per-language in `localStorage` (`hc_tr_hi`, `hc_tr_bn`) so repeat visits are instant and offline-resilient.
+  - `MutationObserver` re-runs translation when dynamic content (job cards, chat panels, modals, tables) appears.
+  - Static `PUBLIC_TEXT` dictionary still preferred (overrides the auto translator) — auto only fills the gaps.
+  - Originals preserved in a `WeakMap` so switching back to English fully restores native text.
+- Language switcher button now also clears `__autoCache` so each language has its own cached map.
+- Required: `GEMINI_API_KEY` secret must be set (already done in this Repl + must be re-set in Firebase via `firebase functions:secrets:set GEMINI_API_KEY` for production — see Phase 9 deploy steps).
+
 ### Still pending (not blocking)
 - Mirror Activity Records / Freeze / Location-Compare sections to admin-feed (currently owner-only by design).
 - Add Edit/Freeze action buttons on Op Manager / Branch Head rows (currently shown on Admin rows only).
-- Expand `PUBLIC_TEXT` dictionary in `js/i18n.js` for any uncovered strings on public pages.
