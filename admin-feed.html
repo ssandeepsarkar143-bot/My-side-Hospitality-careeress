@@ -1072,10 +1072,11 @@ onAuthStateChanged(auth, async (user) => {
       document.getElementById('mpinScreen').style.display = 'block';
     }
   } catch(e) {
+    console.error('[admin-feed init]', e);
     document.getElementById('loader').style.display = 'none';
     document.getElementById('mpinScreen').style.display = 'block';
     const alertEl = document.getElementById('mpinAlert');
-    alertEl.textContent = '⚠️ Connection error. Please try again.';
+    alertEl.innerHTML = `⚠️ ${e?.message || 'Connection error'}. <a href="javascript:location.reload()" style="color:#fff;text-decoration:underline">Reload</a>`;
     alertEl.className = 'alert alert-danger show';
   }
 });

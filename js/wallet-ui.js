@@ -5,12 +5,27 @@
 
 import {
   doc, getDoc, setDoc, updateDoc, addDoc, collection, query, where,
-  getDocs, orderBy, limit, serverTimestamp, runTransaction, increment
+  getDocs, orderBy, limit, serverTimestamp, runTransaction, increment, onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 let REFERRAL_REWARD_POINTS = 10;
-async function loadReferralRewardConfig(db, getDoc, doc) {
+let _refRewardListenerStarted = false;
+async function loadReferralRewardConfig(db, _getDoc, _doc) {
   try { const s = await getDoc(doc(db,'settings','referral')); if (s.exists() && s.data().rewardPoints) REFERRAL_REWARD_POINTS = s.data().rewardPoints; } catch(_){}
+  // Phase 9 — realtime auto-sync: any change in settings/referral updates UI everywhere instantly
+  if (_refRewardListenerStarted) return;
+  _refRewardListenerStarted = true;
+  try {
+    onSnapshot(doc(db,'settings','referral'), (snap) => {
+      if (!snap.exists()) return;
+      const v = snap.data().rewardPoints;
+      if (v && v !== REFERRAL_REWARD_POINTS) {
+        REFERRAL_REWARD_POINTS = v;
+        document.querySelectorAll('.hcw-ref-pts').forEach(el => el.textContent = REFERRAL_REWARD_POINTS + ' HC points');
+        document.querySelectorAll('[data-ref-reward]').forEach(el => el.textContent = REFERRAL_REWARD_POINTS);
+      }
+    });
+  } catch(_){}
 }
 
 function makeReferralCode(uid) {

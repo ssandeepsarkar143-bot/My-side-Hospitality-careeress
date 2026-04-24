@@ -879,6 +879,9 @@
           <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:end">
             <div style="flex:1;min-width:140px"><label style="font-size:12px;color:var(--gray)">From</label><input type="date" id="lcFrom" class="form-control"/></div>
             <div style="flex:1;min-width:140px"><label style="font-size:12px;color:var(--gray)">To</label><input type="date" id="lcTo" class="form-control"/></div>
+            <div style="flex:1;min-width:160px"><label style="font-size:12px;color:var(--gray)">Filter Location(s)</label>
+              <select id="lcLocations" class="form-control" multiple size="1" style="height:42px"><option value="">All Locations</option></select>
+            </div>
             <div style="flex:1;min-width:140px"><label style="font-size:12px;color:var(--gray)">Group By</label>
               <select id="lcGroupBy" class="form-control"><option value="all">All-time totals</option><option value="day">Daily</option><option value="month">Monthly</option><option value="year">Yearly</option></select>
             </div>
@@ -2547,7 +2550,10 @@ window.createCouponBatch = async function() {
     }
   } catch(e) { return showCpnMsg('Failed to load users: '+e.message, 'error'); }
 
-  if (!users.length) return showCpnMsg('No users matched this target', 'error');
+  if (!users.length) {
+    const totalSnap = await getDocs(collection(db,'users')).catch(()=>({size:0}));
+    return showCpnMsg(`No users matched target "${target}". Database has ${totalSnap.size||0} total user(s). Try "All Registered Users" or check filter.`, 'error');
+  }
   if (!confirm(`Send this coupon to ${users.length} user(s)?`)) return;
 
   const expiresAt = new Date(); expiresAt.setDate(expiresAt.getDate() + expDays);
@@ -3453,6 +3459,12 @@ const _chDb = getFirestore(getApp());
 const _chStorage = getStorage(getApp());
 const auth = getAuth(getApp());
 const db = _chDb;
+// Phase 9 — alias renamed imports back to canonical names so shared functions work
+const updateDoc = fbUpdateDoc;
+const deleteDoc = fbDeleteDoc;
+// Live currentUser binding for cross-script-block code
+let currentUser = auth.currentUser;
+try { auth.onAuthStateChanged?.((u) => { currentUser = u; window.currentUser = u; }); } catch(_){}
 
 const CH_INDIAN_STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Andaman & Nicobar','Chandigarh','Dadra & Nagar Haveli','Daman & Diu','Delhi','Jammu & Kashmir','Ladakh','Lakshadweep','Puducherry'];
 
@@ -4338,14 +4350,29 @@ window.renderActivityRecords = function() {
 };
 
 // ===== LOCATION COMPARISON DASHBOARD =====
+async function _populateLocationFilter() {
+  const sel = document.getElementById('lcLocations'); if (!sel) return;
+  if (sel.options.length > 1) return;
+  try {
+    const [jobsSnap, usersSnap] = await Promise.all([getDocs(collection(db,'jobPosts')), getDocs(collection(db,'users'))]);
+    const set = new Set();
+    jobsSnap.forEach(d => { const j=d.data(); if (j.state) set.add(j.state); if (j.location) set.add(j.location); });
+    usersSnap.forEach(d => { const u=d.data(); (u.locations||[]).forEach(s => set.add(s)); });
+    [...set].sort().forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; sel.appendChild(o); });
+    sel.size = Math.min(6, sel.options.length);
+  } catch(_){}
+}
 window.loadLocationCompare = async function() {
   const tbody = document.getElementById('locationCompareBody');
   const status = document.getElementById('lcStatus');
   if (!tbody) return;
+  await _populateLocationFilter();
   status.textContent = '⏳ Building…';
   tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--gray);padding:20px"><i class="fas fa-spinner fa-spin"></i> Aggregating…</td></tr>';
   const fromV = document.getElementById('lcFrom')?.value || '';
   const toV = document.getElementById('lcTo')?.value || '';
+  const locSel = document.getElementById('lcLocations');
+  const selectedLocs = locSel ? [...locSel.selectedOptions].map(o => o.value).filter(Boolean) : [];
   const fromMs = fromV ? new Date(fromV+'T00:00:00').getTime() : 0;
   const toMs = toV ? new Date(toV+'T23:59:59').getTime() : Number.MAX_SAFE_INTEGER;
   try {
@@ -4356,7 +4383,8 @@ window.loadLocationCompare = async function() {
     ]);
     const buckets = {}; // state -> {jobs,contacts,resumeDl,memberships,hired}
     const inRange = (ts) => { const t = ts?.toMillis?.() || 0; return t >= fromMs && t <= toMs; };
-    const bump = (st, key) => { st = st || 'Unknown'; (buckets[st] ||= {jobs:0,contacts:0,resumeDl:0,memberships:0,hired:0})[key]++; };
+    const inLoc = (st) => !selectedLocs.length || selectedLocs.includes(st);
+    const bump = (st, key) => { st = st || 'Unknown'; if (!inLoc(st)) return; (buckets[st] ||= {jobs:0,contacts:0,resumeDl:0,memberships:0,hired:0})[key]++; };
     jobsSnap.docs.forEach(d => { const j=d.data(); if (j.status==='live' && inRange(j.approvedAt||j.createdAt)) bump(j.state||j.location, 'jobs'); });
     reqSnap.docs.forEach(d => {
       const r=d.data(); if (r.status!=='approved' || !inRange(r.approvedAt||r.createdAt)) return;
