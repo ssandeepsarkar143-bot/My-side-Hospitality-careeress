@@ -342,6 +342,72 @@ Rules: keep bullets action-oriented & quantified where possible; reflect hospita
   }
 });
 
+// ===== TRANSLATION (Gemini-powered, batch, cached server-side in-memory) =====
+const __TR_CACHE = new Map(); // key: lang|hashedText -> string
+const __TR_KEY = (lang, txt) => lang + '|' + (txt.length > 80 ? txt.slice(0,80)+'#'+txt.length : txt);
+app.post('/api/translate', async (req, res) => {
+  try {
+    const { texts = [], lang = 'en' } = req.body || {};
+    if (!Array.isArray(texts) || !texts.length) return res.json({ translations: [] });
+    if (texts.length > 80) return res.status(400).json({ error: 'Max 80 texts per batch' });
+    if (lang === 'en') return res.json({ translations: texts });
+    const langName = ({ hi: 'Hindi', bn: 'Bangla' })[lang];
+    if (!langName) return res.json({ translations: texts });
+    // Determine cache hits + misses
+    const result = new Array(texts.length);
+    const missIdx = [];
+    const missTexts = [];
+    texts.forEach((t, i) => {
+      if (typeof t !== 'string' || !t.trim()) { result[i] = t; return; }
+      const k = __TR_KEY(lang, t);
+      if (__TR_CACHE.has(k)) { result[i] = __TR_CACHE.get(k); }
+      else { missIdx.push(i); missTexts.push(t); }
+    });
+    if (!missTexts.length) return res.json({ translations: result, fromCache: true });
+    if (!GEMINI_API_KEY) {
+      // Fallback: echo originals
+      missIdx.forEach((idx, j) => { result[idx] = missTexts[j]; });
+      return res.json({ translations: result, fallback: true });
+    }
+    // Translate with Gemini (one call, JSON array out)
+    const prompt = `Translate the following UI strings to ${langName}. Preserve placeholders like {name}, %s, $\{var\}, line breaks, leading/trailing whitespace, emoji, numbers, brand names ("Hospitality Careers"), and HTML entities. Do NOT translate proper names (people, brands), code identifiers, URLs, or email addresses. Keep the same array length and ORDER. Respond with ONLY a JSON array of translated strings — no commentary, no markdown.
+
+Input JSON array:
+${JSON.stringify(missTexts)}`;
+    let translated = null;
+    try {
+      const out = await callGemini(
+        [{ role: 'user', parts: [{ text: prompt }] }],
+        'You are a precise translation engine. Output ONLY a valid JSON array of strings, same length and order as the input.',
+        { temperature: 0.1, maxOutputTokens: 4096, responseMimeType: 'application/json' }
+      );
+      let cleaned = out.replace(/^[\s\S]*?(\[)/, '$1').replace(/```/g, '').trim();
+      const lastBracket = cleaned.lastIndexOf(']');
+      if (lastBracket > 0) cleaned = cleaned.slice(0, lastBracket + 1);
+      const parsed = JSON.parse(cleaned);
+      if (Array.isArray(parsed) && parsed.length === missTexts.length) {
+        translated = parsed.map(x => typeof x === 'string' ? x : String(x ?? ''));
+      }
+    } catch (err) {
+      console.warn('translate fail:', err.message);
+    }
+    if (!translated) translated = missTexts; // last-resort fallback
+    missIdx.forEach((idx, j) => {
+      result[idx] = translated[j];
+      __TR_CACHE.set(__TR_KEY(lang, missTexts[j]), translated[j]);
+    });
+    // Cap cache memory
+    if (__TR_CACHE.size > 5000) {
+      const keys = [...__TR_CACHE.keys()].slice(0, 1000);
+      keys.forEach(k => __TR_CACHE.delete(k));
+    }
+    res.json({ translations: result });
+  } catch (e) {
+    console.error('translate err:', e.message);
+    res.status(500).json({ error: e.message, translations: req.body?.texts || [] });
+  }
+});
+
 app.get('/:page', (req, res, next) => {
   const { page } = req.params;
   if (!htmlPages.has(page)) return next();

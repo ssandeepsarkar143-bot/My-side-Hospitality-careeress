@@ -69,14 +69,26 @@ const GroupChat = {
       .gc-fab .gc-badge { position:absolute; top:-4px; right:-4px; background:#ef4444; color:#fff;
         font-size:10px; min-width:20px; height:20px; border-radius:10px; display:flex;
         align-items:center; justify-content:center; font-weight:700; padding:0 5px; }
+      .gc-fab.dragging { transition:none; cursor:grabbing; }
       .gc-panel { position:fixed; right:20px; bottom:90px; width:400px; max-width:calc(100vw - 32px);
         height:600px; max-height:calc(100vh - 120px); background:#13131f; border:1px solid rgba(212,175,55,0.3);
         border-radius:16px; box-shadow:0 12px 40px rgba(0,0,0,0.6); z-index:9999;
         display:none; flex-direction:column; overflow:hidden; }
       .gc-panel.open { display:flex; animation: gc-slide .25s ease-out; }
+      .gc-panel.dragging { transition:none; user-select:none; }
       @keyframes gc-slide { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
       .gc-head { padding:14px 16px; background:linear-gradient(135deg,#1a1a2e,#0f0f1a);
-        border-bottom:1px solid rgba(212,175,55,0.25); display:flex; align-items:center; gap:10px; }
+        border-bottom:1px solid rgba(212,175,55,0.25); display:flex; align-items:center; gap:10px; cursor:grab; }
+      .gc-head.gc-grab { cursor:grabbing; }
+      .gc-thread-head { cursor:grab; }
+      .gc-thread-head.gc-grab { cursor:grabbing; }
+      .gc-screenshot-preview { padding:10px 12px; background:rgba(212,175,55,0.08); border-top:1px solid rgba(212,175,55,0.25);
+        border-bottom:1px solid rgba(212,175,55,0.15); display:flex; gap:10px; align-items:center; }
+      .gc-screenshot-preview img { width:64px; height:64px; object-fit:cover; border-radius:8px; border:1px solid rgba(212,175,55,0.4); }
+      .gc-screenshot-preview .gc-sp-info { flex:1; font-size:11px; color:#d4af37; }
+      .gc-screenshot-preview .gc-sp-info b { color:#fff; display:block; font-size:12px; margin-bottom:2px; }
+      .gc-screenshot-preview button { background:rgba(239,68,68,0.18); color:#ef4444; border:1px solid rgba(239,68,68,0.4);
+        padding:6px 10px; border-radius:6px; font-size:11px; cursor:pointer; }
       .gc-head .gc-title { flex:1; font-weight:700; color:#d4af37; font-size:15px; }
       .gc-head button { background:transparent; border:none; color:#fff; cursor:pointer; font-size:18px;
         width:32px; height:32px; border-radius:8px; }
@@ -185,8 +197,9 @@ const GroupChat = {
     panel.id = 'gc-panel'; panel.className = 'gc-panel';
     panel.innerHTML = `
       <div id="gc-list-view">
-        <div class="gc-head">
+        <div class="gc-head" id="gc-list-head">
           <div class="gc-title"><i class="fas fa-users"></i> My Group Chats</div>
+          <button onclick="GroupChat.minimizePanel()" title="Minimize"><i class="fas fa-window-minimize" style="font-size:13px"></i></button>
           <button onclick="GroupChat.togglePanel()" title="Close">&times;</button>
         </div>
         <div class="gc-body"><div class="gc-grouplist" id="gc-grouplist">
@@ -194,18 +207,20 @@ const GroupChat = {
         </div></div>
       </div>
       <div id="gc-thread-view" style="display:none;flex-direction:column;height:100%">
-        <div class="gc-thread-head">
+        <div class="gc-thread-head" id="gc-thread-head">
           <button class="gc-back" onclick="GroupChat.closeThread()"><i class="fas fa-arrow-left"></i></button>
           <div style="flex:1;min-width:0">
             <div class="gc-thread-title" id="gc-thread-title">Group</div>
             <div class="gc-thread-sub" id="gc-thread-sub">—</div>
           </div>
+          <button onclick="GroupChat.minimizePanel()" title="Minimize"><i class="fas fa-window-minimize" style="font-size:13px"></i></button>
           <button onclick="GroupChat.togglePanel()" title="Close">&times;</button>
         </div>
         <div id="gc-meeting-bar"></div>
         <div class="gc-toolbar" id="gc-toolbar"></div>
         <div id="gc-thread-status"></div>
         <div class="gc-messages" id="gc-messages"></div>
+        <div id="gc-screenshot-preview-bar" style="display:none"></div>
         <div class="gc-input-bar" id="gc-input-bar">
           <button class="attach" onclick="GroupChat.pickFile()" title="Attach screenshot"><i class="fas fa-paperclip"></i></button>
           <input type="file" id="gc-file-input" accept="image/*" style="display:none" onchange="GroupChat.onFilePicked(event)"/>
@@ -219,12 +234,105 @@ const GroupChat = {
       </div>
     `;
     document.body.appendChild(panel);
+    // Restore saved position
+    this._restorePanelPos();
+    this._restoreFabPos();
+    // Wire up drag handlers
+    this._setupDrag(fab, null);
+    this._setupDrag(panel, '#gc-list-head, #gc-thread-head');
   },
 
   togglePanel() {
     const p = document.getElementById('gc-panel');
     p.classList.toggle('open');
     if (!p.classList.contains('open')) this.closeThread();
+  },
+
+  minimizePanel() {
+    const p = document.getElementById('gc-panel');
+    if (p) p.classList.remove('open');
+    // Don't close the thread — preserve the state so re-opening returns to the same place
+  },
+
+  // ---------------------- DRAGGABLE ----------------------
+  _setupDrag(el, handleSelector) {
+    if (!el) return;
+    let startX = 0, startY = 0, origLeft = 0, origTop = 0, dragging = false, moved = false;
+    const getHandle = (e) => {
+      if (!handleSelector) return el;
+      return e.target.closest(handleSelector);
+    };
+    const isInteractive = (target) => {
+      // Allow normal clicks on inner buttons / inputs / links
+      return target.closest('button, input, a, select, textarea');
+    };
+    const start = (e) => {
+      if (handleSelector) {
+        const h = getHandle(e); if (!h) return;
+      }
+      if (isInteractive(e.target)) return;
+      const touch = e.touches?.[0];
+      const cx = touch ? touch.clientX : e.clientX;
+      const cy = touch ? touch.clientY : e.clientY;
+      const r = el.getBoundingClientRect();
+      origLeft = r.left; origTop = r.top;
+      startX = cx; startY = cy;
+      dragging = true; moved = false;
+      el.classList.add('dragging');
+      document.addEventListener('mousemove', move); document.addEventListener('mouseup', stop);
+      document.addEventListener('touchmove', move, { passive: false }); document.addEventListener('touchend', stop);
+      e.preventDefault?.();
+    };
+    const move = (e) => {
+      if (!dragging) return;
+      const touch = e.touches?.[0];
+      const cx = touch ? touch.clientX : e.clientX;
+      const cy = touch ? touch.clientY : e.clientY;
+      const dx = cx - startX, dy = cy - startY;
+      if (Math.abs(dx) + Math.abs(dy) > 4) moved = true;
+      let nl = origLeft + dx, nt = origTop + dy;
+      const w = el.offsetWidth, h = el.offsetHeight;
+      const margin = 4;
+      nl = Math.max(margin, Math.min(window.innerWidth - w - margin, nl));
+      nt = Math.max(margin, Math.min(window.innerHeight - h - margin, nt));
+      el.style.left = nl + 'px'; el.style.top = nt + 'px';
+      el.style.right = 'auto'; el.style.bottom = 'auto';
+      e.preventDefault?.();
+    };
+    const stop = () => {
+      if (!dragging) return;
+      dragging = false;
+      el.classList.remove('dragging');
+      document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', stop);
+      document.removeEventListener('touchmove', move); document.removeEventListener('touchend', stop);
+      if (moved) {
+        try {
+          const key = el.id === 'gc-fab' ? 'hc_gc_fab_pos' : 'hc_gc_panel_pos';
+          localStorage.setItem(key, JSON.stringify({ left: el.style.left, top: el.style.top }));
+        } catch(_){}
+        // Suppress click that follows mouseup after drag
+        const block = (ev) => { ev.stopPropagation(); ev.preventDefault(); el.removeEventListener('click', block, true); };
+        el.addEventListener('click', block, true);
+        setTimeout(() => el.removeEventListener('click', block, true), 50);
+      }
+    };
+    el.addEventListener('mousedown', start);
+    el.addEventListener('touchstart', start, { passive: false });
+  },
+
+  _restorePanelPos() {
+    try {
+      const raw = localStorage.getItem('hc_gc_panel_pos'); if (!raw) return;
+      const p = JSON.parse(raw); const el = document.getElementById('gc-panel');
+      if (el && p?.left && p?.top) { el.style.left = p.left; el.style.top = p.top; el.style.right = 'auto'; el.style.bottom = 'auto'; }
+    } catch(_){}
+  },
+  _restoreFabPos() {
+    try {
+      const raw = localStorage.getItem('hc_gc_fab_pos'); if (!raw) return;
+      const p = JSON.parse(raw); const el = document.getElementById('gc-fab');
+      if (el && p?.left && p?.top) { el.style.left = p.left; el.style.top = p.top; el.style.right = 'auto'; el.style.bottom = 'auto'; }
+    } catch(_){}
   },
 
   // ---------------------- PRESENCE ----------------------
@@ -387,7 +495,6 @@ const GroupChat = {
       ${isChatAdmin ? `
         <button onclick="GroupChat.setMeetingLinkPrompt('${groupId}')"><i class="fas fa-video"></i> Set Meeting</button>
         <button onclick="GroupChat.openReminderModal('${groupId}')"><i class="fas fa-bell"></i> Reminder</button>
-        <button onclick="GroupChat.sendReportPrompt('${groupId}')"><i class="fas fa-file-pdf"></i> Send Report</button>
       ` : ''}
       <button onclick="GroupChat.showMembers('${groupId}')"><i class="fas fa-users"></i> Members</button>
       <button onclick="GroupChat.showReminders('${groupId}')"><i class="fas fa-list-ul"></i> Reminders</button>
@@ -509,8 +616,8 @@ const GroupChat = {
   // Get the friendly title for a member of a group
   // Owner of the group ⇒ "👑 CEO / Employer". Others use their adminRole / role.
   memberTitle(g, uid, userData) {
-    if (uid === g.ownerUid) return '👑 CEO / Employer';
-    if ((userData?.email || '').toLowerCase() === OWNER_EMAIL) return '👑 CEO / Employer';
+    if (uid === g.ownerUid) return '👑 CEO';
+    if ((userData?.email || '').toLowerCase() === OWNER_EMAIL) return '👑 CEO';
     return userData?.adminRole || userData?.role || 'Member';
   },
 
@@ -529,10 +636,11 @@ const GroupChat = {
     const isOwner = this.isOwner();
     const overlay = document.createElement('div');
     overlay.className = 'gc-readby-modal';
+    const canManage = isOwner || chatAdmins.includes(this.currentUser.uid);
     overlay.innerHTML = `<div class="gc-modal-card" style="max-width:520px">
       <h3><span><i class="fas fa-users"></i> ${memberUids.length} Members</span><button onclick="this.closest('.gc-readby-modal').remove()">&times;</button></h3>
       <div class="gc-modal-body">
-        ${isOwner ? `<div style="display:flex;gap:8px;margin-bottom:12px">
+        ${canManage ? `<div style="display:flex;gap:8px;margin-bottom:12px">
           <button class="btn btn-sm" style="background:#22c55e;color:#fff;flex:1" onclick="GroupChat.openManageMembers('${groupId}')"><i class="fas fa-user-plus"></i> Add / Remove Members</button>
         </div>` : ''}
         ${userDocs.map((d, i) => {
@@ -573,9 +681,11 @@ const GroupChat = {
     } catch(e) { alert('Could not update chat admin: ' + e.message); }
   },
 
-  // ----- Manage members modal (owner only): location/category filter to add/remove -----
+  // ----- Manage members modal (owner OR chat admin): location/category filter to add/remove -----
   async openManageMembers(groupId) {
-    if (!this.isOwner()) return;
+    const chatAdmins = await this.loadChatAdmins(groupId);
+    const isOwner = this.isOwner();
+    if (!isOwner && !chatAdmins.includes(this.currentUser.uid)) return;
     const g = this.groups.find(x => x.id === groupId); if (!g) return;
     document.querySelector('.gc-readby-modal')?.remove();
     const all = await getDocs(collection(db, 'users'));
@@ -669,7 +779,7 @@ const GroupChat = {
 
   async onFilePicked(ev) {
     const file = ev.target.files?.[0]; if (!file) return;
-    await this.uploadAndSend(file);
+    this._stagePendingImage(file);
     ev.target.value = '';
   },
 
@@ -678,9 +788,38 @@ const GroupChat = {
     for (const it of items) {
       if (it.type && it.type.startsWith('image/')) {
         const f = it.getAsFile();
-        if (f) { ev.preventDefault(); await this.uploadAndSend(f); return; }
+        if (f) { ev.preventDefault(); this._stagePendingImage(f); return; }
       }
     }
+  },
+
+  // Stage a pending screenshot — show preview above input, only upload when user presses Send
+  _stagePendingImage(file) {
+    if (this._pendingImage?.url) { try { URL.revokeObjectURL(this._pendingImage.url); } catch(_){} }
+    const url = URL.createObjectURL(file);
+    this._pendingImage = { file, url };
+    const bar = document.getElementById('gc-screenshot-preview-bar');
+    if (!bar) return;
+    bar.style.display = 'block';
+    const sizeKB = Math.round(file.size / 1024);
+    const fname = (file.name || 'screenshot.png').slice(0, 48);
+    bar.innerHTML = `<div class="gc-screenshot-preview">
+      <img src="${url}" alt="preview"/>
+      <div class="gc-sp-info"><b>${this.escape(fname)}</b>${sizeKB} KB · ready to send. Add a caption below or just hit send.</div>
+      <button onclick="GroupChat._cancelPendingImage()" title="Remove"><i class="fas fa-times"></i> Cancel</button>
+    </div>`;
+    // Update placeholder + send button hint
+    const inp = document.getElementById('gc-msg-input'); if (inp) inp.placeholder = 'Add an optional caption…';
+    const sendBtn = document.getElementById('gc-send-btn');
+    if (sendBtn) sendBtn.title = 'Send screenshot';
+  },
+
+  _cancelPendingImage() {
+    if (this._pendingImage?.url) { try { URL.revokeObjectURL(this._pendingImage.url); } catch(_){} }
+    this._pendingImage = null;
+    const bar = document.getElementById('gc-screenshot-preview-bar');
+    if (bar) { bar.style.display = 'none'; bar.innerHTML = ''; }
+    const inp = document.getElementById('gc-msg-input'); if (inp) inp.placeholder = 'Type a message… (use @ to mention)';
   },
 
   // Instant / optimistic upload: show the picture in the thread INSTANTLY using a local
@@ -738,39 +877,94 @@ const GroupChat = {
     })();
   },
 
-  // ---------------------- SEND TEXT MESSAGE ----------------------
+  // ---------------------- SEND TEXT MESSAGE (and/or staged screenshot) ----------------------
   async sendMessage() {
     const input = document.getElementById('gc-msg-input');
     const text = (input?.value || '').trim();
-    if (!text || !this.currentGroupId || !this.currentUser) return;
+    const pending = this._pendingImage;
+    if (!text && !pending) return;
+    if (!this.currentGroupId || !this.currentUser) return;
     const btn = document.getElementById('gc-send-btn');
     if (btn) btn.disabled = true;
     try {
       const u = this.currentUser;
       const myData = this.currentUserData || (await getDoc(doc(db,'users',u.uid))).data() || {};
-      // Extract @mentions
       const { uids: mentionUids, names: mentionNames } = await this.parseMentions(text, this.currentGroupId);
-      await addDoc(collection(db, 'connectGroups', this.currentGroupId, 'messages'), {
-        senderUid: u.uid,
-        senderName: myData.displayName || u.displayName || u.email || 'User',
-        senderRole: myData.adminRole || myData.role || 'User',
-        text: text.slice(0, 500),
-        mentionUids, mentionNames,
-        readBy: [u.uid],
-        at: serverTimestamp()
-      });
-      await updateDoc(doc(db, 'connectGroups', this.currentGroupId), {
-        lastMessage: text.slice(0, 100),
-        lastMessageAt: serverTimestamp(),
-        lastMessageBy: u.uid,
-        lastMessageByName: myData.displayName || u.email
-      });
-      input.value = '';
+      if (pending) {
+        // Upload + send image (with optional caption) — clear preview immediately for snappy UX
+        const fileToUpload = pending.file;
+        const captionText = text;
+        this._cancelPendingImage();
+        if (input) input.value = '';
+        await this._uploadStagedImage(fileToUpload, captionText, mentionUids, mentionNames, myData);
+      } else {
+        await addDoc(collection(db, 'connectGroups', this.currentGroupId, 'messages'), {
+          senderUid: u.uid,
+          senderName: myData.displayName || u.displayName || u.email || 'User',
+          senderRole: myData.adminRole || myData.role || 'User',
+          text: text.slice(0, 500),
+          mentionUids, mentionNames,
+          readBy: [u.uid],
+          at: serverTimestamp()
+        });
+        await updateDoc(doc(db, 'connectGroups', this.currentGroupId), {
+          lastMessage: text.slice(0, 100),
+          lastMessageAt: serverTimestamp(),
+          lastMessageBy: u.uid,
+          lastMessageByName: myData.displayName || u.email
+        });
+        input.value = '';
+      }
     } catch (e) {
       console.error('Send message failed:', e);
       alert('Could not send: ' + e.message);
     } finally {
       if (btn) btn.disabled = false;
+    }
+  },
+
+  // Upload staged image and post as message (called from sendMessage when a screenshot is staged)
+  async _uploadStagedImage(file, caption, mentionUids, mentionNames, myData) {
+    const u = this.currentUser; const groupId = this.currentGroupId;
+    const localUrl = URL.createObjectURL(file);
+    const tempId = 'gc-tmp-' + Date.now() + '-' + Math.random().toString(36).slice(2,6);
+    const box = document.getElementById('gc-messages');
+    if (box) {
+      const capHtml = caption ? `<div style="margin-bottom:4px">${this.escape(caption)}</div>` : '';
+      box.insertAdjacentHTML('beforeend', `<div class="gc-msg me" id="${tempId}">
+        ${capHtml}
+        <img src="${localUrl}" alt="uploading" style="max-width:240px;border-radius:10px;opacity:0.65"/>
+        <div class="gc-time"><span><i class="fas fa-spinner fa-spin"></i> uploading…</span></div>
+      </div>`);
+      box.scrollTop = box.scrollHeight;
+    }
+    try {
+      const path = `chatUploads/${groupId}/${Date.now()}_${Math.random().toString(36).slice(2,8)}_${file.name||'image.png'}`;
+      const r = sRef(storage, path);
+      await uploadBytes(r, file);
+      const url = await getDownloadURL(r);
+      await addDoc(collection(db, 'connectGroups', groupId, 'messages'), {
+        senderUid: u.uid,
+        senderName: myData.displayName || u.displayName || u.email,
+        senderRole: myData.adminRole || myData.role || 'User',
+        text: (caption || '').slice(0, 500),
+        mentionUids: mentionUids || [], mentionNames: mentionNames || [],
+        imageUrl: url,
+        readBy: [u.uid],
+        at: serverTimestamp()
+      });
+      await updateDoc(doc(db, 'connectGroups', groupId), {
+        lastMessage: caption ? caption.slice(0, 100) : '[image]',
+        lastMessageAt: serverTimestamp(),
+        lastMessageBy: u.uid,
+        lastMessageByName: myData.displayName || u.email
+      });
+      document.getElementById(tempId)?.remove();
+      try { URL.revokeObjectURL(localUrl); } catch(_){}
+    } catch(e) {
+      const t = document.getElementById(tempId);
+      if (t) t.innerHTML = `<div style="color:#ef4444;font-size:11px;padding:6px">❌ Upload failed: ${this.escape(e.message)}</div>`;
+      console.warn('image upload failed:', e);
     }
   },
 

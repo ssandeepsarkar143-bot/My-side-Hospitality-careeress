@@ -506,6 +506,181 @@ function applyPublicStaticTranslations() {
     const original = el.dataset.i18nOriginalPlaceholder;
     el.placeholder = lang === 'en' ? original : (PUBLIC_TEXT[original]?.[lang] || original);
   });
+  // After static dictionary pass, run auto-translation for everything else
+  scheduleAutoTranslate();
+}
+
+// ── AUTO-TRANSLATE ENGINE (DOM walker + Gemini-backed /api/translate) ──────
+// Caches translations in localStorage so repeat visits are instant.
+const __AUTO_SKIP_TAGS = new Set(['SCRIPT','STYLE','CODE','PRE','NOSCRIPT','TEXTAREA','INPUT','SELECT','OPTION','SVG','PATH','CANVAS']);
+const __AUTO_SKIP_CLASS_RX = /(?:^|\s)(no-i18n|gc-message|gc-msg-text|gc-input|chat-msg|hljs|monaco|cm-)/;
+const AUTO_LS_KEY = (l) => 'hc_tr_' + l;
+let __autoCache = null; // { [origText]: translated }
+let __autoTimer = null;
+let __autoInflight = false;
+let __autoObserver = null;
+const __autoOriginals = new WeakMap(); // textNode -> original text
+
+function loadAutoCache() {
+  if (__autoCache) return __autoCache;
+  try { __autoCache = JSON.parse(localStorage.getItem(AUTO_LS_KEY(lang)) || '{}'); }
+  catch(_) { __autoCache = {}; }
+  return __autoCache;
+}
+function persistAutoCache() {
+  try { localStorage.setItem(AUTO_LS_KEY(lang), JSON.stringify(__autoCache || {})); } catch(_) {}
+}
+function shouldSkipNode(n) {
+  let p = n.parentElement;
+  while (p) {
+    if (__AUTO_SKIP_TAGS.has(p.tagName)) return true;
+    if (p.hasAttribute && p.hasAttribute('data-no-i18n')) return true;
+    if (p.className && typeof p.className === 'string' && __AUTO_SKIP_CLASS_RX.test(p.className)) return true;
+    if (p === document.body) break;
+    p = p.parentElement;
+  }
+  return false;
+}
+function isTranslatableText(t) {
+  const s = (t || '').trim();
+  if (s.length < 2) return false;
+  // Skip pure numbers, URLs, emails, dates, currency-only
+  if (/^[\d\s.,:;%+\-/()*$₹€£¥]+$/.test(s)) return false;
+  if (/^(https?:|mailto:|tel:|www\.)/i.test(s)) return false;
+  if (/^[\w.+-]+@[\w-]+\.[\w.-]+$/.test(s)) return false;
+  // Must contain at least one letter
+  if (!/[A-Za-z\u0900-\u097F\u0980-\u09FF]/.test(s)) return false;
+  return true;
+}
+function collectAutoTextNodes() {
+  const out = [];
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+    acceptNode(n) {
+      if (shouldSkipNode(n)) return NodeFilter.FILTER_REJECT;
+      if (!isTranslatableText(n.textContent)) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+  while (walker.nextNode()) out.push(walker.currentNode);
+  return out;
+}
+function collectAutoAttrTargets() {
+  // placeholder, title, aria-label
+  const list = [];
+  const sel = '[placeholder],[title],[aria-label]';
+  document.querySelectorAll(sel).forEach(el => {
+    if (__AUTO_SKIP_TAGS.has(el.tagName) && el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA') return;
+    if (el.hasAttribute('data-no-i18n')) return;
+    ['placeholder','title','aria-label'].forEach(attr => {
+      if (!el.hasAttribute(attr)) return;
+      const v = el.getAttribute(attr);
+      if (!isTranslatableText(v)) return;
+      const dKey = '__i18nOrig_' + attr;
+      if (!el[dKey]) el[dKey] = v;
+      list.push({ el, attr, original: el[dKey] });
+    });
+  });
+  return list;
+}
+function applyAutoTranslations(map) {
+  // Text nodes
+  collectAutoTextNodes().forEach(node => {
+    let original = __autoOriginals.get(node);
+    if (!original) { original = node.textContent; __autoOriginals.set(node, original); }
+    const trimmed = original.replace(/\s+/g, ' ').trim();
+    if (!trimmed) return;
+    if (lang === 'en') {
+      if (node.textContent !== original) node.textContent = original;
+      return;
+    }
+    const tr = map[trimmed];
+    if (tr && tr !== trimmed) {
+      // preserve surrounding whitespace
+      node.textContent = original.replace(trimmed, tr);
+    }
+  });
+  // Attribute targets
+  collectAutoAttrTargets().forEach(({ el, attr, original }) => {
+    if (lang === 'en') { el.setAttribute(attr, original); return; }
+    const trimmed = original.replace(/\s+/g, ' ').trim();
+    const tr = map[trimmed];
+    if (tr && tr !== trimmed) el.setAttribute(attr, tr);
+  });
+}
+function scheduleAutoTranslate() {
+  clearTimeout(__autoTimer);
+  __autoTimer = setTimeout(runAutoTranslate, 250);
+}
+async function runAutoTranslate() {
+  if (lang === 'en') {
+    // Restore originals
+    applyAutoTranslations({});
+    return;
+  }
+  if (__autoInflight) { scheduleAutoTranslate(); return; }
+  loadAutoCache();
+  // Collect uniques
+  const uniq = new Set();
+  collectAutoTextNodes().forEach(n => {
+    let original = __autoOriginals.get(n);
+    if (!original) { original = n.textContent; __autoOriginals.set(n, original); }
+    const t = original.replace(/\s+/g, ' ').trim();
+    if (t) uniq.add(t);
+  });
+  collectAutoAttrTargets().forEach(({ original }) => {
+    const t = original.replace(/\s+/g, ' ').trim();
+    if (t) uniq.add(t);
+  });
+  // Filter out things already in static PUBLIC_TEXT (handled separately)
+  const needed = [...uniq].filter(s => {
+    if (PUBLIC_TEXT[s] && PUBLIC_TEXT[s][lang]) {
+      // copy to autoCache so applyAutoTranslations picks up if static walker missed
+      __autoCache[s] = PUBLIC_TEXT[s][lang];
+      return false;
+    }
+    return !(s in __autoCache);
+  });
+  // Apply what we already have
+  applyAutoTranslations(__autoCache);
+  if (!needed.length) return;
+  __autoInflight = true;
+  try {
+    // Batch in groups of 50
+    const BATCH = 50;
+    for (let i = 0; i < needed.length; i += BATCH) {
+      const slice = needed.slice(i, i + BATCH);
+      try {
+        const r = await fetch('/api/translate', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ texts: slice, lang })
+        });
+        if (!r.ok) throw new Error('translate http ' + r.status);
+        const j = await r.json();
+        if (Array.isArray(j.translations)) {
+          slice.forEach((src, k) => {
+            const tr = j.translations[k];
+            if (typeof tr === 'string' && tr) __autoCache[src] = tr;
+          });
+        }
+      } catch (err) { console.warn('translate batch err:', err.message); }
+    }
+    persistAutoCache();
+    applyAutoTranslations(__autoCache);
+  } finally { __autoInflight = false; }
+}
+function setupAutoMutationObserver() {
+  if (__autoObserver) return;
+  try {
+    __autoObserver = new MutationObserver(muts => {
+      let needs = false;
+      for (const m of muts) {
+        if (m.type === 'childList' && (m.addedNodes.length || m.removedNodes.length)) { needs = true; break; }
+        if (m.type === 'characterData') { needs = true; break; }
+      }
+      if (needs) scheduleAutoTranslate();
+    });
+    __autoObserver.observe(document.body, { childList: true, subtree: true, characterData: true });
+  } catch(e) { console.warn('mut obs failed:', e.message); }
 }
 
 // Build switcher widget
@@ -523,6 +698,7 @@ function buildSwitcher() {
     btn.addEventListener('click', () => {
       lang = l.code;
       localStorage.setItem('hc_ui_lang', lang);
+      __autoCache = null;
       applyTranslations();
       sw.querySelectorAll('button').forEach((b, i) => {
         b.style.background = LANGS[i].code === lang ? 'rgba(212,175,55,.18)' : 'none';
@@ -535,20 +711,25 @@ function buildSwitcher() {
 }
 
 // ── INIT ────────────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
+function bootI18n() {
   buildSwitcher();
   applyTranslations();
   setTimeout(applyTranslations, 1200);
-});
-
-// If DOM already loaded
-if (document.readyState !== 'loading') {
-  buildSwitcher();
-  applyTranslations();
-  setTimeout(applyTranslations, 1200);
+  setupAutoMutationObserver();
 }
+document.addEventListener('DOMContentLoaded', bootI18n);
+if (document.readyState !== 'loading') bootI18n();
 
 // Expose globally
-window.hcI18n = { t, applyTranslations, setLang: (code) => { lang = code; localStorage.setItem('hc_ui_lang', lang); applyTranslations(); } };
+window.hcI18n = {
+  t, applyTranslations,
+  setLang: (code) => {
+    lang = code;
+    localStorage.setItem('hc_ui_lang', lang);
+    __autoCache = null; // re-load per-lang cache
+    applyTranslations();
+  },
+  retranslate: () => scheduleAutoTranslate()
+};
 
 })();
