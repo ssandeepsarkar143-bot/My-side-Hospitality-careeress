@@ -156,6 +156,18 @@ const GroupChat = {
       @keyframes gc-slide-in { from { transform:translateX(120%); } to { transform:translateX(0); } }
       .gc-toast .gc-toast-title { font-weight:700; color:#d4af37; font-size:12px; margin-bottom:3px; }
       .gc-toast .gc-toast-body { font-size:12px; color:#ddd; }
+      .gc-mention { color:#3b82f6; font-weight:700; background:rgba(59,130,246,0.15); padding:1px 4px; border-radius:4px; }
+      .gc-msg.me .gc-mention { color:#0a0a14; background:rgba(0,0,0,0.15); }
+      .gc-msg.mention-me { border-left:3px solid #f59e0b; background:rgba(245,158,11,0.12); }
+      .gc-mention-pop { position:absolute; bottom:60px; left:14px; right:14px; max-height:180px; overflow-y:auto;
+        background:#1a1a2e; border:1px solid rgba(212,175,55,0.4); border-radius:10px; box-shadow:0 6px 20px rgba(0,0,0,0.5);
+        z-index:10002; }
+      .gc-mention-pop .gc-mention-row { padding:8px 12px; cursor:pointer; display:flex; align-items:center; gap:10px; font-size:13px; color:#fff; }
+      .gc-mention-pop .gc-mention-row:hover, .gc-mention-pop .gc-mention-row.active { background:rgba(212,175,55,0.18); }
+      .gc-mention-pop .gc-mention-row .gc-mini-avatar { width:26px; height:26px; font-size:11px; }
+      .gc-reminder-card { background:rgba(245,158,11,0.1); border-left:3px solid #f59e0b; border-radius:8px; padding:10px 12px; margin:6px 0; font-size:12px; color:#fff; }
+      .gc-reminder-card .gc-rmh { display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
+      .gc-reminder-card .gc-rmh b { color:#f59e0b; }
     `;
     document.head.appendChild(css);
   },
@@ -197,8 +209,10 @@ const GroupChat = {
         <div class="gc-input-bar" id="gc-input-bar">
           <button class="attach" onclick="GroupChat.pickFile()" title="Attach screenshot"><i class="fas fa-paperclip"></i></button>
           <input type="file" id="gc-file-input" accept="image/*" style="display:none" onchange="GroupChat.onFilePicked(event)"/>
-          <input type="text" id="gc-msg-input" placeholder="Type a message…" maxlength="500"
-            onkeypress="if(event.key==='Enter')GroupChat.sendMessage()"
+          <div id="gc-mention-pop" class="gc-mention-pop" style="display:none"></div>
+          <input type="text" id="gc-msg-input" placeholder="Type a message… (use @ to mention)" maxlength="500"
+            oninput="GroupChat.onInputChange(event)"
+            onkeydown="GroupChat.onInputKeyDown(event)"
             onpaste="GroupChat.onPaste(event)"/>
           <button onclick="GroupChat.sendMessage()" id="gc-send-btn" title="Send"><i class="fas fa-paper-plane"></i></button>
         </div>
@@ -363,16 +377,20 @@ const GroupChat = {
       </div>`;
     } else { meetBar.innerHTML = ''; }
 
-    // Toolbar (owner gets extras)
+    // Toolbar (owner + chat admins get meeting/reminder/report extras)
     const isOwner = this.isOwner();
+    const chatAdmins = await this.loadChatAdmins(groupId);
+    const isChatAdmin = chatAdmins.includes(this.currentUser.uid) || isOwner;
     const tb = document.getElementById('gc-toolbar');
     tb.innerHTML = `
       <span class="gc-online-count"><i class="fas fa-circle" style="font-size:8px"></i> ${onlineCount} online</span>
-      ${isOwner ? `
+      ${isChatAdmin ? `
         <button onclick="GroupChat.setMeetingLinkPrompt('${groupId}')"><i class="fas fa-video"></i> Set Meeting</button>
+        <button onclick="GroupChat.openReminderModal('${groupId}')"><i class="fas fa-bell"></i> Reminder</button>
         <button onclick="GroupChat.sendReportPrompt('${groupId}')"><i class="fas fa-file-pdf"></i> Send Report</button>
       ` : ''}
       <button onclick="GroupChat.showMembers('${groupId}')"><i class="fas fa-users"></i> Members</button>
+      <button onclick="GroupChat.showReminders('${groupId}')"><i class="fas fa-list-ul"></i> Reminders</button>
     `;
 
     const dismissedBar = document.getElementById('gc-thread-status');
@@ -411,16 +429,27 @@ const GroupChat = {
         return;
       }
       const memberCount = (this.groups.find(g => g.id === groupId)?.memberUids || []).length;
+      const myUid = this.currentUser?.uid;
       box.innerHTML = msgs.map(m => {
         if (m.system) return `<div class="gc-system">${this.escape(m.text || '')}</div>`;
-        const isMe = m.senderUid === this.currentUser?.uid;
+        if (m.reminder) {
+          const due = m.reminder.dueAt?.toDate?.()?.toLocaleString() || '';
+          const mentionList = (m.reminder.mentionNames || []).map(n => '@'+n).join(' ');
+          return `<div class="gc-reminder-card"><div class="gc-rmh"><b><i class="fas fa-bell"></i> Reminder</b><span>Due: ${this.escape(due)}</span></div>
+            <div>${this.escape(m.reminder.text||'')}</div>
+            ${mentionList ? `<div style="color:#3b82f6;margin-top:4px;font-size:11px">${this.escape(mentionList)}</div>` : ''}
+            <div style="font-size:10px;color:#888;margin-top:4px">By ${this.escape(m.reminder.byName||m.senderName||'')}</div>
+          </div>`;
+        }
+        const isMe = m.senderUid === myUid;
         const time = m.at?.toDate?.()?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || '';
         const readCount = (m.readBy || []).length;
         const tickColour = readCount >= memberCount ? '#3b82f6' : '#888';
         const tick = isMe ? `<span class="gc-tick" style="color:${tickColour}">✓✓ ${readCount}</span>` : '';
         const imgHtml = m.imageUrl ? `<img src="${this.escape(m.imageUrl)}" alt="image" onclick="window.open('${this.escape(m.imageUrl)}','_blank')"/>` : '';
-        const textHtml = m.text ? `<div>${this.escape(m.text)}</div>` : '';
-        return `<div class="gc-msg ${isMe ? 'me' : 'them'}" onclick="GroupChat.showReadBy('${groupId}','${m.id}')" title="Click to see who read">
+        const textHtml = m.text ? `<div>${this.renderTextWithMentions(m.text, m.mentionUids||[])}</div>` : '';
+        const mentionMe = (m.mentionUids||[]).includes(myUid) ? ' mention-me' : '';
+        return `<div class="gc-msg ${isMe ? 'me' : 'them'}${mentionMe}" onclick="GroupChat.showReadBy('${groupId}','${m.id}')" title="Click to see who read">
           ${isMe ? '' : `<div class="gc-sender">${this.escape(m.senderName || 'Unknown')}${m.senderRole ? ' · ' + this.escape(m.senderRole) : ''}</div>`}
           ${textHtml}${imgHtml}
           <div class="gc-time"><span>${time}</span>${tick}</div>
@@ -719,11 +748,14 @@ const GroupChat = {
     try {
       const u = this.currentUser;
       const myData = this.currentUserData || (await getDoc(doc(db,'users',u.uid))).data() || {};
+      // Extract @mentions
+      const { uids: mentionUids, names: mentionNames } = await this.parseMentions(text, this.currentGroupId);
       await addDoc(collection(db, 'connectGroups', this.currentGroupId, 'messages'), {
         senderUid: u.uid,
         senderName: myData.displayName || u.displayName || u.email || 'User',
         senderRole: myData.adminRole || myData.role || 'User',
         text: text.slice(0, 500),
+        mentionUids, mentionNames,
         readBy: [u.uid],
         at: serverTimestamp()
       });
@@ -904,6 +936,196 @@ const GroupChat = {
 
   async restoreGroup(groupId) {
     await updateDoc(doc(db, 'connectGroups', groupId), { dismissedAt: null });
+  },
+
+  // ---------------------- @MENTIONS ----------------------
+  async getGroupMembers(groupId) {
+    if (this._memberCache && this._memberCache.gid === groupId && (Date.now() - this._memberCache.t) < 30000) return this._memberCache.list;
+    const g = this.groups.find(x => x.id === groupId);
+    if (!g) return [];
+    const uids = g.memberUids || [];
+    const docs = await Promise.all(uids.map(uid => getDoc(doc(db, 'users', uid)).catch(() => null)));
+    const list = docs.map((d, i) => {
+      const x = d?.exists?.() ? d.data() : {};
+      return { uid: uids[i], name: x.displayName || x.email || uids[i].slice(0,8), email: x.email||'', role: x.adminRole || x.role || 'User' };
+    });
+    this._memberCache = { gid: groupId, t: Date.now(), list };
+    return list;
+  },
+
+  async parseMentions(text, groupId) {
+    const matches = [...text.matchAll(/@([A-Za-z0-9_.\-]{2,40})/g)];
+    if (!matches.length) return { uids: [], names: [] };
+    const members = await this.getGroupMembers(groupId);
+    const uids = []; const names = [];
+    matches.forEach(m => {
+      const tag = m[1].toLowerCase();
+      const hit = members.find(u => {
+        const n = (u.name||'').toLowerCase().replace(/\s+/g,'');
+        const e = (u.email||'').toLowerCase().split('@')[0];
+        return n.startsWith(tag) || e === tag || n === tag;
+      });
+      if (hit && !uids.includes(hit.uid)) { uids.push(hit.uid); names.push(hit.name); }
+    });
+    return { uids, names };
+  },
+
+  renderTextWithMentions(text, mentionUids) {
+    const safe = this.escape(text);
+    return safe.replace(/@([A-Za-z0-9_.\-]{2,40})/g, '<span class="gc-mention">@$1</span>');
+  },
+
+  async onInputChange(ev) {
+    const inp = ev.target;
+    const v = inp.value;
+    const caret = inp.selectionStart || v.length;
+    const before = v.slice(0, caret);
+    const m = before.match(/@([A-Za-z0-9_.\-]{0,40})$/);
+    const pop = document.getElementById('gc-mention-pop');
+    if (!m || !this.currentGroupId) { if (pop) pop.style.display = 'none'; this._mentionState = null; return; }
+    const q = m[1].toLowerCase();
+    const members = await this.getGroupMembers(this.currentGroupId);
+    const filtered = members.filter(u => {
+      if (u.uid === this.currentUser?.uid) return false;
+      if (!q) return true;
+      const n = (u.name||'').toLowerCase();
+      const e = (u.email||'').toLowerCase();
+      return n.includes(q) || e.includes(q);
+    }).slice(0, 8);
+    if (!filtered.length) { pop.style.display = 'none'; this._mentionState = null; return; }
+    this._mentionState = { start: caret - m[0].length, end: caret, list: filtered, idx: 0 };
+    pop.innerHTML = filtered.map((u, i) => {
+      const init = (u.name||'?').split(/\s+/).map(x=>x[0]||'').join('').slice(0,2).toUpperCase();
+      return `<div class="gc-mention-row ${i===0?'active':''}" data-idx="${i}" onclick="GroupChat.applyMention(${i})">
+        <div class="gc-mini-avatar" style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#d4af37,#b8941f);color:#0a0a14;display:flex;align-items:center;justify-content:center;font-weight:700">${init}</div>
+        <div style="flex:1"><div style="font-weight:600">${this.escape(u.name)}</div><div style="font-size:10px;color:#888">${this.escape(u.role||'')}</div></div>
+      </div>`;
+    }).join('');
+    pop.style.display = 'block';
+  },
+
+  onInputKeyDown(ev) {
+    const pop = document.getElementById('gc-mention-pop');
+    const open = pop && pop.style.display !== 'none' && this._mentionState;
+    if (open) {
+      if (ev.key === 'ArrowDown') { ev.preventDefault(); this._mentionState.idx = (this._mentionState.idx + 1) % this._mentionState.list.length; this._refreshMentionActive(); return; }
+      if (ev.key === 'ArrowUp')   { ev.preventDefault(); this._mentionState.idx = (this._mentionState.idx - 1 + this._mentionState.list.length) % this._mentionState.list.length; this._refreshMentionActive(); return; }
+      if (ev.key === 'Enter' || ev.key === 'Tab') { ev.preventDefault(); this.applyMention(this._mentionState.idx); return; }
+      if (ev.key === 'Escape') { pop.style.display = 'none'; this._mentionState = null; return; }
+    }
+    if (ev.key === 'Enter') { ev.preventDefault(); this.sendMessage(); }
+  },
+
+  _refreshMentionActive() {
+    const pop = document.getElementById('gc-mention-pop');
+    if (!pop) return;
+    pop.querySelectorAll('.gc-mention-row').forEach((el, i) => el.classList.toggle('active', i === this._mentionState.idx));
+  },
+
+  applyMention(idx) {
+    if (!this._mentionState) return;
+    const u = this._mentionState.list[idx];
+    if (!u) return;
+    const inp = document.getElementById('gc-msg-input');
+    const v = inp.value;
+    const tag = '@' + (u.name || '').replace(/\s+/g, '') + ' ';
+    inp.value = v.slice(0, this._mentionState.start) + tag + v.slice(this._mentionState.end);
+    const newPos = this._mentionState.start + tag.length;
+    inp.focus(); inp.setSelectionRange(newPos, newPos);
+    document.getElementById('gc-mention-pop').style.display = 'none';
+    this._mentionState = null;
+  },
+
+  // ---------------------- REMINDERS ----------------------
+  async openReminderModal(groupId) {
+    document.querySelectorAll('.gc-readby-modal').forEach(x => x.remove());
+    const members = await this.getGroupMembers(groupId);
+    const overlay = document.createElement('div');
+    overlay.className = 'gc-readby-modal';
+    overlay.innerHTML = `<div class="gc-readby-content" style="max-width:480px">
+      <h3><span><i class="fas fa-bell"></i> New Reminder</span><button onclick="this.closest('.gc-readby-modal').remove()">&times;</button></h3>
+      <div style="padding:14px;display:grid;gap:12px">
+        <div><label style="font-size:12px;color:#aaa">Reason / Description</label><textarea id="gc-rem-text" rows="3" placeholder="What is this reminder about?" style="width:100%;background:#1a1a2e;border:1px solid rgba(255,255,255,0.15);color:#fff;padding:8px;border-radius:6px;font-size:13px"></textarea></div>
+        <div><label style="font-size:12px;color:#aaa">Due Date &amp; Time</label><input type="datetime-local" id="gc-rem-due" style="width:100%;background:#1a1a2e;border:1px solid rgba(255,255,255,0.15);color:#fff;padding:8px;border-radius:6px;font-size:13px"/></div>
+        <div><label style="font-size:12px;color:#aaa">Mention Members (optional)</label>
+          <div id="gc-rem-mentions" style="max-height:160px;overflow-y:auto;border:1px solid rgba(255,255,255,0.12);border-radius:6px;padding:8px;background:#13131f">
+            ${members.map(u => `<label style="display:flex;align-items:center;gap:8px;padding:5px;font-size:13px;color:#fff;cursor:pointer">
+              <input type="checkbox" value="${u.uid}" data-name="${this.escape(u.name)}"/> ${this.escape(u.name)} <span style="color:#888;font-size:11px">· ${this.escape(u.role||'')}</span>
+            </label>`).join('')}
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+          <button class="btn btn-sm" onclick="this.closest('.gc-readby-modal').remove()" style="background:rgba(255,255,255,0.08);color:#fff;padding:8px 14px;border-radius:6px;border:none;cursor:pointer">Cancel</button>
+          <button class="btn btn-sm" onclick="GroupChat.postReminder('${groupId}')" style="background:#f59e0b;color:#0a0a14;padding:8px 14px;border-radius:6px;border:none;cursor:pointer;font-weight:700"><i class="fas fa-paper-plane"></i> Post Reminder</button>
+        </div>
+      </div>
+    </div>`;
+    document.body.appendChild(overlay);
+  },
+
+  async postReminder(groupId) {
+    const text = document.getElementById('gc-rem-text')?.value?.trim();
+    const due = document.getElementById('gc-rem-due')?.value;
+    if (!text) { alert('Please enter a reason for the reminder.'); return; }
+    if (!due) { alert('Please pick a due date and time.'); return; }
+    const dueDate = new Date(due);
+    const checks = document.querySelectorAll('#gc-rem-mentions input[type=checkbox]:checked');
+    const mentionUids = Array.from(checks).map(c => c.value);
+    const mentionNames = Array.from(checks).map(c => c.dataset.name);
+    try {
+      const u = this.currentUser;
+      const myData = this.currentUserData || {};
+      const myName = myData.displayName || u.displayName || u.email;
+      await addDoc(collection(db, 'connectGroups', groupId, 'messages'), {
+        senderUid: u.uid,
+        senderName: myName,
+        senderRole: myData.adminRole || myData.role || 'User',
+        reminder: { text: text.slice(0, 500), dueAt: dueDate, mentionUids, mentionNames, byName: myName, byUid: u.uid, createdAt: new Date() },
+        mentionUids,
+        mentionNames,
+        readBy: [u.uid],
+        at: serverTimestamp()
+      });
+      await updateDoc(doc(db, 'connectGroups', groupId), {
+        lastMessage: '🔔 Reminder: ' + text.slice(0, 80),
+        lastMessageAt: serverTimestamp(),
+        lastMessageBy: u.uid,
+        lastMessageByName: myName
+      });
+      document.querySelector('.gc-readby-modal')?.remove();
+    } catch(e) { alert('Failed to post reminder: ' + e.message); }
+  },
+
+  async showReminders(groupId) {
+    document.querySelectorAll('.gc-readby-modal').forEach(x => x.remove());
+    const overlay = document.createElement('div');
+    overlay.className = 'gc-readby-modal';
+    overlay.innerHTML = `<div class="gc-readby-content" style="max-width:540px">
+      <h3><span><i class="fas fa-list-ul"></i> All Reminders</span><button onclick="this.closest('.gc-readby-modal').remove()">&times;</button></h3>
+      <div id="gc-rem-list" style="padding:14px;max-height:60vh;overflow-y:auto"><div style="text-align:center;color:#888"><i class="fas fa-spinner fa-spin"></i> Loading…</div></div>
+    </div>`;
+    document.body.appendChild(overlay);
+    try {
+      const ms = await getDocs(query(collection(db, 'connectGroups', groupId, 'messages'), orderBy('at','desc'), limit(500)));
+      const reminders = ms.docs.map(d => ({ id: d.id, ...d.data() })).filter(m => m.reminder);
+      const box = document.getElementById('gc-rem-list');
+      if (!reminders.length) { box.innerHTML = '<div style="text-align:center;color:#888;padding:20px">No reminders yet.</div>'; return; }
+      const now = Date.now();
+      box.innerHTML = reminders.map(m => {
+        const due = m.reminder.dueAt?.toDate?.() || (m.reminder.dueAt instanceof Date ? m.reminder.dueAt : null);
+        const dueT = due ? due.getTime() : 0;
+        const overdue = dueT && dueT < now;
+        const mentionList = (m.reminder.mentionNames || []).map(n => '@'+n).join(' ');
+        return `<div class="gc-reminder-card" style="${overdue?'border-left-color:#ef4444':''}">
+          <div class="gc-rmh"><b><i class="fas fa-bell"></i> ${this.escape(m.reminder.byName||m.senderName||'')}</b>
+            <span style="${overdue?'color:#ef4444;font-weight:700':''}">${overdue?'OVERDUE · ':''}${due?due.toLocaleString():''}</span></div>
+          <div>${this.escape(m.reminder.text||'')}</div>
+          ${mentionList ? `<div style="color:#3b82f6;margin-top:4px;font-size:11px">${this.escape(mentionList)}</div>` : ''}
+        </div>`;
+      }).join('');
+    } catch(e) {
+      document.getElementById('gc-rem-list').innerHTML = `<div style="color:#ef4444;text-align:center;padding:20px">Failed: ${this.escape(e.message)}</div>`;
+    }
   }
 };
 

@@ -211,6 +211,13 @@ Port: 5000
 | 6 | Firebase deploy + i18n + Gemini Live mix | ✅ |
 | 7 | Promotion Delegation fix + Switch View admin filter broadened | ✅ |
 | 8 | MPIN Rotation Reminders, User Credentials issuance, Reports Center, Group Chat overhaul (presence, read-receipts, screenshot upload, meeting link, notifications, PDF reports) | ✅ |
+| 9 | Connect Hub overhaul v2 (admin Chatbox tab, @mentions autocomplete, Reminders, chat-admin meeting/reports/reminder access) + Branch Reports Center for Branch Heads / Operations Managers (daily/monthly/yearly + custom date PDFs viewable by Owner) | ✅ |
+
+### Phase 9 — New collections / paths
+- `branchReports/{id}` — Branch-Head / Op-Mgr PDF activity reports (period, from, to, states, generatedByUid/Name/Role, totalActions, perActor[], perState[], pdfDataUrl base64, createdAt). Owner viewer at `owner-feed.html#sec-reportsCenter` with filters by person/state/period; Branch-Head/Op-Mgr generators at `admin-feed.html#sec-reportsCenter`.
+- `connectGroups/{id}/messages/*.mentionUids[]` + `mentionNames[]` — @-mention list extracted from text or attached to a `reminder` message.
+- `connectGroups/{id}/messages/*.reminder` — `{ text, dueAt, mentionUids, mentionNames, byName, byUid, createdAt }`. Renders as orange reminder card; overdue items highlighted in viewer (`GroupChat.showReminders`).
+- Admin sidebar adds "Chatbox" + "Reports Center" (latter only for Operations Manager / Branch Head).
 
 ### Phase 8 — New collections / paths
 - `presence/{uid}` — heartbeat docs (lastSeen serverTimestamp; online window 90s)
