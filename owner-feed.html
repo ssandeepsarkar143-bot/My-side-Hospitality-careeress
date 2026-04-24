@@ -1179,6 +1179,8 @@ function showToast(msg, type='success') {
   t.className = `toast show ${type}`;
   setTimeout(() => t.classList.remove('show'), 4000);
 }
+// Expose to other module scripts
+window.showToast = showToast;
 
 window.closeModal = function(id) { document.getElementById(id).classList.remove('active'); };
 window.showLogout = function() { document.getElementById('logoutModal').classList.add('active'); };
@@ -1914,6 +1916,7 @@ async function loadAdminWorking() {
         <td style="text-align:center">${hiredCandidates.size}</td>
         <td>
           <button class="btn btn-sm" style="background:#3b82f6;color:#fff;margin-right:4px" onclick="switchAdminView('${adminId}','${(admin.displayName||admin.email||'').replace(/'/g,'&#39;')}')"><i class="fas fa-eye"></i> Switch View</button>
+          <button class="btn btn-sm" style="background:#a855f7;color:#fff;margin-right:4px" onclick="generateAdminReport('${adminId}','${(admin.displayName||admin.email||'').replace(/'/g,'&#39;')}')"><i class="fas fa-file-pdf"></i> Report</button>
           <button class="btn btn-sm btn-danger" onclick="demoteAdmin('${adminId}')"><i class="fas fa-user-minus"></i> Remove</button>
         </td>
       </tr>`;
@@ -3292,10 +3295,14 @@ window.saveSiteSettings = async function() {
 <script src="js/my-resumes.js"></script>
 <script type="module">
 // ============== CONNECT HUB LOGIC (Phase 4) ==============
-import { collection, doc, getDoc, getDocs, query, where, onSnapshot, deleteDoc as fbDeleteDoc, updateDoc as fbUpdateDoc, serverTimestamp as fbServerTimestamp, setDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { collection, doc, getDoc, getDocs, query, where, onSnapshot, deleteDoc as fbDeleteDoc, updateDoc as fbUpdateDoc, serverTimestamp as fbServerTimestamp, setDoc, addDoc, serverTimestamp, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 const _chDb = getFirestore(getApp());
+const _chStorage = getStorage(getApp());
+const auth = getAuth(getApp());
 const db = _chDb;
 
 const CH_INDIAN_STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Andaman & Nicobar','Chandigarh','Dadra & Nagar Haveli','Daman & Diu','Delhi','Jammu & Kashmir','Ladakh','Lakshadweep','Puducherry'];
@@ -3607,10 +3614,21 @@ window.loadDelegationConfig = async function() {
     opManager: { label: 'Operations Manager', icon: 'fa-user-shield', color: '#a855f7', allowedMax: ['Branch Head','Admin','Team Leader','Accountant','Recruiter','Support Executive','Marketing Manager'] },
     branchHead: { label: 'Branch Head', icon: 'fa-user-tie', color: '#3b82f6', allowedMax: ['Team Leader','Admin','Accountant','Recruiter','Support Executive','Marketing Manager'] }
   };
-  box.innerHTML = Object.entries(tiers).map(([key, t]) => {
+  box.innerHTML = `
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,0.08)">
+      <button class="btn btn-sm" style="background:#22c55e;color:#fff" onclick="delegationBulk('all')"><i class="fas fa-check-double"></i> Select All (Both Tiers)</button>
+      <button class="btn btn-sm" style="background:#ef4444;color:#fff" onclick="delegationBulk('clear')"><i class="fas fa-times"></i> Clear All</button>
+    </div>
+  ` + Object.entries(tiers).map(([key, t]) => {
     const c = cfg[key] || { roles: [], auths: [] };
     return `<div style="background:rgba(255,255,255,0.04);border:1px solid ${t.color}55;border-radius:14px;padding:16px">
-      <div style="font-weight:700;font-size:15px;color:${t.color};margin-bottom:12px"><i class="fas ${t.icon}"></i> ${t.label} — Promotion Powers</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div style="font-weight:700;font-size:15px;color:${t.color}"><i class="fas ${t.icon}"></i> ${t.label} — Promotion Powers</div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm" style="background:rgba(34,197,94,0.18);color:#22c55e;border:1px solid #22c55e55" onclick="delegationBulk('selectTier','${key}')"><i class="fas fa-check"></i> Select All</button>
+          <button class="btn btn-sm" style="background:rgba(239,68,68,0.18);color:#ef4444;border:1px solid #ef444455" onclick="delegationBulk('clearTier','${key}')"><i class="fas fa-eraser"></i> Clear</button>
+        </div>
+      </div>
       <div style="font-size:12px;color:var(--gray);margin-bottom:8px">Allowed Roles to Promote:</div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
         ${t.allowedMax.map(r => `<label style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.05);padding:5px 10px;border-radius:18px;cursor:pointer;font-size:12px"><input type="checkbox" data-tier="${key}" data-kind="role" value="${r}" ${c.roles?.includes(r)?'checked':''}/> ${r}</label>`).join('')}
@@ -3621,6 +3639,15 @@ window.loadDelegationConfig = async function() {
       </div>
     </div>`;
   }).join('');
+};
+
+window.delegationBulk = function(action, tier) {
+  const sel = tier
+    ? `#delegationCfgBox input[type="checkbox"][data-tier="${tier}"]`
+    : `#delegationCfgBox input[type="checkbox"]`;
+  const checked = (action === 'all' || action === 'selectTier');
+  document.querySelectorAll(sel).forEach(cb => { cb.checked = checked; });
+  if (window.showToast) window.showToast(checked ? 'All options selected.' : 'All options cleared.');
 };
 
 window.saveDelegationConfig = async function() {
@@ -3798,6 +3825,111 @@ window.deleteUserCredential = async function(uid, name) {
   if (!confirm(`Revoke credentials for ${name}?`)) return;
   try { await fbDeleteDoc(doc(db, 'userCredentials', uid)); loadUserCredentials(); }
   catch(e) { alert('Failed: '+e.message); }
+};
+
+// ============== PHASE 8: PER-ADMIN ONE-CLICK REPORT ==============
+window.generateAdminReport = async function(adminUid, adminName) {
+  const t = window.showToast || alert;
+  t(`Generating report for ${adminName}…`);
+  try {
+    // Pull admin's profile + activity
+    const [userSnap, jobsApproved, contactApproved, resumeApproved, membershipApproved, hired,
+           credSnap, mpinSnap, presenceSnap, groupsSnap, reportsSnap] = await Promise.all([
+      getDoc(doc(db, 'users', adminUid)),
+      getDocs(query(collection(db, 'jobPosts'), where('approvedBy','==',adminUid))),
+      getDocs(query(collection(db, 'requests'), where('approvedBy','==',adminUid), where('type','==','contact'))),
+      getDocs(query(collection(db, 'requests'), where('approvedBy','==',adminUid), where('type','==','resumeDownload'))),
+      getDocs(query(collection(db, 'requests'), where('approvedBy','==',adminUid), where('type','==','membership'))),
+      getDocs(query(collection(db, 'applications'), where('hiredBy','==',adminUid))),
+      getDoc(doc(db, 'userCredentials', adminUid)).catch(() => null),
+      getDoc(doc(db, 'mpins', adminUid)).catch(() => null),
+      getDoc(doc(db, 'presence', adminUid)).catch(() => null),
+      getDocs(query(collection(db, 'connectGroups'), where('memberUids', 'array-contains', adminUid))),
+      getDocs(collection(db, 'chatReports'))
+    ]);
+
+    const u = userSnap.exists() ? userSnap.data() : {};
+    const groups = groupsSnap.docs.map(d => ({ id:d.id, ...d.data() }));
+
+    // Aggregate chat activity across groups (sample latest 200 per group)
+    let totalSent = 0, totalSeen = 0, totalGroups = groups.length;
+    const perGroup = [];
+    for (const g of groups) {
+      try {
+        const ms = await getDocs(query(collection(db, 'connectGroups', g.id, 'messages'), orderBy('at','desc'), limit(300)));
+        const sent = ms.docs.filter(d => d.data().senderUid === adminUid).length;
+        const seen = ms.docs.filter(d => (d.data().readBy||[]).includes(adminUid)).length;
+        totalSent += sent; totalSeen += seen;
+        perGroup.push({ name: g.name||'Group', sent, seen, members: (g.memberUids||[]).length });
+      } catch(_){}
+    }
+
+    // Lazy-load jsPDF
+    if (!window.jspdf) {
+      await new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
+    }
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF();
+    let y = 18;
+    pdf.setFontSize(18); pdf.text('Hospitality Careers — Promoted User Report', 14, y); y += 8;
+    pdf.setFontSize(10); pdf.text(`Generated: ${new Date().toLocaleString()}`, 14, y); y += 10;
+
+    pdf.setFontSize(13); pdf.text('Profile', 14, y); y += 6;
+    pdf.setFontSize(10);
+    pdf.text(`Name: ${u.displayName || adminName}`, 14, y); y+=5;
+    pdf.text(`Email: ${u.email || '—'}`, 14, y); y+=5;
+    pdf.text(`Role: ${u.adminRole || u.role || 'Admin'}`, 14, y); y+=5;
+    pdf.text(`State(s): ${(u.adminStates||u.state||[]).toString() || 'All India'}`, 14, y); y+=5;
+    pdf.text(`Issued Email: ${credSnap?.exists?.() ? credSnap.data().email : '— not yet issued —'}`, 14, y); y+=5;
+    pdf.text(`MPIN status: ${mpinSnap?.exists?.() && mpinSnap.data().mpin ? 'Set ('+(mpinSnap.data().updatedAt?.toDate?.()?.toLocaleDateString()||'?')+')' : 'NOT SET'}`, 14, y); y+=5;
+    const lastSeen = presenceSnap?.exists?.() ? presenceSnap.data().lastSeen?.toDate?.()?.toLocaleString() : '—';
+    pdf.text(`Last seen: ${lastSeen}`, 14, y); y+=8;
+
+    pdf.setFontSize(13); pdf.text('Operational Activity', 14, y); y += 6;
+    pdf.setFontSize(10);
+    pdf.text(`Job posts approved: ${jobsApproved.size}`, 14, y); y+=5;
+    pdf.text(`Contact requests approved: ${contactApproved.size}`, 14, y); y+=5;
+    pdf.text(`Resume requests approved: ${resumeApproved.size}`, 14, y); y+=5;
+    pdf.text(`Memberships approved: ${membershipApproved.size}`, 14, y); y+=5;
+    pdf.text(`Candidates hired: ${hired.size}`, 14, y); y+=8;
+
+    pdf.setFontSize(13); pdf.text('Connect Hub Activity', 14, y); y += 6;
+    pdf.setFontSize(10);
+    pdf.text(`Groups: ${totalGroups}  ·  Messages sent: ${totalSent}  ·  Messages seen: ${totalSeen}`, 14, y); y += 7;
+    if (perGroup.length) {
+      pdf.text('Group', 14, y); pdf.text('Members', 110, y); pdf.text('Sent', 145, y); pdf.text('Seen', 175, y); y += 4;
+      pdf.line(14, y, 196, y); y += 5;
+      perGroup.sort((a,b)=>b.sent-a.sent).forEach(p => {
+        if (y > 280) { pdf.addPage(); y = 20; }
+        pdf.text(String(p.name).slice(0,40), 14, y);
+        pdf.text(String(p.members), 110, y);
+        pdf.text(String(p.sent), 145, y);
+        pdf.text(String(p.seen), 175, y);
+        y += 5;
+      });
+    }
+
+    // Upload + record
+    const blob = pdf.output('blob');
+    const path = `chatReports/admin_${adminUid}_${Date.now()}.pdf`;
+    const r = sRef(_chStorage, path);
+    await uploadBytes(r, blob);
+    const url = await getDownloadURL(r);
+    await addDoc(collection(db, 'chatReports'), {
+      kind: 'admin', adminUid, adminName: u.displayName||adminName, adminRole: u.adminRole||u.role||'Admin',
+      groupId: '_admin', groupName: `[Admin Report] ${u.displayName||adminName}`, period: 'lifetime',
+      generatedBy: auth.currentUser?.uid, generatedByName: auth.currentUser?.email,
+      totalMessages: totalSent, memberCount: totalGroups,
+      jobsApproved: jobsApproved.size, contactApproved: contactApproved.size,
+      resumeApproved: resumeApproved.size, membershipApproved: membershipApproved.size, hired: hired.size,
+      pdfUrl: url, createdAt: serverTimestamp()
+    });
+    const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.click();
+    t(`✓ Report ready for ${adminName}`);
+  } catch(e) {
+    console.error('Admin report failed', e);
+    t('Report failed: ' + e.message, 'error');
+  }
 };
 
 // ============== PHASE 8: REPORTS CENTER ==============
