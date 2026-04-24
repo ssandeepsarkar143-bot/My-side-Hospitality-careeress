@@ -82,6 +82,7 @@
       <div class="sidebar-item hidden" id="nav_jobRequests" onclick="showSection('jobRequests')"><i class="fas fa-inbox"></i> Job Post Requests</div>
       <div class="sidebar-item hidden" id="nav_jobList" onclick="showSection('jobList')"><i class="fas fa-list"></i> Manage Jobs</div>
       <div class="sidebar-section hidden" id="nav_management_header">Management (Ops/Branch Head)</div>
+      <div class="sidebar-item hidden" id="nav_resumeRecords" onclick="showSection('resumeRecords')"><i class="fas fa-file-alt"></i> AI Resume Records</div>
       <div class="sidebar-item hidden" id="nav_managePromoted" onclick="showSection('managePromoted')"><i class="fas fa-user-shield"></i> Promoted Admins</div>
       <div class="sidebar-item hidden" id="nav_manageMpin" onclick="showSection('manageMpin')"><i class="fas fa-key"></i> Manage MPINs</div>
       <div class="sidebar-item hidden" id="nav_auditLog" onclick="showSection('auditLog')"><i class="fas fa-history"></i> Change Log</div>
@@ -174,6 +175,21 @@
         <div class="table-wrapper">
           <table><thead><tr><th>Position</th><th>Company</th><th>Location</th><th>Status</th><th>Action</th></tr></thead>
           <tbody id="admin_jobListBody"></tbody></table>
+        </div>
+      </div>
+
+      <!-- AI RESUME RECORDS (gated) -->
+      <div id="sec-resumeRecords" class="page-section">
+        <div class="section-title" style="color:#e94560"><i class="fas fa-file-alt" style="-webkit-text-fill-color:#e94560"></i> AI Resume Builder Records</div>
+        <div class="card">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:end">
+            <div style="flex:1;min-width:180px"><label style="font-size:12px;color:var(--gray)">Search by name / email</label><input id="adRrSearch" class="form-control" placeholder="Type to filter..." oninput="renderAdResumeRecords()"/></div>
+            <button class="btn btn-sm" onclick="loadAdResumeRecords()" style="background:rgba(255,255,255,0.08)"><i class="fas fa-sync"></i> Refresh</button>
+          </div>
+          <div class="table-wrapper">
+            <table><thead><tr><th>When</th><th>User</th><th>Email</th><th>Job Title</th><th>Action</th></tr></thead>
+            <tbody id="adRrBody"><tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody></table>
+          </div>
         </div>
       </div>
 
@@ -298,7 +314,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, doc, getDoc, getDocs, setDoc, collection, query, where, updateDoc, deleteDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, getDoc, getDocs, setDoc, collection, query, where, orderBy, limit, updateDoc, deleteDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCuAuc9qhA7D_-Lqt-69pbG81KTIiDFVpg",
@@ -379,6 +395,7 @@ function setupAuthority() {
   if (auth_perms.membership) { document.getElementById('nav_membershipReqs').classList.remove('hidden'); document.getElementById('auth_sections_header').style.display='block'; }
   if (auth_perms.jobPost) { document.getElementById('nav_jobRequests').classList.remove('hidden'); }
   if (auth_perms.jobList) { document.getElementById('nav_jobList').classList.remove('hidden'); }
+  if (auth_perms.resumeRecords) { document.getElementById('nav_resumeRecords').classList.remove('hidden'); document.getElementById('auth_sections_header').style.display='block'; loadAdResumeRecords(); }
   // Operations Manager / Branch Head extras
   const adminRole = adminData?.adminRole || '';
   const isOpMgr = adminRole === 'Operations Manager';
@@ -427,6 +444,7 @@ window.showSection = function(name) {
     case 'managePromoted': loadManagePromoted(); break;
     case 'manageMpin': loadOtherMpinList(); loadMpinRecordsAdmin(); break;
     case 'auditLog': loadAdminAuditLog(); break;
+    case 'resumeRecords': loadAdResumeRecords(); break;
   }
 };
 
@@ -1054,10 +1072,11 @@ onAuthStateChanged(auth, async (user) => {
       document.getElementById('mpinScreen').style.display = 'block';
     }
   } catch(e) {
+    console.error('[admin-feed init]', e);
     document.getElementById('loader').style.display = 'none';
     document.getElementById('mpinScreen').style.display = 'block';
     const alertEl = document.getElementById('mpinAlert');
-    alertEl.textContent = '⚠️ Connection error. Please try again.';
+    alertEl.innerHTML = `⚠️ ${e?.message || 'Connection error'}. <a href="javascript:location.reload()" style="color:#fff;text-decoration:underline">Reload</a>`;
     alertEl.className = 'alert alert-danger show';
   }
 });
@@ -1120,7 +1139,66 @@ async function loadAdminAppButtons() {
   } catch(e) {}
 }
 
+// ===== AI RESUME RECORDS (admin) =====
+let __adRrCache = [];
+window.loadAdResumeRecords = async function() {
+  const tbody = document.getElementById('adRrBody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr>';
+  try {
+    const snap = await getDocs(collection(db, 'aiResumes'));
+    __adRrCache = snap.docs.map(d => ({ id:d.id, ...d.data() }))
+      .sort((a,b) => (b.createdAt?.toDate?.()?.getTime()||0) - (a.createdAt?.toDate?.()?.getTime()||0));
+    renderAdResumeRecords();
+  } catch(e) {
+    console.error('loadAdResumeRecords:', e);
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#e94560;padding:20px">Failed to load. Check Firestore rules for aiResumes.</td></tr>';
+  }
+};
+window.renderAdResumeRecords = function() {
+  const tbody = document.getElementById('adRrBody');
+  const q = (document.getElementById('adRrSearch')?.value || '').toLowerCase().trim();
+  const rows = __adRrCache.filter(r => !q || (r.name||'').toLowerCase().includes(q) || (r.email||'').toLowerCase().includes(q));
+  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">No resumes yet.</td></tr>'; return; }
+  tbody.innerHTML = rows.map(r => `<tr>
+    <td style="font-size:11px">${r.createdAt?.toDate?.()?.toLocaleString()||'N/A'}</td>
+    <td><strong>${esc(r.name||'N/A')}</strong></td>
+    <td style="font-size:11px"><a href="mailto:${esc(r.email||'')}" style="color:#a78bfa">${esc(r.email||'-')}</a></td>
+    <td>${esc(r.jobTitle||'-')}</td>
+    <td>
+      <button class="btn btn-sm btn-info" style="margin:2px" onclick='adViewResume(${JSON.stringify(JSON.stringify(r))})'><i class="fas fa-eye"></i> View</button>
+      <button class="btn btn-sm" style="background:#22c55e;color:#fff;margin:2px" onclick='adDownloadResume("${r.id}")'><i class="fas fa-download"></i> PDF</button>
+    </td>
+  </tr>`).join('');
+};
+function esc(s){return String(s||'').replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));}
+window.adViewResume = function(jsonStr) {
+  let r = {}; try { r = JSON.parse(jsonStr); } catch(_){}
+  const w = window.open('', '_blank', 'width=720,height=820');
+  if (!w) { alert('Popup blocked. Allow popups to view.'); return; }
+  const html = `<!doctype html><html><head><title>${esc(r.name||'Resume')}</title>
+    <style>body{font-family:system-ui,Arial;color:#1a1a2e;padding:24px;line-height:1.6}h2{color:#1a1a2e;border-bottom:2px solid #d4af37;padding-bottom:6px}.lbl{color:#d4af37;font-weight:700;margin-top:12px}</style>
+    </head><body>
+    <h2>${esc(r.name||'')} <small style="color:#d4af37">${esc(r.jobTitle||'')}</small></h2>
+    <div>${esc(r.email||'')} · ${esc(r.phone||'')} · ${esc(r.location||'')}</div>
+    ${r.experience?`<div class="lbl">Experience</div><div style="white-space:pre-wrap">${esc(r.experience)}</div>`:''}
+    ${r.education?`<div class="lbl">Education</div><div style="white-space:pre-wrap">${esc(r.education)}</div>`:''}
+    ${r.skills?`<div class="lbl">Skills</div><div>${esc(r.skills)}</div>`:''}
+    ${r.aiResume?`<div class="lbl">AI Resume</div><div style="white-space:pre-wrap;background:#fff7e0;padding:12px;border-radius:8px">${esc(r.aiResume)}</div>`:''}
+    </body></html>`;
+  w.document.write(html); w.document.close();
+};
+window.adDownloadResume = async function(docId) {
+  if (typeof window.__downloadMyResume === 'function') {
+    try { await window.__downloadMyResume(docId); return; } catch(e) { console.warn('PDF builder failed:', e); }
+  }
+  // Fallback — open print dialog
+  window.adViewResume && (function(){ const r = __adRrCache.find(x=>x.id===docId); if(r){ adViewResume(JSON.stringify(r)); setTimeout(()=>{ try{ window.print(); }catch(_){} }, 800); } })();
+};
+
 </script>
+
+<script src="js/my-resumes.js"></script>
 
 <!-- APP DOWNLOAD SECTION -->
 <div id="adminAppDownloadSection" style="display:none;margin:8px 24px 16px;padding:12px 20px;background:rgba(233,69,96,0.05);border:1px solid rgba(233,69,96,0.15);border-radius:14px;text-align:center">
@@ -1139,5 +1217,6 @@ async function loadAdminAppButtons() {
 <script src="js/i18n.js"></script>
 <script src="js/chatbot.js"></script>
 <script src="js/pwa-install.js"></script>
+<script type="module" src="js/freeze-guard.js"></script>
 </body>
 </html>

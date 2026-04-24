@@ -777,6 +777,8 @@ onAuthStateChanged(auth, async (user) => {
   loadMembershipDetails();
   checkPrimeNotifBadge();
   loadPrimeAppButtons();
+  // Group Chat (Phase 4)
+  import('./js/group-chat.js').then(m => { m.default.init({ user }); }).catch(e => console.warn('GroupChat init failed:', e));
   // HC Wallet + Refer & Earn
   try {
     const { attachWallet } = await import('./js/wallet-ui.js');
@@ -879,5 +881,6 @@ async function loadPrimeAppButtons() {
   </div>
 </footer>
 <script src="js/pwa-install.js"></script>
+<script type="module" src="js/freeze-guard.js"></script>
 </body>
 </html>

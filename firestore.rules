@@ -85,6 +85,25 @@ service cloud.firestore {
       allow delete: if isOwner();
     }
 
+    // ACTIVITY RECORDS — global success/fail log (any signed-in user can append; owner-only read)
+    match /activityRecords/{id} {
+      allow read: if isOwner();
+      allow create: if isSignedIn();
+      allow update, delete: if isOwner();
+    }
+
+    // FROZEN USERS — owner controlled freeze table
+    match /frozenUsers/{uid} {
+      allow read: if isSignedIn();
+      allow write: if isOwner();
+    }
+
+    // CHAT GROUP ADMINS — per-group sub-admins set by owner
+    match /chatGroupAdmins/{id} {
+      allow read: if isSignedIn();
+      allow write: if isOwner();
+    }
+
     // OFFERS / UPGRADES / MPINS / NOTIFICATIONS / FEEDBACK
     match /offers/{id}     { allow read: if true; allow write: if isOwner(); }
     match /upgrades/{id}   { allow read: if isSignedIn(); allow write: if isOwner(); }
@@ -138,7 +157,7 @@ service cloud.firestore {
           && request.resource.data.ownerUid == resource.data.ownerUid);
       allow delete: if isOwner();
 
-      // MESSAGES — only group members can read/post; nobody updates or deletes
+      // MESSAGES — only group members can read/post; updates only for read receipts
       match /messages/{msgId} {
         allow read: if isSignedIn() && (
           isOwner() ||
@@ -148,9 +167,36 @@ service cloud.firestore {
           isOwner() ||
           request.auth.uid in get(/databases/$(database)/documents/connectGroups/$(groupId)).data.memberUids
         );
-        allow update: if false;
+        // Members can update only the readBy list (mark themselves as read)
+        allow update: if isSignedIn() && (
+          isOwner() ||
+          (request.auth.uid in get(/databases/$(database)/documents/connectGroups/$(groupId)).data.memberUids
+            && request.resource.data.diff(resource.data).changedKeys().hasOnly(['readBy']))
+        );
         allow delete: if isOwner();
       }
+    }
+
+    // PRESENCE (Phase 8) — anyone can write/read own presence; signed-in can read all
+    match /presence/{uid} {
+      allow read: if isSignedIn();
+      allow write: if isSelf(uid);
+    }
+
+    // CHAT REPORTS (Phase 8) — owner only
+    match /chatReports/{id} {
+      allow read, write: if isOwner();
+    }
+
+    // USER CREDENTIALS (Phase 8) — owner-only Email/Password issuance ledger
+    match /userCredentials/{uid} {
+      allow read, write: if isOwner();
+    }
+
+    // MPIN REMINDER CONFIG (Phase 8)
+    match /mpinReminderConfig/{id} {
+      allow read: if isSignedIn();
+      allow write: if isOwner();
     }
   }
 }

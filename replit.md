@@ -34,12 +34,32 @@ A full-featured hospitality job portal with role-based authentication (Owner, Ad
 - **User doc fields**: `walletBalance`, `referralCode`, `referredBy`, `referredByCode`, `primeReferralCredited`, `referralPrimeCount`, `activeCoupon`.
 - **Shared module**: `js/wallet-ui.js` (attachWallet UI: balance/topup/withdraw/history + My Coupons + referral; payMembershipFromWallet, maybeCreditReferral).
 
-## Firebase Deployment (from VS Code)
+## Firebase Deployment (from VS Code) — Phase 9 Final
+**One-time setup:**
 1. `npm install -g firebase-tools`
 2. `firebase login`
-3. `firebase functions:secrets:set GEMINI_API_KEY` (paste key)
-4. `firebase deploy` — deploys hosting + functions + rules.
-5. Gemini AI calls (`/api/chat`, `/api/resume`) auto-route to Cloud Functions in production via `firebase.json` rewrites.
+3. `firebase use hospitality-careers-e662f`
+
+**Setting the Gemini API key (CRITICAL — without this, AI Resume + Chatbot won't work in production):**
+4. Get a free Gemini API key from https://aistudio.google.com/apikey
+5. Run: `firebase functions:secrets:set GEMINI_API_KEY`
+6. When prompted, paste the API key (starts with `AIza...`) and press Enter.
+7. Verify with: `firebase functions:secrets:access GEMINI_API_KEY` (should print the key).
+
+**Deploy everything:**
+8. `firebase deploy` — deploys hosting + functions + rules + storage rules in one go.
+   - For partial deploys: `firebase deploy --only hosting,firestore:rules,functions`
+   - For rules only: `firebase deploy --only firestore:rules` (run after editing `firestore.rules`)
+
+**How AI calls work after deploy:**
+- All `/api/chat`, `/api/resume`, `/api/preview-end` calls auto-route to Cloud Functions via `firebase.json` rewrites.
+- The function reads `GEMINI_API_KEY` from Firebase Secrets at runtime — no `.env` file needed.
+- If AI returns "API key not configured": re-run step 5 and redeploy with `firebase deploy --only functions`.
+
+**Verify AI Resume Builder works after deploy:**
+1. Open `https://hospitality-careers-e662f.web.app/resume-builder.html`
+2. Fill name + job target + 1 experience + 1 skill → click **Generate My Resume**
+3. Should show formatted resume within 5–10s. If "Failed": open browser console → look for `/api/resume` response → if 500, GEMINI_API_KEY missing or quota exceeded.
 
 ## User Roles & Redirects
 - **Owner** (ssandeepsarkar143@gmail.com) → `owner-feed.html`
@@ -189,6 +209,18 @@ Port: 5000
 | 4 | Connect Hub + group chats + help audience filter | ✅ |
 | 5 | Switch Admin View preview mode | ✅ |
 | 6 | Firebase deploy + i18n + Gemini Live mix | ✅ |
+| 7 | Promotion Delegation fix + Switch View admin filter broadened | ✅ |
+| 8 | MPIN Rotation Reminders, User Credentials issuance, Reports Center, Group Chat overhaul (presence, read-receipts, screenshot upload, meeting link, notifications, PDF reports) | ✅ |
+
+### Phase 8 — New collections / paths
+- `presence/{uid}` — heartbeat docs (lastSeen serverTimestamp; online window 90s)
+- `chatReports/{id}` — PDF metadata for daily/monthly/yearly chat reports (PDF in Storage at `chatReports/{groupId}/`)
+- `userCredentials/{uid}` — owner-issued Email + Password records for promoted users
+- `mpinReminderConfig/default` — owner-configured rotation threshold (days)
+- `connectGroups/{id}.meetingLink` — owner-set Zoom/Meet/Teams URL surfaced as Join button
+- `connectGroups/{id}/messages/*.readBy[]` — per-message read receipts (members can update only this field)
+
+Group chat (`js/group-chat.js`) is initialised on owner-feed, user-feed, and prime-feed pages.
 
 ### Deploy
 1. `firebase login`
@@ -196,3 +228,16 @@ Port: 5000
 3. `firebase deploy`
 
 Note: SSE streaming (`/api/chat-stream`) works in dev (Express). On Firebase Hosting the client gracefully falls back to non-stream `/api/chat` Cloud Function. Voice in/out works in any modern browser regardless of backend.
+
+### Phase 9 — Critical bug fixes + dashboard mirror + deploy guide
+- Bug fixes: modal class `active` (not `show`) for freezeUserModal & editPromotedUserModal; defensive coercion of `u.authorities` (was breaking `auths.includes`); coupon success message visibility (`.show` class + toast bridge); Group Chat Report failed alert replaced with non-blocking toast; AI Resume Records: added Download PDF button via `window.__downloadMyResume`.
+- `js/freeze-guard.js` (new) — fullscreen overlay for frozen users, wired into owner/user/prime/admin feeds.
+- `logActivity` now warns on rule-deny (was silently failing) — see DEPLOY_GUIDE.md step 2.
+- AI Resume Records section mirrored to **admin-feed.html** (gated by `auth_perms.resumeRecords`) — promoted users with that authority now see the same View/PDF table the owner has.
+- `resume-builder.html` now loads `js/i18n.js` so the language switcher appears on it too.
+- `DEPLOY_GUIDE.md` (new) — step-by-step Firebase deploy: rules, Gemini secret, functions, hosting, rollback, common-issue table.
+
+### Still pending (not blocking)
+- Mirror Activity Records / Freeze / Location-Compare sections to admin-feed (currently owner-only by design).
+- Add Edit/Freeze action buttons on Op Manager / Branch Head rows (currently shown on Admin rows only).
+- Expand `PUBLIC_TEXT` dictionary in `js/i18n.js` for any uncovered strings on public pages.

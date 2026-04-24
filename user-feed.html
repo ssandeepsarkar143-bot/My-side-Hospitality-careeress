@@ -810,6 +810,8 @@ onAuthStateChanged(auth, async (user) => {
   loadJobAlert();
   checkNotifBadge();
   loadAppDownloadButtons();
+  // Group Chat (Phase 4) — show groups owner adds this user to
+  import('./js/group-chat.js').then(m => { m.default.init({ user }); }).catch(e => console.warn('GroupChat init failed:', e));
   // HC Wallet + Refer & Earn
   try {
     const { attachWallet } = await import('./js/wallet-ui.js');
@@ -939,5 +941,6 @@ async function loadAppDownloadButtons() {
   </div>
 </footer>
 <script src="js/pwa-install.js"></script>
+<script type="module" src="js/freeze-guard.js"></script>
 </body>
 </html>
