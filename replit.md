@@ -208,3 +208,16 @@ Group chat (`js/group-chat.js`) is initialised on owner-feed, user-feed, and pri
 3. `firebase deploy`
 
 Note: SSE streaming (`/api/chat-stream`) works in dev (Express). On Firebase Hosting the client gracefully falls back to non-stream `/api/chat` Cloud Function. Voice in/out works in any modern browser regardless of backend.
+
+### Phase 9 — Critical bug fixes + dashboard mirror + deploy guide
+- Bug fixes: modal class `active` (not `show`) for freezeUserModal & editPromotedUserModal; defensive coercion of `u.authorities` (was breaking `auths.includes`); coupon success message visibility (`.show` class + toast bridge); Group Chat Report failed alert replaced with non-blocking toast; AI Resume Records: added Download PDF button via `window.__downloadMyResume`.
+- `js/freeze-guard.js` (new) — fullscreen overlay for frozen users, wired into owner/user/prime/admin feeds.
+- `logActivity` now warns on rule-deny (was silently failing) — see DEPLOY_GUIDE.md step 2.
+- AI Resume Records section mirrored to **admin-feed.html** (gated by `auth_perms.resumeRecords`) — promoted users with that authority now see the same View/PDF table the owner has.
+- `resume-builder.html` now loads `js/i18n.js` so the language switcher appears on it too.
+- `DEPLOY_GUIDE.md` (new) — step-by-step Firebase deploy: rules, Gemini secret, functions, hosting, rollback, common-issue table.
+
+### Still pending (not blocking)
+- Mirror Activity Records / Freeze / Location-Compare sections to admin-feed (currently owner-only by design).
+- Add Edit/Freeze action buttons on Op Manager / Branch Head rows (currently shown on Admin rows only).
+- Expand `PUBLIC_TEXT` dictionary in `js/i18n.js` for any uncovered strings on public pages.

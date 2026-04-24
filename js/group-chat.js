@@ -846,8 +846,18 @@ const GroupChat = {
 
       // Trigger download
       const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.click();
-      alert(`Report generated and saved. Total ${allMsgs.length} messages analysed.`);
-    } catch(e) { console.error('Report failed', e); alert('Report failed: ' + e.message); }
+      if (typeof window.showToast === 'function') window.showToast(`Report ready (${allMsgs.length} msgs)`, 'success');
+      else alert(`Report generated and saved. Total ${allMsgs.length} messages analysed.`);
+    } catch(e) {
+      console.warn('Report failed', e?.message || e);
+      // Storage retry-limit-exceeded usually means CORS not configured — surface gentle message instead of blocking alert
+      const msg = String(e?.message || e);
+      const friendly = msg.includes('storage/retry-limit-exceeded') || msg.includes('Storage')
+        ? 'Could not upload PDF — storage may be offline. The report data is saved; try again from Reports Center.'
+        : 'Could not generate report: ' + msg;
+      if (typeof window.showToast === 'function') window.showToast(friendly, 'error');
+      else console.warn(friendly);
+    }
   },
 
   escape(s) { return String(s || '').replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c])); },
