@@ -85,6 +85,25 @@ service cloud.firestore {
       allow delete: if isOwner();
     }
 
+    // ACTIVITY RECORDS — global success/fail log (any signed-in user can append; owner-only read)
+    match /activityRecords/{id} {
+      allow read: if isOwner();
+      allow create: if isSignedIn();
+      allow update, delete: if isOwner();
+    }
+
+    // FROZEN USERS — owner controlled freeze table
+    match /frozenUsers/{uid} {
+      allow read: if isSignedIn();
+      allow write: if isOwner();
+    }
+
+    // CHAT GROUP ADMINS — per-group sub-admins set by owner
+    match /chatGroupAdmins/{id} {
+      allow read: if isSignedIn();
+      allow write: if isOwner();
+    }
+
     // OFFERS / UPGRADES / MPINS / NOTIFICATIONS / FEEDBACK
     match /offers/{id}     { allow read: if true; allow write: if isOwner(); }
     match /upgrades/{id}   { allow read: if isSignedIn(); allow write: if isOwner(); }

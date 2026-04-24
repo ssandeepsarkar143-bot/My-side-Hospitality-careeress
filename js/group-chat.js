@@ -477,30 +477,162 @@ const GroupChat = {
     } catch(e) { console.warn('readBy error', e); }
   },
 
+  // Get the friendly title for a member of a group
+  // Owner of the group ⇒ "👑 CEO / Employer". Others use their adminRole / role.
+  memberTitle(g, uid, userData) {
+    if (uid === g.ownerUid) return '👑 CEO / Employer';
+    if ((userData?.email || '').toLowerCase() === OWNER_EMAIL) return '👑 CEO / Employer';
+    return userData?.adminRole || userData?.role || 'Member';
+  },
+
+  async loadChatAdmins(groupId) {
+    try {
+      const s = await getDoc(doc(db, 'chatGroupAdmins', groupId));
+      return s.exists() ? (s.data().admins || []) : [];
+    } catch(_) { return []; }
+  },
+
   async showMembers(groupId) {
     const g = this.groups.find(x => x.id === groupId); if (!g) return;
     const memberUids = g.memberUids || [];
     const userDocs = await Promise.all(memberUids.map(uid => getDoc(doc(db, 'users', uid)).catch(() => null)));
+    const chatAdmins = await this.loadChatAdmins(groupId);
+    const isOwner = this.isOwner();
     const overlay = document.createElement('div');
     overlay.className = 'gc-readby-modal';
-    overlay.innerHTML = `<div class="gc-modal-card">
+    overlay.innerHTML = `<div class="gc-modal-card" style="max-width:520px">
       <h3><span><i class="fas fa-users"></i> ${memberUids.length} Members</span><button onclick="this.closest('.gc-readby-modal').remove()">&times;</button></h3>
       <div class="gc-modal-body">
+        ${isOwner ? `<div style="display:flex;gap:8px;margin-bottom:12px">
+          <button class="btn btn-sm" style="background:#22c55e;color:#fff;flex:1" onclick="GroupChat.openManageMembers('${groupId}')"><i class="fas fa-user-plus"></i> Add / Remove Members</button>
+        </div>` : ''}
         ${userDocs.map((d, i) => {
           const uid = memberUids[i];
           const x = d?.exists?.() ? d.data() : { displayName: uid.slice(0,8) };
           const online = this.isOnline(uid);
           const initial = (x.displayName || x.email || '?')[0].toUpperCase();
+          const title = this.memberTitle(g, uid, x);
+          const isChatAdmin = chatAdmins.includes(uid);
+          const isGroupOwner = uid === g.ownerUid;
+          const adminBadge = isChatAdmin && !isGroupOwner ? '<span style="background:rgba(245,158,11,0.18);color:#f59e0b;font-size:9px;padding:2px 6px;border-radius:6px;margin-left:6px">⭐ Chat Admin</span>' : '';
+          const adminBtn = isOwner && !isGroupOwner
+            ? `<button class="btn btn-sm" style="background:${isChatAdmin?'#ef4444':'rgba(245,158,11,0.18)'};color:${isChatAdmin?'#fff':'#f59e0b'};font-size:10px" onclick="GroupChat.toggleChatAdmin('${groupId}','${uid}',${!isChatAdmin})">${isChatAdmin ? 'Remove Admin' : 'Make Admin'}</button>`
+            : '';
           return `<div class="gc-readby-row">
             <div class="gc-mini-avatar" style="position:relative">${initial}${online?'<span style="position:absolute;bottom:-2px;right:-2px;width:9px;height:9px;background:#22c55e;border-radius:50%;border:2px solid #13131f"></span>':''}</div>
-            <div style="flex:1;color:#fff;font-size:13px">${this.escape(x.displayName || x.email || uid)}<div style="font-size:10px;color:#888">${this.escape(x.adminRole || x.role || 'Member')}</div></div>
-            <div style="font-size:10px;color:${online?'#22c55e':'#666'}">${online ? '● Online' : 'Offline'}</div>
+            <div style="flex:1;color:#fff;font-size:13px">${this.escape(x.displayName || x.email || uid)}${adminBadge}<div style="font-size:10px;color:#d4af37">${this.escape(title)}</div></div>
+            ${adminBtn || `<div style="font-size:10px;color:${online?'#22c55e':'#666'}">${online ? '● Online' : 'Offline'}</div>`}
           </div>`;
         }).join('')}
       </div>
     </div>`;
     overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
     document.body.appendChild(overlay);
+  },
+
+  async toggleChatAdmin(groupId, uid, makeAdmin) {
+    if (!this.isOwner()) return;
+    try {
+      const s = await getDoc(doc(db, 'chatGroupAdmins', groupId));
+      let admins = s.exists() ? (s.data().admins || []) : [];
+      if (makeAdmin) { if (!admins.includes(uid)) admins.push(uid); }
+      else { admins = admins.filter(x => x !== uid); }
+      await setDoc(doc(db, 'chatGroupAdmins', groupId), { admins, updatedAt: serverTimestamp() }, { merge: true });
+      // Refresh the member list
+      document.querySelector('.gc-readby-modal')?.remove();
+      this.showMembers(groupId);
+    } catch(e) { alert('Could not update chat admin: ' + e.message); }
+  },
+
+  // ----- Manage members modal (owner only): location/category filter to add/remove -----
+  async openManageMembers(groupId) {
+    if (!this.isOwner()) return;
+    const g = this.groups.find(x => x.id === groupId); if (!g) return;
+    document.querySelector('.gc-readby-modal')?.remove();
+    const all = await getDocs(collection(db, 'users'));
+    const users = all.docs.map(d => ({ uid: d.id, ...d.data() }));
+    const states = Array.from(new Set(users.flatMap(u => Array.isArray(u.locations) ? u.locations : (u.state ? [u.state] : [])).filter(Boolean))).sort();
+    const cats = Array.from(new Set(users.map(u => u.adminRole || u.role || 'User').filter(Boolean))).sort();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'gc-readby-modal';
+    overlay.innerHTML = `<div class="gc-modal-card" style="max-width:560px;max-height:88vh;overflow:hidden;display:flex;flex-direction:column">
+      <h3><span><i class="fas fa-user-plus"></i> Manage "${this.escape(g.name||'Group')}" Members</span><button onclick="this.closest('.gc-readby-modal').remove()">&times;</button></h3>
+      <div style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;gap:8px;flex-wrap:wrap">
+        <select id="gc-mm-state" style="flex:1;min-width:140px;background:#1a1a2e;color:#fff;border:1px solid rgba(255,255,255,0.15);padding:7px;border-radius:6px;font-size:12px">
+          <option value="">All locations</option>${states.map(s=>`<option value="${this.escape(s)}">${this.escape(s)}</option>`).join('')}
+        </select>
+        <select id="gc-mm-cat" style="flex:1;min-width:140px;background:#1a1a2e;color:#fff;border:1px solid rgba(255,255,255,0.15);padding:7px;border-radius:6px;font-size:12px">
+          <option value="">All categories</option>${cats.map(c=>`<option value="${this.escape(c)}">${this.escape(c)}</option>`).join('')}
+        </select>
+        <input id="gc-mm-search" placeholder="Search name / email…" style="flex:2;min-width:160px;background:#1a1a2e;color:#fff;border:1px solid rgba(255,255,255,0.15);padding:7px;border-radius:6px;font-size:12px"/>
+      </div>
+      <div id="gc-mm-list" class="gc-modal-body" style="flex:1;overflow-y:auto"></div>
+      <div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,0.08);display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn btn-sm" style="background:rgba(255,255,255,0.1);color:#fff" onclick="this.closest('.gc-readby-modal').remove()">Cancel</button>
+        <button class="btn btn-sm" style="background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff" onclick="GroupChat.saveMemberChanges('${groupId}')"><i class="fas fa-save"></i> Save Changes</button>
+      </div>
+    </div>`;
+    document.body.appendChild(overlay);
+
+    // store state
+    this._mmUsers = users;
+    this._mmGroupId = groupId;
+    this._mmSelected = new Set(g.memberUids || []);
+
+    const render = () => {
+      const fs = document.getElementById('gc-mm-state').value;
+      const fc = document.getElementById('gc-mm-cat').value;
+      const fq = document.getElementById('gc-mm-search').value.trim().toLowerCase();
+      const list = users.filter(u => {
+        if (fs) {
+          const ulocs = Array.isArray(u.locations) ? u.locations : (u.state ? [u.state] : []);
+          if (!ulocs.includes(fs)) return false;
+        }
+        if (fc && (u.adminRole || u.role || 'User') !== fc) return false;
+        if (fq) { const t = ((u.displayName||'')+' '+(u.email||'')).toLowerCase(); if (!t.includes(fq)) return false; }
+        return true;
+      });
+      document.getElementById('gc-mm-list').innerHTML = list.length ? list.map(u => {
+        const sel = this._mmSelected.has(u.uid);
+        const isGroupOwner = u.uid === g.ownerUid;
+        return `<div class="gc-readby-row" style="cursor:${isGroupOwner?'not-allowed':'pointer'};opacity:${isGroupOwner?0.6:1}" onclick="${isGroupOwner?'':`GroupChat.toggleMmSelect('${u.uid}', this)`}">
+          <div class="gc-mini-avatar">${(u.displayName||u.email||'?')[0].toUpperCase()}</div>
+          <div style="flex:1;color:#fff;font-size:13px">${this.escape(u.displayName||u.email||u.uid)}<div style="font-size:10px;color:#888">${this.escape(u.email||'')} · ${this.escape(u.adminRole||u.role||'User')}</div></div>
+          <div style="font-size:18px;color:${sel?'#22c55e':'#444'}">${isGroupOwner ? '👑' : (sel ? '✓' : '○')}</div>
+        </div>`;
+      }).join('') : '<div class="gc-empty">No users match these filters.</div>';
+    };
+    document.getElementById('gc-mm-state').onchange = render;
+    document.getElementById('gc-mm-cat').onchange = render;
+    document.getElementById('gc-mm-search').oninput = render;
+    render();
+  },
+
+  toggleMmSelect(uid, rowEl) {
+    if (this._mmSelected.has(uid)) this._mmSelected.delete(uid);
+    else this._mmSelected.add(uid);
+    const sel = this._mmSelected.has(uid);
+    const tick = rowEl.querySelector('div:last-child');
+    if (tick) { tick.textContent = sel ? '✓' : '○'; tick.style.color = sel ? '#22c55e' : '#444'; }
+  },
+
+  async saveMemberChanges(groupId) {
+    if (!this.isOwner()) return;
+    try {
+      const newMembers = Array.from(this._mmSelected);
+      // ensure owner stays
+      const g = this.groups.find(x => x.id === groupId);
+      if (g && !newMembers.includes(g.ownerUid)) newMembers.push(g.ownerUid);
+      await updateDoc(doc(db, 'connectGroups', groupId), { memberUids: newMembers });
+      await addDoc(collection(db, 'connectGroups', groupId, 'messages'), {
+        system: true,
+        text: `Member list updated — group now has ${newMembers.length} members.`,
+        at: serverTimestamp()
+      });
+      document.querySelector('.gc-readby-modal')?.remove();
+      alert('Members updated.');
+    } catch(e) { alert('Failed: ' + e.message); }
   },
 
   // ---------------------- FILE / SCREENSHOT UPLOAD ----------------------
@@ -522,34 +654,59 @@ const GroupChat = {
     }
   },
 
+  // Instant / optimistic upload: show the picture in the thread INSTANTLY using a local
+  // preview, then upload in background and quietly swap to the cloud URL.
   async uploadAndSend(file) {
     if (!this.currentGroupId || !this.currentUser) return;
-    const btn = document.getElementById('gc-send-btn');
-    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; }
-    try {
-      const path = `chatUploads/${this.currentGroupId}/${Date.now()}_${Math.random().toString(36).slice(2,8)}_${file.name||'image.png'}`;
-      const r = sRef(storage, path);
-      await uploadBytes(r, file);
-      const url = await getDownloadURL(r);
-      const u = this.currentUser;
-      const myData = this.currentUserData || {};
-      await addDoc(collection(db, 'connectGroups', this.currentGroupId, 'messages'), {
-        senderUid: u.uid,
-        senderName: myData.displayName || u.displayName || u.email,
-        senderRole: myData.adminRole || myData.role || 'User',
-        text: '',
-        imageUrl: url,
-        readBy: [u.uid],
-        at: serverTimestamp()
-      });
-      await updateDoc(doc(db, 'connectGroups', this.currentGroupId), {
-        lastMessage: '[image]',
-        lastMessageAt: serverTimestamp(),
-        lastMessageBy: u.uid,
-        lastMessageByName: myData.displayName || u.email
-      });
-    } catch(e) { alert('Upload failed: ' + e.message); }
-    finally { if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i>'; } }
+    const u = this.currentUser;
+    const myData = this.currentUserData || {};
+    const groupId = this.currentGroupId;
+
+    // 1. Generate local preview (data URL) and show it instantly as a temporary message
+    const localUrl = URL.createObjectURL(file);
+    const tempId = 'gc-tmp-' + Date.now() + '-' + Math.random().toString(36).slice(2,6);
+    const box = document.getElementById('gc-messages');
+    if (box) {
+      const tempHtml = `<div class="gc-msg me" id="${tempId}">
+        <img src="${localUrl}" alt="uploading" style="max-width:240px;border-radius:10px;opacity:0.65"/>
+        <div class="gc-time"><span><i class="fas fa-spinner fa-spin"></i> uploading…</span></div>
+      </div>`;
+      box.insertAdjacentHTML('beforeend', tempHtml);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    // 2. Upload in background — do NOT block sending UI
+    (async () => {
+      try {
+        const path = `chatUploads/${groupId}/${Date.now()}_${Math.random().toString(36).slice(2,8)}_${file.name||'image.png'}`;
+        const r = sRef(storage, path);
+        await uploadBytes(r, file);
+        const url = await getDownloadURL(r);
+        await addDoc(collection(db, 'connectGroups', groupId, 'messages'), {
+          senderUid: u.uid,
+          senderName: myData.displayName || u.displayName || u.email,
+          senderRole: myData.adminRole || myData.role || 'User',
+          text: '',
+          imageUrl: url,
+          readBy: [u.uid],
+          at: serverTimestamp()
+        });
+        await updateDoc(doc(db, 'connectGroups', groupId), {
+          lastMessage: '[image]',
+          lastMessageAt: serverTimestamp(),
+          lastMessageBy: u.uid,
+          lastMessageByName: myData.displayName || u.email
+        });
+        // Real message will arrive via onSnapshot and re-render — wipe the placeholder
+        document.getElementById(tempId)?.remove();
+        try { URL.revokeObjectURL(localUrl); } catch(_){}
+      } catch(e) {
+        const t = document.getElementById(tempId);
+        if (t) t.innerHTML = `<div style="color:#ef4444;font-size:11px;padding:6px">❌ Upload failed: ${this.escape(e.message)} — tap to retry</div>`;
+        if (t) t.onclick = () => { t.remove(); this.uploadAndSend(file); };
+        console.warn('image upload failed:', e);
+      }
+    })();
   },
 
   // ---------------------- SEND TEXT MESSAGE ----------------------

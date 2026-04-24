@@ -103,6 +103,9 @@
       <div class="sidebar-item" onclick="showSection('mpinReminders')"><i class="fas fa-bell"></i> MPIN Rotation Reminders</div>
       <div class="sidebar-item" onclick="showSection('userCredentials')"><i class="fas fa-id-card"></i> User Credentials</div>
       <div class="sidebar-item" onclick="showSection('reportsCenter')"><i class="fas fa-file-pdf"></i> Reports Center</div>
+      <div class="sidebar-item" onclick="showSection('locationCompare')"><i class="fas fa-balance-scale"></i> Location Comparison</div>
+      <div class="sidebar-item" onclick="showSection('activityRecords')"><i class="fas fa-list-check"></i> All Activity Records</div>
+      <div class="sidebar-item" onclick="showSection('frozenUsers')"><i class="fas fa-snowflake"></i> Freeze User Accounts</div>
       <div class="sidebar-item" onclick="showSection('auditLog')"><i class="fas fa-history"></i> Change & Modification Log</div>
     </div>
 
@@ -725,8 +728,10 @@
         <div class="section-title"><i class="fas fa-stopwatch"></i> Preview Activity Log</div>
         <div class="card">
           <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:end">
-            <div style="flex:1;min-width:160px"><label style="font-size:12px;color:var(--gray)">Filter by Admin</label><select id="plFilterTarget" class="form-control" onchange="renderPreviewLog()"><option value="">All Admins</option></select></div>
-            <div style="flex:1;min-width:160px"><label style="font-size:12px;color:var(--gray)">Date</label><input type="date" id="plFilterDate" class="form-control" onchange="renderPreviewLog()"/></div>
+            <div style="flex:1;min-width:140px"><label style="font-size:12px;color:var(--gray)">Filter by Admin</label><select id="plFilterTarget" class="form-control" onchange="renderPreviewLog()"><option value="">All Admins</option></select></div>
+            <div style="flex:1;min-width:140px"><label style="font-size:12px;color:var(--gray)">Location / State</label><select id="plFilterState" class="form-control" onchange="renderPreviewLog()"><option value="">All Locations</option></select></div>
+            <div style="flex:1;min-width:140px"><label style="font-size:12px;color:var(--gray)">Category / Role</label><select id="plFilterCategory" class="form-control" onchange="renderPreviewLog()"><option value="">All Roles</option></select></div>
+            <div style="flex:1;min-width:140px"><label style="font-size:12px;color:var(--gray)">Date</label><input type="date" id="plFilterDate" class="form-control" onchange="renderPreviewLog()"/></div>
             <button class="btn btn-sm" onclick="loadPreviewLog()" style="background:rgba(255,255,255,0.08)"><i class="fas fa-sync"></i> Refresh</button>
           </div>
           <div class="table-wrapper">
@@ -826,8 +831,72 @@
         </div>
       </div>
 
+      <!-- ============ FREEZE USER ACCOUNTS ============ -->
+      <div id="sec-frozenUsers" class="page-section">
+        <div class="section-title"><i class="fas fa-snowflake"></i> Freeze User Accounts</div>
+        <div class="card" style="background:linear-gradient(135deg,rgba(59,130,246,0.06),rgba(59,130,246,0.02));border:1px solid rgba(59,130,246,0.25)">
+          <p style="color:rgba(255,255,255,0.85);font-size:13px;margin-bottom:14px"><i class="fas fa-info-circle" style="color:#3b82f6"></i> Frozen accounts cannot perform any action and cannot logout (they are sent to a "frozen" screen automatically). The freeze auto-expires after the configured days, or the Owner can lift it manually.</p>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Account</th><th>Role</th><th>Frozen At</th><th>Frozen Until</th><th>Days Left</th><th>Reason</th><th>Action</th></tr></thead>
+              <tbody id="frozenUsersBody"><tr><td colspan="7" style="text-align:center;color:var(--gray);padding:20px">Loading…</td></tr></tbody>
+            </table>
+          </div>
+          <p style="font-size:11px;color:var(--gray);margin-top:10px"><i class="fas fa-info-circle"></i> Tip: open <strong>Admin Working</strong> and click the blue ❄ Freeze button on any promoted user to add them here.</p>
+        </div>
+      </div>
+
+      <!-- ============ ALL ACTIVITY RECORDS (success / fail audit) ============ -->
+      <div id="sec-activityRecords" class="page-section">
+        <div class="section-title"><i class="fas fa-list-check"></i> All Activity Records (Success / Fail Audit)</div>
+        <div class="card">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:end">
+            <div style="flex:1;min-width:140px"><label style="font-size:12px;color:var(--gray)">Status</label>
+              <select id="actrFilterStatus" class="form-control" onchange="renderActivityRecords()">
+                <option value="">All</option><option value="success">✅ Success</option><option value="fail">❌ Failed</option>
+              </select>
+            </div>
+            <div style="flex:1;min-width:140px"><label style="font-size:12px;color:var(--gray)">Category</label><select id="actrFilterCat" class="form-control" onchange="renderActivityRecords()"><option value="">All</option></select></div>
+            <div style="flex:1;min-width:140px"><label style="font-size:12px;color:var(--gray)">Date</label><input type="date" id="actrFilterDate" class="form-control" onchange="renderActivityRecords()"/></div>
+            <button class="btn btn-sm" onclick="loadActivityRecords()" style="background:rgba(255,255,255,0.08)"><i class="fas fa-sync"></i> Refresh</button>
+          </div>
+          <div class="stats-grid" id="actrStats" style="margin-bottom:14px"></div>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>When</th><th>Status</th><th>Category</th><th>Action</th><th>By</th><th>Details</th></tr></thead>
+              <tbody id="activityRecordsBody"><tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">Loading…</td></tr></tbody>
+            </table>
+          </div>
+          <p style="font-size:11px;color:var(--gray);margin-top:10px"><i class="fas fa-info-circle"></i> Every save / change across the website is logged here — both successful actions and failures. Smallest changes (settings, prices, coupon broadcasts, promotions, role edits, MPIN updates) all appear in this stream.</p>
+        </div>
+      </div>
+
+      <!-- ============ LOCATION COMPARISON DASHBOARD ============ -->
+      <div id="sec-locationCompare" class="page-section">
+        <div class="section-title"><i class="fas fa-balance-scale"></i> Location Comparison Dashboard</div>
+        <div class="card">
+          <p style="color:rgba(255,255,255,0.85);font-size:13px;margin-bottom:14px"><i class="fas fa-info-circle" style="color:#22c55e"></i> Side-by-side performance of every location (state) — total jobs approved, contacts approved, candidates hired, promoted users, and chat activity. Filter by date range and group by day, month, or year.</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:end">
+            <div style="flex:1;min-width:140px"><label style="font-size:12px;color:var(--gray)">From</label><input type="date" id="lcFrom" class="form-control"/></div>
+            <div style="flex:1;min-width:140px"><label style="font-size:12px;color:var(--gray)">To</label><input type="date" id="lcTo" class="form-control"/></div>
+            <div style="flex:1;min-width:140px"><label style="font-size:12px;color:var(--gray)">Group By</label>
+              <select id="lcGroupBy" class="form-control"><option value="all">All-time totals</option><option value="day">Daily</option><option value="month">Monthly</option><option value="year">Yearly</option></select>
+            </div>
+            <button class="btn btn-sm btn-primary" onclick="loadLocationCompare()" style="height:42px"><i class="fas fa-sync"></i> Build Dashboard</button>
+            <button class="btn btn-sm" style="background:#a855f7;color:#fff;height:42px" onclick="exportLocationCompare()"><i class="fas fa-file-pdf"></i> Export PDF</button>
+          </div>
+          <div id="lcStatus" style="font-size:12px;color:var(--gray);margin-bottom:8px">Click <strong>Build Dashboard</strong> to load.</div>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Location / State</th><th>Jobs Approved</th><th>Contacts</th><th>Resume DL</th><th>Memberships</th><th>Hired</th><th>Total</th></tr></thead>
+              <tbody id="locationCompareBody"><tr><td colspan="7" style="text-align:center;color:var(--gray);padding:20px">No data yet.</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <div id="sec-auditLog" class="page-section">
-        <div class="section-title"><i class="fas fa-history"></i> Change &amp; Modification Log</div>
+        <div class="section-title"><i class="fas fa-history"></i> Change &amp; Modification Log <span style="font-size:11px;color:var(--gray);margin-left:10px">(Owner-only view)</span></div>
         <div class="card">
           <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:end">
             <div style="flex:1;min-width:160px"><label style="font-size:12px;color:var(--gray)">Filter by Action</label><select id="auditFilterAction" class="form-control" onchange="renderAuditLog()"><option value="">All Actions</option></select></div>
@@ -1223,6 +1292,9 @@ function loadSectionData(name) {
     case 'mpinReminders': loadMpinReminderConfig(); break;
     case 'userCredentials': loadUserCredentials(); break;
     case 'reportsCenter': loadReportsCenter(); break;
+    case 'frozenUsers': loadFrozenUsers(); break;
+    case 'activityRecords': loadActivityRecords(); break;
+    case 'locationCompare': loadLocationCompare(); break;
     case 'auditLog': loadAuditLog(); break;
     case 'notifications': loadNotifications(); break;
     case 'feedbackRecords': loadFeedbackRecords(); break;
@@ -1915,9 +1987,11 @@ async function loadAdminWorking() {
         <td style="text-align:center">${membershipApproved.size}</td>
         <td style="text-align:center">${hiredCandidates.size}</td>
         <td>
-          <button class="btn btn-sm" style="background:#3b82f6;color:#fff;margin-right:4px" onclick="switchAdminView('${adminId}','${(admin.displayName||admin.email||'').replace(/'/g,'&#39;')}')"><i class="fas fa-eye"></i> Switch View</button>
-          <button class="btn btn-sm" style="background:#a855f7;color:#fff;margin-right:4px" onclick="generateAdminReport('${adminId}','${(admin.displayName||admin.email||'').replace(/'/g,'&#39;')}')"><i class="fas fa-file-pdf"></i> Report</button>
-          <button class="btn btn-sm btn-danger" onclick="demoteAdmin('${adminId}')"><i class="fas fa-user-minus"></i> Remove</button>
+          <button class="btn btn-sm" style="background:#3b82f6;color:#fff;margin:2px" onclick="switchAdminView('${adminId}','${(admin.displayName||admin.email||'').replace(/'/g,'&#39;')}')"><i class="fas fa-eye"></i> View</button>
+          <button class="btn btn-sm" style="background:#a855f7;color:#fff;margin:2px" onclick="generateAdminReport('${adminId}','${(admin.displayName||admin.email||'').replace(/'/g,'&#39;')}')"><i class="fas fa-file-pdf"></i> Report</button>
+          <button class="btn btn-sm" style="background:#f59e0b;color:#fff;margin:2px" onclick="openEditPromotedUser('${adminId}')"><i class="fas fa-pen"></i> Edit</button>
+          <button class="btn btn-sm" style="background:#0ea5e9;color:#fff;margin:2px" onclick="openFreezeUser('${adminId}','${(admin.displayName||admin.email||'').replace(/'/g,'&#39;')}','Admin')"><i class="fas fa-snowflake"></i> Freeze</button>
+          <button class="btn btn-sm btn-danger" style="margin:2px" onclick="demoteAdmin('${adminId}')"><i class="fas fa-user-minus"></i> Remove</button>
         </td>
       </tr>`;
     }));
@@ -2490,15 +2564,23 @@ window.createCouponBatch = async function() {
         expiresAt
       });
       const noteText = type==='discount'
-        ? `🎟️ You received a coupon: ₹${value} OFF on Prime Membership! Title: "${title}". Open your dashboard → My Coupons → Claim.`
+        ? `🎟️ You received a coupon: ₹${value} OFF on Prime Membership! Title: "${title}". Code: ${code}. Open your dashboard → My Coupons → Claim.`
         : type==='trial'
-        ? `🎁 You received a FREE ${value}-day Prime Trial coupon! Title: "${title}". Open your dashboard → My Coupons → Claim to activate instantly.`
-        : `🎁 You received a 1 Month FREE Prime Membership coupon! Title: "${title}". Open your dashboard → My Coupons → Claim to activate instantly.`;
-      await sendNotification(u.uid, noteText, 'success');
+        ? `🎁 You received a FREE ${value}-day Prime Trial coupon! Title: "${title}". Code: ${code}. Open your dashboard → My Coupons → Claim to activate instantly.`
+        : `🎁 You received a 1 Month FREE Prime Membership coupon! Title: "${title}". Code: ${code}. Open your dashboard → My Coupons → Claim to activate instantly.`;
+      // Both: targeted notification (for receipt) and ensure it appears in their All Notifications panel
+      try {
+        await addDoc(collection(db, 'notifications'), {
+          userId: u.uid, type: 'coupon', title: '🎟️ '+title, message: noteText, read: false, createdAt: serverTimestamp()
+        });
+      } catch(_){}
+      try { await sendNotification(u.uid, noteText, 'success'); } catch(_){}
       ok++;
     } catch(e) { fail++; console.warn('coupon fail for',u.email,e.message); }
   }
   showCpnMsg(`✅ Coupon sent to ${ok} user(s)${fail?`, ${fail} failed`:''}.`, 'success');
+  if (typeof showToast === 'function') showToast(`Coupon sent to ${ok} user(s)`, ok ? 'success' : 'error');
+  await logActivity({ status: ok ? 'success' : 'fail', category:'Coupon', action:'Create coupon batch', details:`type=${type} value=${value} target=${target} ok=${ok} fail=${fail}` });
   document.getElementById('cpnTitle').value=''; document.getElementById('cpnMsg').value=''; document.getElementById('cpnValue').value='';
   loadCouponsSection();
 };
@@ -2542,14 +2624,40 @@ async function loadReferralRewardSetting() {
 }
 window.saveReferralReward = async function() {
   const pts = parseInt(document.getElementById('refRewardPts').value)||10;
-  if (pts < 1) return;
+  const m = document.getElementById('refRewardMsg');
+  if (pts < 1) {
+    m.className = 'alert mt-8 alert-danger show'; m.textContent = 'Enter a value of 1 or more.';
+    return;
+  }
+  m.className = 'alert mt-8 alert-info show'; m.textContent = '⏳ Saving…';
   try {
     await setDoc(doc(db,'settings','referral'), { rewardPoints: pts, updatedAt: serverTimestamp() }, { merge: true });
-    const m = document.getElementById('refRewardMsg');
-    m.className = 'alert mt-8 alert-success'; m.textContent = '✅ Saved! New referrals will earn '+pts+' HC points each.';
+    m.className = 'alert mt-8 alert-success show'; m.textContent = '✅ Saved! New referrals will now earn '+pts+' HC points each.';
+    if (typeof showToast === 'function') showToast('Referral reward saved ('+pts+' pts)', 'success');
+    await logActivity({ status:'success', category:'Referral', action:'Update referral reward', details:`Set reward to ${pts} HC pts` });
   } catch(e) {
-    const m = document.getElementById('refRewardMsg'); m.className = 'alert mt-8 alert-danger'; m.textContent = 'Failed: '+e.message;
+    m.className = 'alert mt-8 alert-danger show'; m.textContent = 'Failed: '+e.message;
+    if (typeof showToast === 'function') showToast('Failed to save referral reward', 'error');
+    await logActivity({ status:'fail', category:'Referral', action:'Update referral reward', details:`Error: ${e.message}` });
   }
+};
+
+// ============== ACTIVITY LOG HELPER (success/fail audit) ==============
+window.logActivity = async function(entry) {
+  try {
+    await addDoc(collection(db, 'activityRecords'), {
+      status: entry.status || 'success',
+      category: entry.category || 'General',
+      action: entry.action || '',
+      details: entry.details || '',
+      byUid: currentUser?.uid || null,
+      byName: currentUser?.displayName || currentUser?.email || 'System',
+      byEmail: currentUser?.email || '',
+      state: entry.state || '',
+      role: entry.role || '',
+      createdAt: serverTimestamp()
+    });
+  } catch(_){}
 };
 
 // ---------- REFERRAL RECORDS ----------
@@ -2635,15 +2743,40 @@ window.addDiscount = async function() {
   }
   if (type === 'percent') data.discountPercent = parseInt(document.getElementById('discountPercent').value)||0;
   else data.discountAmount = parseInt(document.getElementById('discountAmount').value)||0;
-  await addDoc(collection(db, 'offers'), data);
-  showToast('Offer successfully যোগ হয়েছে!');
-  loadOffers();
+  try {
+    await addDoc(collection(db, 'offers'), data);
+    showToast('Offer added successfully!');
+    // Broadcast to All Notifications
+    try {
+      const valTxt = type==='percent' ? `${data.discountPercent}% OFF` : `₹${data.discountAmount} OFF`;
+      await addDoc(collection(db, 'notifications'), {
+        userId: data.targetUserId || 'broadcast',
+        broadcast: !data.targetUserId,
+        type: 'offer',
+        title: '🎁 New Offer Available',
+        message: `New offer: ${valTxt}${data.extraDays?` + ${data.extraDays} extra days`:''} on Prime Membership. Open Prime upgrade to use it.`,
+        read: false,
+        createdAt: serverTimestamp()
+      });
+    } catch(_){}
+    await logActivity({ status:'success', category:'Offer', action:'Add discount/offer', details:JSON.stringify({type,category,extraDays}) });
+    loadOffers();
+  } catch(e) {
+    showToast('Failed to add offer: '+e.message, 'error');
+    await logActivity({ status:'fail', category:'Offer', action:'Add discount/offer', details:'Error: '+e.message });
+  }
 };
 
 window.deleteOffer = async function(id) {
-  await deleteDoc(doc(db, 'offers', id));
-  showToast('Offer removed.');
-  loadOffers();
+  try {
+    await deleteDoc(doc(db, 'offers', id));
+    showToast('Offer removed.');
+    await logActivity({ status:'success', category:'Offer', action:'Delete offer', details:'id='+id });
+    loadOffers();
+  } catch(e) {
+    showToast('Failed: '+e.message, 'error');
+    await logActivity({ status:'fail', category:'Offer', action:'Delete offer', details:'Error: '+e.message });
+  }
 };
 
 window.upgradePrice = async function() {
@@ -3566,9 +3699,26 @@ window.renderPreviewLog = function() {
   const tbody = document.getElementById('previewLogBody'); if (!tbody) return;
   const ft = document.getElementById('plFilterTarget')?.value || '';
   const fd = document.getElementById('plFilterDate')?.value || '';
+  const fs = document.getElementById('plFilterState')?.value || '';
+  const fc = document.getElementById('plFilterCategory')?.value || '';
+  // Populate location + category dropdowns from data once
+  try {
+    const sSel = document.getElementById('plFilterState');
+    const cSel = document.getElementById('plFilterCategory');
+    if (sSel && sSel.options.length <= 1) {
+      const states = [...new Set(__plAll.map(p => p.targetState||p.state||'').filter(Boolean))].sort();
+      states.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; sSel.appendChild(o); });
+    }
+    if (cSel && cSel.options.length <= 1) {
+      const cats = [...new Set(__plAll.map(p => p.targetRole||p.role||'').filter(Boolean))].sort();
+      cats.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; cSel.appendChild(o); });
+    }
+  } catch(_){}
   let list = __plAll;
   if (ft) list = list.filter(p => p.targetName === ft);
   if (fd) list = list.filter(p => { const d = p.startedAt?.toDate?.(); if (!d) return false; return d.toISOString().slice(0,10) === fd; });
+  if (fs) list = list.filter(p => (p.targetState||p.state||'') === fs);
+  if (fc) list = list.filter(p => (p.targetRole||p.role||'') === fc);
   if (!list.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">No preview sessions match.</td></tr>'; return; }
   tbody.innerHTML = list.slice(0, 500).map(p => {
     const start = p.startedAt?.toDate?.();
@@ -3980,10 +4130,329 @@ window.ch_deleteGroup = async function(id, name) {
     showToast('Group deleted');
   } catch(e) { alert('Delete failed: ' + e.message); }
 };
+
+// =================================================================
+//   PHASE 9 — FREEZE USER, EDIT PROMOTED USER, ACTIVITY RECORDS,
+//             LOCATION COMPARISON DASHBOARD
+// =================================================================
+window.openFreezeUser = async function(uid, name, role) {
+  document.getElementById('frzUid').value = uid;
+  document.getElementById('frzName').textContent = name || uid;
+  document.getElementById('frzRole').textContent = role || '';
+  document.getElementById('frzDays').value = 7;
+  document.getElementById('frzReason').value = '';
+  document.getElementById('frzMsg').textContent = '';
+  document.getElementById('frzMsg').className = 'alert';
+  document.getElementById('freezeUserModal').classList.add('show');
+};
+
+window.confirmFreezeUser = async function() {
+  const uid = document.getElementById('frzUid').value;
+  const name = document.getElementById('frzName').textContent;
+  const role = document.getElementById('frzRole').textContent;
+  const days = parseInt(document.getElementById('frzDays').value)||7;
+  const reason = document.getElementById('frzReason').value.trim();
+  const msg = document.getElementById('frzMsg');
+  if (days < 1) { msg.className='alert alert-danger show'; msg.textContent='Enter at least 1 day.'; return; }
+  msg.className='alert alert-info show'; msg.textContent='⏳ Freezing…';
+  try {
+    const until = new Date(); until.setDate(until.getDate() + days);
+    await setDoc(doc(db, 'frozenUsers', uid), {
+      uid, name, role, days, reason,
+      frozenAt: serverTimestamp(),
+      frozenUntil: until,
+      frozenBy: currentUser.uid, frozenByName: currentUser.displayName || currentUser.email,
+      active: true
+    }, { merge: true });
+    msg.className='alert alert-success show'; msg.textContent=`✅ ${name} is frozen for ${days} day(s).`;
+    showToast(`Account frozen for ${days} day(s)`,'success');
+    await logActivity({ status:'success', category:'Freeze', action:'Freeze user', details:`uid=${uid} role=${role} days=${days} reason=${reason}` });
+    setTimeout(() => closeModal('freezeUserModal'), 900);
+  } catch(e) {
+    msg.className='alert alert-danger show'; msg.textContent='Failed: '+e.message;
+    await logActivity({ status:'fail', category:'Freeze', action:'Freeze user', details:'Error: '+e.message });
+  }
+};
+
+window.unfreezeUser = async function(uid, name) {
+  if (!confirm(`Unfreeze "${name}" right now?`)) return;
+  try {
+    await deleteDoc(doc(db, 'frozenUsers', uid));
+    showToast('Unfrozen successfully','success');
+    await logActivity({ status:'success', category:'Freeze', action:'Unfreeze user', details:`uid=${uid}` });
+    loadFrozenUsers();
+  } catch(e) { showToast('Failed: '+e.message,'error'); }
+};
+
+window.loadFrozenUsers = async function() {
+  const tbody = document.getElementById('frozenUsersBody'); if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--gray);padding:20px"><i class="fas fa-spinner fa-spin"></i> Loading…</td></tr>';
+  try {
+    const snap = await getDocs(collection(db,'frozenUsers'));
+    if (snap.empty) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--gray);padding:20px">No frozen accounts.</td></tr>'; return; }
+    const now = Date.now();
+    const rows = [];
+    for (const d of snap.docs) {
+      const f = d.data();
+      const untilMs = f.frozenUntil?.toMillis?.() || 0;
+      const left = Math.max(0, Math.ceil((untilMs - now) / 86400000));
+      // Auto-cleanup expired
+      if (untilMs && untilMs < now) {
+        try { await deleteDoc(d.ref); } catch(_){}
+        continue;
+      }
+      rows.push(`<tr>
+        <td><strong>${(f.name||'').replace(/[<>]/g,'')}</strong><br><span style="font-size:10px;color:var(--gray);font-family:monospace">${d.id}</span></td>
+        <td><span class="badge">${f.role||'—'}</span></td>
+        <td style="font-size:11px">${f.frozenAt?.toDate?.()?.toLocaleString()||'—'}</td>
+        <td style="font-size:11px">${f.frozenUntil?.toDate?.()?.toLocaleString()||'—'}</td>
+        <td style="text-align:center;font-weight:700;color:${left<=1?'#ef4444':'#22c55e'}">${left} day${left===1?'':'s'}</td>
+        <td style="font-size:11px">${(f.reason||'').replace(/[<>]/g,'')}</td>
+        <td><button class="btn btn-sm" style="background:#22c55e;color:#fff" onclick="unfreezeUser('${d.id}','${(f.name||'').replace(/'/g,'&#39;')}')"><i class="fas fa-snowflake"></i> Unfreeze Now</button></td>
+      </tr>`);
+    }
+    tbody.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="7" style="text-align:center;color:var(--gray);padding:20px">No active freezes (expired ones auto-cleaned).</td></tr>';
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#ef4444">Error: ${e.message}</td></tr>`;
+  }
+};
+
+// ===== EDIT PROMOTED USER (change role / authorities without demoting) =====
+const ALL_AUTHS = [
+  ['dashboard','Small Dashboard'],['connectEmployer','Approve Connect Employer'],['resumeDownload','Approve Resume Download'],
+  ['contact','Approve Contact Requests'],['membership','Approve Membership'],['jobPost','Approve Job Posts'],
+  ['jobList','Manage Job List'],['candidates','Candidate List & Hiring'],
+  ['walletTopups','Wallet Top-ups'],['walletWithdrawals','Wallet Withdrawals'],['walletRecords','Wallet Records'],
+  ['coupons','Coupons'],['discounts','Discounts & Offers'],['referrals','Refer & Earn'],
+  ['enquiries','Enquiries'],['feedback','Feedback'],['resumeRecords','AI Resume Records'],
+  ['engagement','Engagement Tools'],['content','Site Content']
+];
+const EDITABLE_ROLES = ['Admin','Operations Manager','Branch Head','Team Leader','Accountant','Recruiter','Support Executive','Marketing Manager'];
+
+window.openEditPromotedUser = async function(uid) {
+  try {
+    const us = await getDoc(doc(db,'users',uid));
+    if (!us.exists()) { showToast('User not found','error'); return; }
+    const u = us.data();
+    document.getElementById('editPuUid').value = uid;
+    document.getElementById('editPuName').textContent = u.displayName || u.email;
+    document.getElementById('editPuEmail').textContent = u.email || '';
+    const roleSel = document.getElementById('editPuRole');
+    roleSel.innerHTML = EDITABLE_ROLES.map(r => `<option value="${r}" ${u.role===r?'selected':''}>${r}</option>`).join('');
+    const auths = u.authorities || [];
+    document.getElementById('editPuAuths').innerHTML = ALL_AUTHS.map(([k,l]) =>
+      `<label style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.05);padding:6px 10px;border-radius:18px;cursor:pointer;font-size:12px">
+        <input type="checkbox" value="${k}" ${auths.includes(k)?'checked':''}/> ${l}
+      </label>`).join('');
+    document.getElementById('editPuMsg').textContent = '';
+    document.getElementById('editPuMsg').className = 'alert';
+    document.getElementById('editPromotedUserModal').classList.add('show');
+  } catch(e) { showToast('Failed: '+e.message,'error'); }
+};
+
+window.saveEditPromotedUser = async function() {
+  const uid = document.getElementById('editPuUid').value;
+  const newRole = document.getElementById('editPuRole').value;
+  const checks = [...document.querySelectorAll('#editPuAuths input[type=checkbox]:checked')].map(c => c.value);
+  const msg = document.getElementById('editPuMsg');
+  msg.className='alert alert-info show'; msg.textContent='⏳ Saving…';
+  try {
+    await updateDoc(doc(db,'users',uid), { role: newRole, authorities: checks, roleUpdatedAt: serverTimestamp(), roleUpdatedBy: currentUser.uid });
+    msg.className='alert alert-success show'; msg.textContent=`✅ Saved. Role: ${newRole} • ${checks.length} authorit${checks.length===1?'y':'ies'}.`;
+    showToast('Promoted user updated','success');
+    await logActivity({ status:'success', category:'Promotion', action:'Edit promoted user', details:`uid=${uid} newRole=${newRole} auths=${checks.length}` });
+    setTimeout(() => { closeModal('editPromotedUserModal'); loadAdminWorking(); }, 900);
+  } catch(e) {
+    msg.className='alert alert-danger show'; msg.textContent='Failed: '+e.message;
+    await logActivity({ status:'fail', category:'Promotion', action:'Edit promoted user', details:'Error: '+e.message });
+  }
+};
+
+// ===== ACTIVITY RECORDS (success/fail audit log) =====
+let __actrAll = [];
+window.loadActivityRecords = async function() {
+  const tbody = document.getElementById('activityRecordsBody'); if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px"><i class="fas fa-spinner fa-spin"></i> Loading…</td></tr>';
+  try {
+    const snap = await getDocs(collection(db,'activityRecords'));
+    __actrAll = snap.docs.map(d => ({ id:d.id, ...d.data() }))
+      .sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0));
+    // Populate category filter
+    const cSel = document.getElementById('actrFilterCat');
+    if (cSel && cSel.options.length <= 1) {
+      const cats = [...new Set(__actrAll.map(a => a.category||'').filter(Boolean))].sort();
+      cats.forEach(c => { const o = document.createElement('option'); o.value=c; o.textContent=c; cSel.appendChild(o); });
+    }
+    renderActivityRecords();
+  } catch(e) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#ef4444">Error: ${e.message}</td></tr>`; }
+};
+
+window.renderActivityRecords = function() {
+  const tbody = document.getElementById('activityRecordsBody'); if (!tbody) return;
+  const fs = document.getElementById('actrFilterStatus')?.value || '';
+  const fc = document.getElementById('actrFilterCat')?.value || '';
+  const fd = document.getElementById('actrFilterDate')?.value || '';
+  let list = __actrAll;
+  if (fs) list = list.filter(a => (a.status||'')===fs);
+  if (fc) list = list.filter(a => (a.category||'')===fc);
+  if (fd) list = list.filter(a => { const d=a.createdAt?.toDate?.(); return d && d.toISOString().slice(0,10)===fd; });
+  // Stats
+  const totalS = list.filter(a=>a.status==='success').length;
+  const totalF = list.filter(a=>a.status==='fail').length;
+  const stats = document.getElementById('actrStats');
+  if (stats) stats.innerHTML = `
+    <div class="stat-card"><div class="stat-label">Showing</div><div class="stat-value">${list.length}</div></div>
+    <div class="stat-card" style="border-color:#22c55e55"><div class="stat-label">✅ Success</div><div class="stat-value" style="color:#22c55e">${totalS}</div></div>
+    <div class="stat-card" style="border-color:#ef444455"><div class="stat-label">❌ Failed</div><div class="stat-value" style="color:#ef4444">${totalF}</div></div>
+    <div class="stat-card"><div class="stat-label">Total Records</div><div class="stat-value">${__actrAll.length}</div></div>`;
+  if (!list.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">No activity records match.</td></tr>'; return; }
+  tbody.innerHTML = list.slice(0,500).map(a => `<tr>
+    <td style="font-size:11px;white-space:nowrap">${a.createdAt?.toDate?.()?.toLocaleString()||'—'}</td>
+    <td>${a.status==='success' ? '<span class="badge badge-success">✅ Success</span>' : '<span class="badge badge-danger">❌ Failed</span>'}</td>
+    <td><span class="badge">${(a.category||'').replace(/[<>]/g,'')}</span></td>
+    <td>${(a.action||'').replace(/[<>]/g,'')}</td>
+    <td style="font-size:11px">${(a.byName||'').replace(/[<>]/g,'')}</td>
+    <td style="font-size:11px;max-width:340px;overflow-wrap:break-word">${(a.details||'').replace(/[<>]/g,'')}</td>
+  </tr>`).join('');
+};
+
+// ===== LOCATION COMPARISON DASHBOARD =====
+window.loadLocationCompare = async function() {
+  const tbody = document.getElementById('locationCompareBody');
+  const status = document.getElementById('lcStatus');
+  if (!tbody) return;
+  status.textContent = '⏳ Building…';
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--gray);padding:20px"><i class="fas fa-spinner fa-spin"></i> Aggregating…</td></tr>';
+  const fromV = document.getElementById('lcFrom')?.value || '';
+  const toV = document.getElementById('lcTo')?.value || '';
+  const fromMs = fromV ? new Date(fromV+'T00:00:00').getTime() : 0;
+  const toMs = toV ? new Date(toV+'T23:59:59').getTime() : Number.MAX_SAFE_INTEGER;
+  try {
+    const [jobsSnap, reqSnap, appsSnap] = await Promise.all([
+      getDocs(collection(db,'jobPosts')),
+      getDocs(collection(db,'requests')),
+      getDocs(collection(db,'applications'))
+    ]);
+    const buckets = {}; // state -> {jobs,contacts,resumeDl,memberships,hired}
+    const inRange = (ts) => { const t = ts?.toMillis?.() || 0; return t >= fromMs && t <= toMs; };
+    const bump = (st, key) => { st = st || 'Unknown'; (buckets[st] ||= {jobs:0,contacts:0,resumeDl:0,memberships:0,hired:0})[key]++; };
+    jobsSnap.docs.forEach(d => { const j=d.data(); if (j.status==='live' && inRange(j.approvedAt||j.createdAt)) bump(j.state||j.location, 'jobs'); });
+    reqSnap.docs.forEach(d => {
+      const r=d.data(); if (r.status!=='approved' || !inRange(r.approvedAt||r.createdAt)) return;
+      const st = r.state || r.targetState || r.location || '';
+      if (r.type==='contact') bump(st,'contacts');
+      else if (r.type==='resumeDownload') bump(st,'resumeDl');
+      else if (r.type==='membership') bump(st,'memberships');
+    });
+    appsSnap.docs.forEach(d => { const a=d.data(); if (a.status==='hired' && inRange(a.hiredAt||a.createdAt)) bump(a.state||a.jobState||'', 'hired'); });
+    const rows = Object.entries(buckets).sort((a,b)=>{
+      const sa = a[1].jobs+a[1].contacts+a[1].resumeDl+a[1].memberships+a[1].hired;
+      const sb = b[1].jobs+b[1].contacts+b[1].resumeDl+b[1].memberships+b[1].hired;
+      return sb-sa;
+    });
+    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--gray);padding:20px">No data in this date range.</td></tr>'; status.textContent='Empty.'; return; }
+    tbody.innerHTML = rows.map(([st,b]) => {
+      const total = b.jobs+b.contacts+b.resumeDl+b.memberships+b.hired;
+      return `<tr>
+        <td><strong>${st.replace(/[<>]/g,'')}</strong></td>
+        <td style="text-align:center">${b.jobs}</td>
+        <td style="text-align:center">${b.contacts}</td>
+        <td style="text-align:center">${b.resumeDl}</td>
+        <td style="text-align:center">${b.memberships}</td>
+        <td style="text-align:center">${b.hired}</td>
+        <td style="text-align:center;font-weight:700;color:#22c55e">${total}</td>
+      </tr>`;
+    }).join('');
+    status.innerHTML = `✅ Built dashboard for <strong>${rows.length}</strong> location(s)${fromV||toV?` (${fromV||'start'} → ${toV||'now'})`:''}.`;
+    window.__lcRows = rows;
+  } catch(e) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#ef4444">Error: ${e.message}</td></tr>`; status.textContent='Failed: '+e.message; }
+};
+
+window.exportLocationCompare = async function() {
+  const rows = window.__lcRows || [];
+  if (!rows.length) { showToast('Build the dashboard first','error'); return; }
+  try {
+    if (!window.jspdf) await new Promise((res, rej) => { const s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js'; s.onload=res; s.onerror=rej; document.head.appendChild(s); });
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF();
+    pdf.setFontSize(16); pdf.text('Location Comparison Dashboard', 14, 18);
+    pdf.setFontSize(10); pdf.text('Generated: ' + new Date().toLocaleString(), 14, 26);
+    let y = 38;
+    pdf.setFontSize(11); pdf.setFont(undefined,'bold');
+    pdf.text('Location', 14, y); pdf.text('Jobs', 70, y); pdf.text('Contacts', 90, y); pdf.text('Resume', 115, y); pdf.text('Memb.', 138, y); pdf.text('Hired', 160, y); pdf.text('Total', 180, y);
+    pdf.setFont(undefined,'normal'); y += 6;
+    rows.forEach(([st,b]) => {
+      const total = b.jobs+b.contacts+b.resumeDl+b.memberships+b.hired;
+      pdf.text(String(st).slice(0,28), 14, y); pdf.text(String(b.jobs), 70, y); pdf.text(String(b.contacts), 90, y);
+      pdf.text(String(b.resumeDl), 115, y); pdf.text(String(b.memberships), 138, y); pdf.text(String(b.hired), 160, y); pdf.text(String(total), 180, y);
+      y += 6; if (y > 280) { pdf.addPage(); y = 20; }
+    });
+    pdf.save(`location-comparison-${Date.now()}.pdf`);
+    showToast('PDF downloaded','success');
+    await logActivity({ status:'success', category:'Report', action:'Export Location Comparison PDF', details:`rows=${rows.length}` });
+  } catch(e) { showToast('Export failed: '+e.message,'error'); }
+};
 </script>
+
+<!-- ============ FREEZE USER MODAL ============ -->
+<div class="modal-overlay" id="freezeUserModal">
+  <div class="modal-box" style="max-width:520px">
+    <div class="modal-header">
+      <div class="modal-title"><i class="fas fa-snowflake" style="color:#0ea5e9"></i> Freeze User Account</div>
+      <button class="modal-close" onclick="closeModal('freezeUserModal')">&times;</button>
+    </div>
+    <input type="hidden" id="frzUid"/>
+    <div style="margin:12px 0 6px"><strong id="frzName"></strong> <span style="color:var(--gray);font-size:11px">(<span id="frzRole"></span>)</span></div>
+    <div style="background:rgba(14,165,233,0.08);border:1px solid rgba(14,165,233,0.3);border-radius:10px;padding:10px;margin:10px 0;font-size:12px;color:rgba(255,255,255,0.85)">
+      <i class="fas fa-info-circle" style="color:#0ea5e9"></i> While frozen, this user cannot use any feature and cannot logout — they will see only a "Account Frozen" screen until the freeze auto-lifts.
+    </div>
+    <div style="margin:10px 0">
+      <label style="font-size:12px;color:var(--gray)">Freeze for how many days?</label>
+      <input type="number" id="frzDays" class="form-control" min="1" max="365" value="7"/>
+    </div>
+    <div style="margin:10px 0">
+      <label style="font-size:12px;color:var(--gray)">Reason (visible only to Owner)</label>
+      <textarea id="frzReason" class="form-control" rows="2" placeholder="e.g. Suspicious activity, pending verification…"></textarea>
+    </div>
+    <div id="frzMsg" class="alert"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+      <button class="btn btn-sm" style="background:rgba(255,255,255,0.08)" onclick="closeModal('freezeUserModal')">Cancel</button>
+      <button class="btn btn-sm" style="background:#0ea5e9;color:#fff" onclick="confirmFreezeUser()"><i class="fas fa-snowflake"></i> Freeze Now</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ EDIT PROMOTED USER MODAL ============ -->
+<div class="modal-overlay" id="editPromotedUserModal">
+  <div class="modal-box" style="max-width:680px;max-height:85vh;overflow-y:auto">
+    <div class="modal-header">
+      <div class="modal-title"><i class="fas fa-pen" style="color:#f59e0b"></i> Edit Promoted User</div>
+      <button class="modal-close" onclick="closeModal('editPromotedUserModal')">&times;</button>
+    </div>
+    <input type="hidden" id="editPuUid"/>
+    <div style="margin:10px 0"><strong id="editPuName"></strong> <span style="color:var(--gray);font-size:11px" id="editPuEmail"></span></div>
+    <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);border-radius:10px;padding:10px;margin:10px 0;font-size:12px;color:rgba(255,255,255,0.85)">
+      <i class="fas fa-info-circle" style="color:#f59e0b"></i> Change role and authorities <strong>without demoting</strong>. The user keeps their promoted status and continues working.
+    </div>
+    <div style="margin:10px 0">
+      <label style="font-size:12px;color:var(--gray)">Role</label>
+      <select id="editPuRole" class="form-control"></select>
+    </div>
+    <div style="margin:10px 0">
+      <label style="font-size:12px;color:var(--gray)">Authorities</label>
+      <div id="editPuAuths" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px"></div>
+    </div>
+    <div id="editPuMsg" class="alert"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+      <button class="btn btn-sm" style="background:rgba(255,255,255,0.08)" onclick="closeModal('editPromotedUserModal')">Cancel</button>
+      <button class="btn btn-sm" style="background:#f59e0b;color:#fff" onclick="saveEditPromotedUser()"><i class="fas fa-save"></i> Save Changes</button>
+    </div>
+  </div>
+</div>
 
 <script src="js/i18n.js"></script>
 <script src="js/chatbot.js"></script>
 <script src="js/pwa-install.js"></script>
+<script type="module" src="js/freeze-guard.js"></script>
 </body>
 </html>
