@@ -84,11 +84,35 @@ const GroupChat = {
       .gc-thread-head.gc-grab { cursor:grabbing; }
       .gc-screenshot-preview { padding:10px 12px; background:rgba(212,175,55,0.08); border-top:1px solid rgba(212,175,55,0.25);
         border-bottom:1px solid rgba(212,175,55,0.15); display:flex; gap:10px; align-items:center; }
-      .gc-screenshot-preview img { width:64px; height:64px; object-fit:cover; border-radius:8px; border:1px solid rgba(212,175,55,0.4); }
-      .gc-screenshot-preview .gc-sp-info { flex:1; font-size:11px; color:#d4af37; }
-      .gc-screenshot-preview .gc-sp-info b { color:#fff; display:block; font-size:12px; margin-bottom:2px; }
+      .gc-screenshot-preview img { width:64px; height:64px; object-fit:cover; border-radius:8px; border:1px solid rgba(212,175,55,0.4); cursor:zoom-in; }
+      .gc-screenshot-preview .gc-sp-info { flex:1; font-size:11px; color:#d4af37; min-width:0; }
+      .gc-screenshot-preview .gc-sp-info b { color:#fff; display:block; font-size:12px; margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .gc-screenshot-preview .gc-sp-actions { display:flex; flex-direction:column; gap:5px; }
+      .gc-screenshot-preview button.gc-edit-btn { background:rgba(212,175,55,0.18); color:#d4af37; border:1px solid rgba(212,175,55,0.45);
+        padding:6px 10px; border-radius:6px; font-size:11px; cursor:pointer; white-space:nowrap; }
+      .gc-screenshot-preview button.gc-edit-btn:hover { background:rgba(212,175,55,0.32); }
       .gc-screenshot-preview button { background:rgba(239,68,68,0.18); color:#ef4444; border:1px solid rgba(239,68,68,0.4);
-        padding:6px 10px; border-radius:6px; font-size:11px; cursor:pointer; }
+        padding:6px 10px; border-radius:6px; font-size:11px; cursor:pointer; white-space:nowrap; }
+      .gc-crop-modal { position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:10100; display:flex;
+        align-items:center; justify-content:center; padding:16px; }
+      .gc-crop-card { background:#13131f; border:1px solid rgba(212,175,55,0.35); border-radius:14px;
+        max-width:760px; width:100%; max-height:92vh; display:flex; flex-direction:column; overflow:hidden; }
+      .gc-crop-card h3 { margin:0; padding:12px 16px; color:#d4af37; font-size:14px; border-bottom:1px solid rgba(212,175,55,0.25);
+        display:flex; justify-content:space-between; align-items:center; }
+      .gc-crop-card h3 button { background:transparent; border:none; color:#fff; font-size:22px; cursor:pointer; padding:0 6px; line-height:1; }
+      .gc-crop-tools { padding:8px 12px; background:#0f0f1a; border-bottom:1px solid rgba(212,175,55,0.15);
+        display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+      .gc-crop-tools button { background:rgba(212,175,55,0.12); border:1px solid rgba(212,175,55,0.3); color:#d4af37;
+        padding:5px 10px; border-radius:6px; font-size:11px; cursor:pointer; }
+      .gc-crop-tools button:hover { background:rgba(212,175,55,0.22); }
+      .gc-crop-tools button.active { background:#d4af37; color:#0a0a14; }
+      .gc-crop-stage { flex:1; min-height:240px; max-height:60vh; overflow:hidden; background:#000; position:relative; }
+      .gc-crop-stage img { display:block; max-width:100%; max-height:60vh; }
+      .gc-crop-actions { padding:10px 14px; display:flex; gap:8px; justify-content:flex-end; border-top:1px solid rgba(212,175,55,0.2); background:#0f0f1a; }
+      .gc-crop-actions button.cancel { background:rgba(255,255,255,0.06); color:#fff; border:1px solid rgba(255,255,255,0.18);
+        padding:8px 14px; border-radius:8px; cursor:pointer; font-size:12px; }
+      .gc-crop-actions button.apply { background:linear-gradient(135deg,#d4af37,#b8941f); color:#0a0a14; border:none;
+        padding:8px 16px; border-radius:8px; cursor:pointer; font-size:12px; font-weight:700; }
       .gc-head .gc-title { flex:1; font-weight:700; color:#d4af37; font-size:15px; }
       .gc-head button { background:transparent; border:none; color:#fff; cursor:pointer; font-size:18px;
         width:32px; height:32px; border-radius:8px; }
@@ -812,9 +836,12 @@ const GroupChat = {
     const sizeKB = Math.round(file.size / 1024);
     const fname = (file.name || 'screenshot.png').slice(0, 48);
     bar.innerHTML = `<div class="gc-screenshot-preview">
-      <img src="${url}" alt="preview"/>
-      <div class="gc-sp-info"><b>${this.escape(fname)}</b>${sizeKB} KB · ready to send. Add a caption below or just hit send.</div>
-      <button onclick="GroupChat._cancelPendingImage()" title="Remove"><i class="fas fa-times"></i> Cancel</button>
+      <img src="${url}" alt="preview" onclick="GroupChat.openCropModal()" title="Click to edit / crop"/>
+      <div class="gc-sp-info"><b>${this.escape(fname)}</b>${sizeKB} KB · review below. Click image or "Edit" to crop before sending.</div>
+      <div class="gc-sp-actions">
+        <button class="gc-edit-btn" onclick="GroupChat.openCropModal()" title="Crop / edit"><i class="fas fa-crop"></i> Edit</button>
+        <button onclick="GroupChat._cancelPendingImage()" title="Remove"><i class="fas fa-times"></i> Cancel</button>
+      </div>
     </div>`;
     // Update placeholder + send button hint
     const inp = document.getElementById('gc-msg-input'); if (inp) inp.placeholder = 'Add an optional caption…';
@@ -828,6 +855,120 @@ const GroupChat = {
     const bar = document.getElementById('gc-screenshot-preview-bar');
     if (bar) { bar.style.display = 'none'; bar.innerHTML = ''; }
     const inp = document.getElementById('gc-msg-input'); if (inp) inp.placeholder = 'Type a message… (use @ to mention)';
+  },
+
+  // ---------------------- IMAGE CROP / EDIT MODAL ----------------------
+  // Loads CropperJS from CDN on demand and shows a full crop UI.
+  async _ensureCropper() {
+    if (window.Cropper) return;
+    if (!document.getElementById('gc-cropper-css')) {
+      const link = document.createElement('link');
+      link.id = 'gc-cropper-css'; link.rel = 'stylesheet';
+      link.href = 'https://cdn.jsdelivr.net/npm/cropperjs@1.6.1/dist/cropper.min.css';
+      document.head.appendChild(link);
+    }
+    await new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/cropperjs@1.6.1/dist/cropper.min.js';
+      s.onload = res; s.onerror = () => rej(new Error('Failed to load CropperJS'));
+      document.head.appendChild(s);
+    });
+  },
+
+  async openCropModal() {
+    if (!this._pendingImage) return;
+    try {
+      await this._ensureCropper();
+    } catch(e) { alert('Could not load crop tool. Are you online?'); return; }
+    const file = this._pendingImage.file;
+    const url = this._pendingImage.url;
+    document.querySelector('.gc-crop-modal')?.remove();
+    const modal = document.createElement('div');
+    modal.className = 'gc-crop-modal';
+    modal.innerHTML = `
+      <div class="gc-crop-card">
+        <h3>
+          <span><i class="fas fa-crop"></i> Edit Screenshot — drag corners to crop</span>
+          <button onclick="GroupChat._closeCropModal()" title="Cancel">&times;</button>
+        </h3>
+        <div class="gc-crop-tools">
+          <button data-ratio="NaN" class="active" onclick="GroupChat._setCropRatio(this, NaN)">Free</button>
+          <button data-ratio="1" onclick="GroupChat._setCropRatio(this, 1)">1 : 1</button>
+          <button data-ratio="${4/3}" onclick="GroupChat._setCropRatio(this, 4/3)">4 : 3</button>
+          <button data-ratio="${16/9}" onclick="GroupChat._setCropRatio(this, 16/9)">16 : 9</button>
+          <button data-ratio="${9/16}" onclick="GroupChat._setCropRatio(this, 9/16)">9 : 16</button>
+          <span style="flex:1"></span>
+          <button onclick="GroupChat._cropRotate(-90)" title="Rotate left"><i class="fas fa-undo"></i></button>
+          <button onclick="GroupChat._cropRotate(90)" title="Rotate right"><i class="fas fa-redo"></i></button>
+          <button onclick="GroupChat._cropFlip('h')" title="Flip horizontal"><i class="fas fa-arrows-alt-h"></i></button>
+          <button onclick="GroupChat._cropFlip('v')" title="Flip vertical"><i class="fas fa-arrows-alt-v"></i></button>
+          <button onclick="GroupChat._cropReset()" title="Reset"><i class="fas fa-sync"></i> Reset</button>
+        </div>
+        <div class="gc-crop-stage">
+          <img id="gc-crop-img" src="${url}" alt="to crop"/>
+        </div>
+        <div class="gc-crop-actions">
+          <button class="cancel" onclick="GroupChat._closeCropModal()">Cancel</button>
+          <button class="apply" onclick="GroupChat._applyCrop()"><i class="fas fa-check"></i> Apply &amp; Use</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    const img = modal.querySelector('#gc-crop-img');
+    this._cropFlipState = { h: 1, v: 1 };
+    this._cropper = new window.Cropper(img, {
+      viewMode: 1,
+      dragMode: 'move',
+      autoCropArea: 0.95,
+      background: false,
+      responsive: true,
+      movable: true,
+      zoomable: true,
+      rotatable: true,
+      scalable: true,
+      checkOrientation: false
+    });
+    this._origCropFile = file;
+  },
+  _setCropRatio(btn, ratio) {
+    if (!this._cropper) return;
+    document.querySelectorAll('.gc-crop-tools button[data-ratio]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    this._cropper.setAspectRatio(ratio);
+  },
+  _cropRotate(deg) { if (this._cropper) this._cropper.rotate(deg); },
+  _cropFlip(axis) {
+    if (!this._cropper) return;
+    if (axis === 'h') { this._cropFlipState.h *= -1; this._cropper.scaleX(this._cropFlipState.h); }
+    else { this._cropFlipState.v *= -1; this._cropper.scaleY(this._cropFlipState.v); }
+  },
+  _cropReset() {
+    if (!this._cropper) return;
+    this._cropFlipState = { h: 1, v: 1 };
+    this._cropper.reset();
+  },
+  _closeCropModal() {
+    try { this._cropper?.destroy(); } catch(_){}
+    this._cropper = null;
+    document.querySelector('.gc-crop-modal')?.remove();
+  },
+  async _applyCrop() {
+    if (!this._cropper || !this._pendingImage) { this._closeCropModal(); return; }
+    const canvas = this._cropper.getCroppedCanvas({
+      maxWidth: 2000, maxHeight: 2000,
+      imageSmoothingEnabled: true, imageSmoothingQuality: 'high'
+    });
+    if (!canvas) { this._closeCropModal(); return; }
+    const orig = this._origCropFile || this._pendingImage.file;
+    const mime = (orig.type && orig.type !== 'image/gif') ? orig.type : 'image/png';
+    const quality = mime === 'image/jpeg' ? 0.92 : undefined;
+    canvas.toBlob((blob) => {
+      if (!blob) { this._closeCropModal(); return; }
+      const newName = (orig.name || 'screenshot.png').replace(/(\.[^.]+)?$/, '_edited' + (mime==='image/jpeg'?'.jpg':'.png'));
+      const newFile = new File([blob], newName, { type: mime, lastModified: Date.now() });
+      this._closeCropModal();
+      // Re-stage with the cropped result; preview bar refreshes automatically
+      this._stagePendingImage(newFile);
+    }, mime, quality);
   },
 
   // Instant / optimistic upload: show the picture in the thread INSTANTLY using a local

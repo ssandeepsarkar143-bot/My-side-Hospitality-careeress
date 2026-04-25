@@ -180,8 +180,9 @@ style.textContent = `
 #hc-status{font-size:10px;color:#22c55e;display:flex;align-items:center;gap:4px}
 #hc-status::before{content:'';width:5px;height:5px;border-radius:50%;background:#22c55e;flex-shrink:0;animation:hcGlow 2s infinite}
 @keyframes hcGlow{0%,100%{opacity:1}50%{opacity:0.4}}
-#hc-close{background:none;border:none;cursor:pointer;color:rgba(255,255,255,.4);font-size:16px;padding:4px 6px;border-radius:6px;flex-shrink:0}
-#hc-close:hover{color:#fff;background:rgba(255,255,255,.1)}
+#hc-close,#hc-min{background:none;border:none;cursor:pointer;color:rgba(255,255,255,.4);font-size:18px;padding:4px 8px;border-radius:6px;flex-shrink:0;line-height:1}
+#hc-close:hover,#hc-min:hover{color:#fff;background:rgba(255,255,255,.1)}
+#hc-min{font-weight:700;font-size:22px}
 #hc-msgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:9px;min-height:200px;max-height:310px;scrollbar-width:thin;scrollbar-color:rgba(212,175,55,.2) transparent}
 #hc-msgs::-webkit-scrollbar{width:3px}
 #hc-msgs::-webkit-scrollbar-thumb{background:rgba(212,175,55,.25);border-radius:2px}
@@ -231,6 +232,7 @@ win.innerHTML = `
     <div id="hc-name">HC Assistant</div>
     <div id="hc-status">Online · Powered by Google Gemini</div>
   </div>
+  <button id="hc-min" title="Minimize">−</button>
   <button id="hc-close" title="Close">✕</button>
 </div>
 <div id="hc-msgs"></div>
@@ -463,7 +465,7 @@ function ensureOpen() {
 
 let isDragging = false, dragStartX, dragStartY, winStartRight, winStartBottom;
 function onDragStart(e) {
-  if (e.target.closest('#hc-close')) return;
+  if (e.target.closest('#hc-close') || e.target.closest('#hc-min')) return;
   isDragging = true;
   const rect = win.getBoundingClientRect();
   const vw = window.innerWidth, vh = window.innerHeight;
@@ -513,6 +515,14 @@ btn.addEventListener('click', () => {
 document.getElementById('hc-close').addEventListener('click', (e) => {
   e.stopPropagation();
   win.style.display = 'none';
+});
+document.getElementById('hc-min').addEventListener('click', (e) => {
+  e.stopPropagation();
+  win.style.display = 'none';
+  // Pulse the floating chat-head so the user sees where the assistant minimised to
+  btn.style.transform = 'scale(1.18)';
+  btn.style.boxShadow = '0 14px 50px rgba(212,175,55,.95),inset 0 2px 12px rgba(255,255,255,.5)';
+  setTimeout(() => { btn.style.transform = ''; btn.style.boxShadow = ''; }, 450);
 });
 document.getElementById('hc-send').addEventListener('click', () => sendMsg());
 inputEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendMsg(); });
