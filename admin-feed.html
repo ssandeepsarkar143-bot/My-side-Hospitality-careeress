@@ -509,7 +509,9 @@ function setupAuthority() {
     document.getElementById('nav_userControl_wrap').style.display = 'block';
     document.getElementById('adminUserControl').classList.remove('hidden');
     loadAdminUsers();
-    // Phase 11 — show Revenue Dashboard restricted to allocated locations
+  }
+  // Phase 11 — Revenue Dashboard is now a SEPARATE permission, restricted to allocated locations
+  if (auth_perms.revenueDashboard) {
     const revWrap = document.getElementById('adminRevenueDashboard');
     if (revWrap) {
       revWrap.classList.remove('hidden');

@@ -1087,10 +1087,11 @@
             <input type="checkbox" class="auth-cat-toggle" data-cat="visibility" onchange="toggleAuthCategory('visibility', this.checked)"/>
             <span class="auth-cat-title">👁️ Dashboard &amp; Visibility</span>
           </label>
-          <span class="auth-cat-count" id="auth-cat-count-visibility">0/1</span>
+          <span class="auth-cat-count" id="auth-cat-count-visibility">0/2</span>
         </div>
         <div class="authority-grid">
           <label class="authority-item"><input type="checkbox" id="auth_dashboard" data-cat="visibility" checked/><div class="authority-label"><strong>Small User Control Dashboard</strong>View basic user information</div></label>
+          <label class="authority-item"><input type="checkbox" id="auth_revenueDashboard" data-cat="visibility"/><div class="authority-label"><strong>Revenue Dashboard (Location Filtered)</strong>View revenue stats &amp; charts for allocated states only</div></label>
         </div>
       </div>
 
@@ -2033,15 +2034,15 @@ async function getAllKnownStates() {
 // Role-based authority presets
 const ROLE_PRESETS = {
   'Admin': ['dashboard'],
-  'Branch Head': ['dashboard','connectEmployer','resumeDownload','contact','membership','jobPost','jobList','candidates','walletTopups','walletWithdrawals','walletRecords','enquiries','feedback','resumeRecords'],
+  'Branch Head': ['dashboard','revenueDashboard','connectEmployer','resumeDownload','contact','membership','jobPost','jobList','candidates','walletTopups','walletWithdrawals','walletRecords','enquiries','feedback','resumeRecords'],
   'Team Leader': ['dashboard','candidates','jobList','jobPost','contact'],
-  'Accountant': ['dashboard','walletTopups','walletWithdrawals','walletRecords','membership','enquiries'],
+  'Accountant': ['dashboard','revenueDashboard','walletTopups','walletWithdrawals','walletRecords','membership','enquiries'],
   'Recruiter': ['dashboard','candidates','contact','resumeDownload','jobPost','resumeRecords'],
   'Support Executive': ['dashboard','enquiries','feedback','contact'],
   'Marketing Manager': ['dashboard','coupons','discounts','referrals','engagement','content'],
-  'Operations Manager': ['dashboard','connectEmployer','resumeDownload','contact','membership','jobPost','jobList','candidates','walletTopups','walletWithdrawals','walletRecords','coupons','discounts','referrals','enquiries','feedback','resumeRecords','engagement','content','settings','promote']
+  'Operations Manager': ['dashboard','revenueDashboard','connectEmployer','resumeDownload','contact','membership','jobPost','jobList','candidates','walletTopups','walletWithdrawals','walletRecords','coupons','discounts','referrals','enquiries','feedback','resumeRecords','engagement','content','settings','promote']
 };
-const ALL_AUTH_KEYS = ['dashboard','connectEmployer','resumeDownload','contact','membership','jobPost','jobList','candidates','walletTopups','walletWithdrawals','walletRecords','coupons','discounts','referrals','enquiries','feedback','resumeRecords','engagement','content','settings','promote'];
+const ALL_AUTH_KEYS = ['dashboard','revenueDashboard','connectEmployer','resumeDownload','contact','membership','jobPost','jobList','candidates','walletTopups','walletWithdrawals','walletRecords','coupons','discounts','referrals','enquiries','feedback','resumeRecords','engagement','content','settings','promote'];
 
 window.applyRolePreset = function() {
   const role = document.getElementById('auth_role').value;
@@ -2171,7 +2172,8 @@ window.confirmPromote = async function() {
   const targetUser = allUsers.find(u => u.id === promoteUserId) || {};
   const wasAdmin = targetUser.role === 'Admin';
   const authorityLabels = {
-    dashboard:'Small Dashboard', connectEmployer:'Approve Connect Employer', resumeDownload:'Approve Resume Download',
+    dashboard:'Small Dashboard', revenueDashboard:'Revenue Dashboard (Location Filtered)',
+    connectEmployer:'Approve Connect Employer', resumeDownload:'Approve Resume Download',
     contact:'Approve Contact Requests', membership:'Approve Membership', jobPost:'Approve Job Posts',
     jobList:'Manage Job List', candidates:'Candidate List & Hiring', walletTopups:'Wallet Top-ups',
     walletWithdrawals:'Wallet Withdrawals', walletRecords:'Wallet Records', coupons:'Coupons',

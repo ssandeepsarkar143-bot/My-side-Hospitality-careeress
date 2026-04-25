@@ -196,7 +196,7 @@ style.textContent = `
 #hc-quick{padding:0 10px 8px;display:flex;gap:5px;flex-wrap:wrap}
 .hc-qb{background:rgba(212,175,55,.08);border:1px solid rgba(212,175,55,.22);color:#d4af37;font-size:11px;padding:4px 10px;border-radius:18px;cursor:pointer;white-space:nowrap;transition:background .15s}
 .hc-qb:hover{background:rgba(212,175,55,.22)}
-#hc-lang-row{display:flex;gap:5px;align-items:center;padding:8px 10px 0;flex-wrap:wrap}
+#hc-lang-row{display:none}
 .hc-lang-chip{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.62);font-size:10px;font-weight:700;padding:4px 8px;border-radius:14px;cursor:pointer}
 .hc-lang-chip.active{background:rgba(212,175,55,.18);border-color:rgba(212,175,55,.42);color:#d4af37}
 #hc-input-row{display:flex;gap:7px;padding:8px 12px 13px;border-top:1px solid rgba(255,255,255,.06)}
