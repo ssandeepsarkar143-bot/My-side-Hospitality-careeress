@@ -689,7 +689,10 @@ const GroupChat = {
     const g = this.groups.find(x => x.id === groupId); if (!g) return;
     document.querySelector('.gc-readby-modal')?.remove();
     const all = await getDocs(collection(db, 'users'));
-    const users = all.docs.map(d => ({ uid: d.id, ...d.data() }));
+    // Show ONLY promoted members (Admin role) + the existing group members so they can be removed.
+    const allUsers = all.docs.map(d => ({ uid: d.id, ...d.data() }));
+    const existingMemberIds = new Set(g.memberUids || []);
+    const users = allUsers.filter(u => u.role === 'Admin' || existingMemberIds.has(u.uid));
     const states = Array.from(new Set(users.flatMap(u => Array.isArray(u.locations) ? u.locations : (u.state ? [u.state] : [])).filter(Boolean))).sort();
     const cats = Array.from(new Set(users.map(u => u.adminRole || u.role || 'User').filter(Boolean))).sort();
 
@@ -757,7 +760,12 @@ const GroupChat = {
   },
 
   async saveMemberChanges(groupId) {
-    if (!this.isOwner()) return;
+    // Allow group owner OR chat-admins to save member changes.
+    const chatAdmins = await this.loadChatAdmins(groupId);
+    if (!this.isOwner() && !chatAdmins.includes(this.currentUser.uid)) {
+      alert('Only the owner or chat-admins can change members.');
+      return;
+    }
     try {
       const newMembers = Array.from(this._mmSelected);
       // ensure owner stays

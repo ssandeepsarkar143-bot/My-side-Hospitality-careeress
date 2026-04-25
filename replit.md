@@ -274,6 +274,45 @@ Note: SSE streaming (`/api/chat-stream`) works in dev (Express). On Firebase Hos
 - Language switcher button now also clears `__autoCache` so each language has its own cached map.
 - Required: `GEMINI_API_KEY` secret must be set (already done in this Repl + must be re-set in Firebase via `firebase functions:secrets:set GEMINI_API_KEY` for production — see Phase 9 deploy steps).
 
+### Phase 11 — Revenue Dashboard filters + Promoted Dashboard + enriched Reports + 3-language switcher REMOVED (Apr 25, 2026)
+**1. Owner Revenue Dashboard — date + location filters + line chart**
+- Gold filter card on top of `sec-revenue` (owner-feed.html) with: 6 date presets (Today / 7d / 30d / 90d / 1y / All), from/to date pickers, INDIA-states checkbox dropdown (search, Select All/None, persisted in `window.__revSelectedStates`).
+- `loadRevenue()` fully refactored — applies `passRevFilter(d)` (date + state) to users / applications / jobPosts / requests / aiResumes / feedback collections.
+- New `renderMembershipLineChart()` draws a Chart.js dual-axis line chart (memberships gold, revenue green) with auto bucket sizing — daily ≤60d, weekly ≤180d, monthly otherwise.
+- Chart.js 4.4.1 CDN added to owner-feed.html before js/i18n.js.
+
+**2. Promoted-Admin Revenue Dashboard (admin-feed.html)**
+- `sec-dashboard` now shows a red-themed Revenue Dashboard mirror, gated by `adminData.authorities.dashboard`.
+- Location dropdown is **strictly limited** to `adminData.locations` — admin can only see/filter their allocated states.
+- Stat cards are gated by the matching authority: e.g. `Membership` card requires `auth.membership`, `Live Jobs` requires `auth.jobList || auth.jobPost`, `Connect Approved` requires `auth.connectEmployer`, etc. Promoted admins only see what they're permitted to.
+- Same date/preset/dropdown UX as owner; `__adRevAllowedStates`/`__adRevSelectedStates` namespace keeps it isolated.
+- Same dual-axis line chart (`adminRevenueChart`).
+
+**3. Enriched daily/branch report — `generateBranchReport()` + `showBranchReportPreview()` / `_renderOwnerBranchReportPreview()`**
+- `generateBranchReport` now also pulls `users`, `applications`, and `workshops` collections (best-effort).
+- New summary fields persisted to `branchReports/{id}`: `workshopCount`, `workshops[]`, `usersJoinedCount`, `usersJoinedSample`, `jobsAppliedCount`, `jobsPostedCount`, `requestsByType` (5 types each with `total/approved/rejected/pending/acceptedBy[]`), `requestPercents`, `membershipsCount`, `membershipsRevenue`, `promotedActivity[]` (each with `actions/approved/rejected/onlineMin/breakdown`), `overallPercents` (`hired`, `approvedReq`, `primeConv`).
+- Preview overlays (admin + owner) rebuilt with: 6-card KPI grid (Workshops, Users Joined, Jobs Posted/Applied, Memberships, Revenue), Overall Performance %, Requests-by-Type table (with acceptors), Promoted-Persons table (online minutes + work breakdown), Per-State table, Workshops list. PDF download button still works on demand.
+
+**4. 3-Language Switcher REMOVED**
+- `js/i18n.js`: `buildSwitcher()` is now a no-op early return; `localStorage` forced to `en`; `i18nState.lang = 'en'`. The HI/BN switcher in the header no longer appears anywhere.
+- `/api/translate` endpoint in server.js stays (harmless) but is unused on the client.
+
+**5. Group Chat — Add Members filter + chat-admin save permission**
+- `openManageMembers` (`js/group-chat.js`) already filters to **promoted members only** (role==='Admin') OR existing members, plus location/category/search filters from Phase 10.
+- `saveMemberChanges` now allows **owner OR chat-admins** (was owner-only) — chat-admins can finally add/remove members.
+
+**6. Firebase production: zero-error AI Resume Builder + Gemini Live AI**
+- Required steps for production:
+  1. `firebase login` then `firebase use hospitality-careers-e662f`
+  2. `firebase functions:secrets:set GEMINI_API_KEY` → paste your key when prompted (or `printf 'KEY' | firebase functions:secrets:set GEMINI_API_KEY --data-file=-`)
+  3. `firebase functions:secrets:access GEMINI_API_KEY` → must print the key
+  4. `cd functions && npm install && cd ..`
+  5. `firebase deploy --only functions:chat,functions:resume,hosting`
+- `firebase.json` rewrites already map `/api/chat`→`exports.chat`, `/api/resume`→`exports.resume`. `functions/index.js` uses `defineSecret('GEMINI_API_KEY')` and exports both as `onRequest({ secrets: [GEMINI_API_KEY] }, …)`.
+- Verify in production:
+  - **AI Resume Builder** → fill 6-step wizard → click Generate → expect formatted resume in 5-10s. If 500 error: check `firebase functions:log --only resume`.
+  - **Gemini Live AI / Chatbot** → click chatbot bubble → say "hi" → expect Gemini reply. If 500: check `firebase functions:log --only chat`.
+
 ### Still pending (not blocking)
 - Mirror Activity Records / Freeze / Location-Compare sections to admin-feed (currently owner-only by design).
 - Add Edit/Freeze action buttons on Op Manager / Branch Head rows (currently shown on Admin rows only).

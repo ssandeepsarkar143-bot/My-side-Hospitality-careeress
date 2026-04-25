@@ -115,12 +115,54 @@
       <!-- REVENUE DASHBOARD -->
       <div id="sec-revenue" class="page-section active">
         <div class="section-title"><i class="fas fa-chart-bar"></i> Revenue Dashboard</div>
+        <!-- FILTER BAR -->
+        <div class="card" style="padding:14px 16px;margin-bottom:16px;background:linear-gradient(135deg,rgba(212,175,55,0.08),rgba(212,175,55,0.02));border:1px solid rgba(212,175,55,0.2);border-radius:10px">
+          <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end">
+            <div style="flex:1;min-width:200px">
+              <label style="font-size:11px;color:var(--gold-light);font-weight:600;text-transform:uppercase;letter-spacing:0.6px">📅 Date Range</label>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+                <button class="btn btn-sm rev-preset" data-preset="today" onclick="setRevPreset('today')" style="font-size:11px;padding:5px 10px">Today</button>
+                <button class="btn btn-sm rev-preset" data-preset="7d" onclick="setRevPreset('7d')" style="font-size:11px;padding:5px 10px">7 Days</button>
+                <button class="btn btn-sm rev-preset active" data-preset="30d" onclick="setRevPreset('30d')" style="font-size:11px;padding:5px 10px">30 Days</button>
+                <button class="btn btn-sm rev-preset" data-preset="90d" onclick="setRevPreset('90d')" style="font-size:11px;padding:5px 10px">90 Days</button>
+                <button class="btn btn-sm rev-preset" data-preset="1y" onclick="setRevPreset('1y')" style="font-size:11px;padding:5px 10px">1 Year</button>
+                <button class="btn btn-sm rev-preset" data-preset="all" onclick="setRevPreset('all')" style="font-size:11px;padding:5px 10px">All</button>
+              </div>
+              <div style="display:flex;gap:6px;align-items:center;margin-top:8px">
+                <input type="date" id="revFromDate" class="form-control" style="padding:5px 8px;font-size:12px;max-width:140px" onchange="applyRevenueFilters()"/>
+                <span style="color:var(--gray);font-size:11px">to</span>
+                <input type="date" id="revToDate" class="form-control" style="padding:5px 8px;font-size:12px;max-width:140px" onchange="applyRevenueFilters()"/>
+              </div>
+            </div>
+            <div style="flex:1;min-width:240px;position:relative">
+              <label style="font-size:11px;color:var(--gold-light);font-weight:600;text-transform:uppercase;letter-spacing:0.6px">📍 Location (States)</label>
+              <button type="button" id="revLocBtn" onclick="toggleRevLocDropdown()" class="form-control" style="width:100%;text-align:left;padding:8px 10px;font-size:12px;cursor:pointer;background:#1a1a2e;color:#fff;border:1px solid rgba(212,175,55,0.3);margin-top:6px;display:flex;justify-content:space-between;align-items:center">
+                <span id="revLocBtnLabel">All India (all states)</span>
+                <i class="fas fa-chevron-down" style="font-size:10px;color:var(--gray)"></i>
+              </button>
+              <div id="revLocDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:#1a1a2e;border:1px solid rgba(212,175,55,0.4);border-radius:8px;margin-top:4px;max-height:280px;overflow:hidden;z-index:50;box-shadow:0 8px 24px rgba(0,0,0,0.5)">
+                <div style="padding:8px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;gap:6px">
+                  <input type="text" id="revLocSearch" placeholder="Search state…" oninput="filterRevLocList()" class="form-control" style="flex:1;padding:5px 8px;font-size:12px;background:#0d0d1a;color:#fff;border:1px solid rgba(255,255,255,0.1)"/>
+                  <button class="btn btn-sm" style="font-size:11px;padding:4px 8px" onclick="revSelectAllLocs(true)">All</button>
+                  <button class="btn btn-sm" style="font-size:11px;padding:4px 8px;background:rgba(255,255,255,0.1);color:#fff" onclick="revSelectAllLocs(false)">None</button>
+                </div>
+                <div id="revLocList" style="max-height:200px;overflow-y:auto;padding:6px"></div>
+              </div>
+            </div>
+            <div>
+              <button class="btn btn-primary" onclick="loadRevenue()" style="font-size:12px;padding:8px 16px"><i class="fas fa-sync-alt"></i> Apply / Refresh</button>
+            </div>
+          </div>
+        </div>
         <div class="stats-grid" id="revenueStats"></div>
         <div class="stats-grid" id="avgStats"></div>
-        <div class="chart-container">
-          <div class="card-title"><i class="fas fa-chart-line"></i> Membership Sales Over Time</div>
-          <canvas id="revenueChart" style="width:100%;height:200px"></canvas>
-          <div id="revenueChartFallback" style="text-align:center;color:var(--gray);padding:40px">Loading chart data...</div>
+        <div class="chart-container" style="margin-top:18px;background:#1a1a2e;padding:18px;border-radius:10px;border:1px solid rgba(212,175,55,0.15)">
+          <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <span><i class="fas fa-chart-line"></i> Membership Sales Over Time</span>
+            <span style="font-size:11px;color:var(--gray);font-weight:400" id="revChartRangeLabel"></span>
+          </div>
+          <div style="position:relative;height:300px"><canvas id="revenueChart"></canvas></div>
+          <div id="revenueChartFallback" style="text-align:center;color:var(--gray);padding:14px;font-size:12px">Loading chart data...</div>
         </div>
       </div>
 
@@ -1425,50 +1467,244 @@ function unlockDashboard() {
   }).catch(e => console.warn('GroupChat init failed:', e));
 }
 
-// REVENUE
+// REVENUE — date + location filtered
+window.__revFromMs = null;     // null = no lower bound (All time)
+window.__revToMs = null;       // null = no upper bound
+window.__revAllowedStates = null; // null = all India; Set<string> when restricted
+window.__revSelectedStates = new Set(); // user-selected (empty = all)
+
+const REV_INDIA_STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Andaman and Nicobar Islands','Chandigarh','Dadra and Nagar Haveli and Daman and Diu','Delhi','Jammu and Kashmir','Ladakh','Lakshadweep','Puducherry'];
+
+window.setRevPreset = function(preset) {
+  document.querySelectorAll('.rev-preset').forEach(b => b.classList.toggle('active', b.dataset.preset === preset));
+  const now = new Date();
+  const toEl = document.getElementById('revToDate');
+  const fromEl = document.getElementById('revFromDate');
+  const fmt = d => d.toISOString().slice(0,10);
+  if (preset === 'all') { fromEl.value = ''; toEl.value = ''; }
+  else {
+    const days = preset === 'today' ? 0 : (preset === '7d' ? 7 : preset === '30d' ? 30 : preset === '90d' ? 90 : preset === '1y' ? 365 : 30);
+    const from = new Date(now); from.setDate(from.getDate() - days);
+    fromEl.value = fmt(from);
+    toEl.value = fmt(now);
+  }
+  applyRevenueFilters();
+};
+
+window.applyRevenueFilters = function() {
+  const fromVal = document.getElementById('revFromDate').value;
+  const toVal = document.getElementById('revToDate').value;
+  window.__revFromMs = fromVal ? new Date(fromVal+'T00:00:00').getTime() : null;
+  window.__revToMs = toVal ? new Date(toVal+'T23:59:59').getTime() : null;
+  loadRevenue();
+};
+
+window.toggleRevLocDropdown = function() {
+  const dd = document.getElementById('revLocDropdown');
+  const open = dd.style.display === 'block';
+  dd.style.display = open ? 'none' : 'block';
+  if (!open) buildRevLocList();
+};
+function buildRevLocList(filter='') {
+  const allowed = window.__revAllowedStates ? [...window.__revAllowedStates] : REV_INDIA_STATES;
+  const list = allowed.filter(s => s.toLowerCase().includes(filter.toLowerCase()));
+  const sel = window.__revSelectedStates;
+  document.getElementById('revLocList').innerHTML = list.map(s => {
+    const checked = sel.has(s) ? 'checked' : '';
+    return `<label style="display:flex;align-items:center;gap:8px;padding:6px 10px;cursor:pointer;border-radius:4px;color:#fff;font-size:12px" onmouseover="this.style.background='rgba(212,175,55,0.1)'" onmouseout="this.style.background='transparent'">
+      <input type="checkbox" value="${s}" ${checked} onchange="toggleRevLoc('${s.replace(/'/g,"\\'")}', this.checked)" style="cursor:pointer">${s}
+    </label>`;
+  }).join('') || '<div style="padding:14px;text-align:center;color:var(--gray);font-size:12px">No states match</div>';
+}
+window.filterRevLocList = function() { buildRevLocList(document.getElementById('revLocSearch').value); };
+window.toggleRevLoc = function(state, on) {
+  if (on) window.__revSelectedStates.add(state);
+  else window.__revSelectedStates.delete(state);
+  updateRevLocLabel();
+};
+window.revSelectAllLocs = function(all) {
+  const allowed = window.__revAllowedStates ? [...window.__revAllowedStates] : REV_INDIA_STATES;
+  if (all) allowed.forEach(s => window.__revSelectedStates.add(s));
+  else window.__revSelectedStates.clear();
+  buildRevLocList(document.getElementById('revLocSearch').value);
+  updateRevLocLabel();
+};
+function updateRevLocLabel() {
+  const n = window.__revSelectedStates.size;
+  const allowed = window.__revAllowedStates ? [...window.__revAllowedStates] : REV_INDIA_STATES;
+  const label = document.getElementById('revLocBtnLabel');
+  if (n === 0) label.textContent = window.__revAllowedStates ? `All allocated (${allowed.length})` : 'All India (all states)';
+  else if (n === allowed.length) label.textContent = `All ${n} selected`;
+  else label.textContent = `${n} state${n>1?'s':''} selected`;
+}
+function getRevSelectedStates() {
+  // empty selection => all allowed states
+  if (window.__revSelectedStates.size === 0) {
+    return window.__revAllowedStates ? [...window.__revAllowedStates] : null; // null = no state filter
+  }
+  return [...window.__revSelectedStates];
+}
+function getDocDateMs(d) {
+  return d?.createdAt?.toDate?.()?.getTime?.()
+      || d?.appliedAt?.toDate?.()?.getTime?.()
+      || d?.postedAt?.toDate?.()?.getTime?.()
+      || d?.purchasedAt?.toDate?.()?.getTime?.()
+      || d?.requestedAt?.toDate?.()?.getTime?.()
+      || d?.timestamp?.toDate?.()?.getTime?.()
+      || (typeof d?.createdAt === 'number' ? d.createdAt : 0);
+}
+function getDocStates(d) {
+  const arr = [];
+  if (Array.isArray(d.locations)) arr.push(...d.locations);
+  ['state','location','jobState','requestState','jobLocation'].forEach(k => { if (d[k] && typeof d[k] === 'string') arr.push(d[k]); });
+  return arr;
+}
+function inDateRange(ms) {
+  if (window.__revFromMs && ms < window.__revFromMs) return false;
+  if (window.__revToMs && ms > window.__revToMs) return false;
+  return true;
+}
+function inStateFilter(stateList) {
+  const sel = getRevSelectedStates();
+  if (!sel) return true; // no state restriction
+  if (!stateList.length) return false;
+  return stateList.some(s => sel.includes(s));
+}
+function passRevFilter(d) {
+  const ms = getDocDateMs(d);
+  if (window.__revFromMs || window.__revToMs) { if (!ms || !inDateRange(ms)) return false; }
+  return inStateFilter(getDocStates(d));
+}
+
+let __revChartInstance = null;
+function renderMembershipLineChart(primeUsers) {
+  const fallback = document.getElementById('revenueChartFallback');
+  const ctx = document.getElementById('revenueChart')?.getContext?.('2d');
+  if (!ctx || typeof Chart === 'undefined') {
+    if (fallback) fallback.textContent = `Total Revenue from ${primeUsers.length} Prime memberships: ₹${(primeUsers.length*499).toLocaleString()}`;
+    return;
+  }
+  // Determine bucket size from selected range
+  const fromMs = window.__revFromMs || (primeUsers.reduce((min,u)=>{ const m = getDocDateMs(u); return m && (!min || m < min) ? m : min; }, null) || (Date.now() - 30*86400000));
+  const toMs = window.__revToMs || Date.now();
+  const span = toMs - fromMs;
+  let bucketDays;
+  if (span <= 7*86400000) bucketDays = 1;
+  else if (span <= 60*86400000) bucketDays = 1;
+  else if (span <= 180*86400000) bucketDays = 7;
+  else bucketDays = 30;
+  const bucketMs = bucketDays * 86400000;
+  const buckets = []; const labels = []; const counts = []; const revenues = [];
+  for (let t = fromMs; t <= toMs; t += bucketMs) {
+    buckets.push(t);
+    const d = new Date(t);
+    labels.push(bucketDays === 1
+      ? d.toLocaleDateString('en-IN', { day:'2-digit', month:'short' })
+      : bucketDays === 7
+        ? d.toLocaleDateString('en-IN', { day:'2-digit', month:'short' })
+        : d.toLocaleDateString('en-IN', { month:'short', year:'2-digit' }));
+    counts.push(0); revenues.push(0);
+  }
+  primeUsers.forEach(u => {
+    const m = getDocDateMs(u); if (!m) return;
+    const i = Math.floor((m - fromMs) / bucketMs);
+    if (i >= 0 && i < counts.length) { counts[i] += 1; revenues[i] += 499; }
+  });
+  document.getElementById('revChartRangeLabel').textContent =
+    `${labels[0]||''} → ${labels[labels.length-1]||''}  ·  ${bucketDays===1?'daily':bucketDays===7?'weekly':'monthly'} buckets`;
+  if (__revChartInstance) { __revChartInstance.destroy(); __revChartInstance = null; }
+  __revChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Memberships',
+          data: counts,
+          borderColor: '#d4af37',
+          backgroundColor: 'rgba(212,175,55,0.18)',
+          borderWidth: 2.5,
+          tension: 0.35,
+          fill: true,
+          pointRadius: 3,
+          pointBackgroundColor: '#d4af37',
+          yAxisID: 'y'
+        },
+        {
+          label: 'Revenue (₹)',
+          data: revenues,
+          borderColor: '#22c55e',
+          backgroundColor: 'rgba(34,197,94,0.08)',
+          borderWidth: 2,
+          tension: 0.35,
+          fill: false,
+          pointRadius: 2,
+          borderDash: [5,3],
+          yAxisID: 'y1'
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { color: '#fff', font: { size: 12 } } },
+        tooltip: { backgroundColor: '#000', titleColor: '#d4af37', bodyColor: '#fff' }
+      },
+      scales: {
+        x: { ticks: { color: '#bbb', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+        y: { position: 'left', beginAtZero: true, ticks: { color: '#d4af37', stepSize: 1 }, title: { display: true, text: 'Memberships', color: '#d4af37' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+        y1: { position: 'right', beginAtZero: true, ticks: { color: '#22c55e', callback: v => '₹'+v }, title: { display: true, text: 'Revenue', color: '#22c55e' }, grid: { drawOnChartArea: false } }
+      }
+    }
+  });
+  if (fallback) fallback.style.display = 'none';
+}
+
 async function loadRevenue() {
   try {
     const usersSnap = await getDocs(collection(db, 'users'));
-    const users = usersSnap.docs.map(d => d.data());
+    let users = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const appsSnap = await getDocs(collection(db, 'applications'));
+    let apps = appsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const jobsSnap = await getDocs(collection(db, 'jobPosts'));
+    let jobs = jobsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const reqsSnap = await getDocs(collection(db, 'requests'));
+    let reqs = reqsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    let resumesBuilt = [];
+    try { const rs = await getDocs(collection(db, 'aiResumes')); resumesBuilt = rs.docs.map(d => ({ id:d.id, ...d.data() })); } catch(_) {}
+    let feedbacks = [];
+    try { const fb = await getDocs(collection(db, 'feedback')); feedbacks = fb.docs.map(d => ({ id:d.id, ...d.data() })); } catch(_) {}
+
+    // Apply date+location filters across the board
+    users = users.filter(u => passRevFilter(u));
+    apps = apps.filter(a => passRevFilter(a));
+    jobs = jobs.filter(j => passRevFilter(j));
+    reqs = reqs.filter(r => passRevFilter(r));
+    resumesBuilt = resumesBuilt.filter(r => passRevFilter(r));
+    feedbacks = feedbacks.filter(f => passRevFilter(f));
+
     const totalUsers = users.length;
     const normalUsers = users.filter(u => u.role === 'User').length;
-    const primeUsers = users.filter(u => u.role === 'Prime').length;
+    const primeUsersList = users.filter(u => u.role === 'Prime');
+    const primeUsers = primeUsersList.length;
     const admins = users.filter(u => u.role === 'Admin').length;
-
-    const appsSnap = await getDocs(collection(db, 'applications'));
-    const apps = appsSnap.docs.map(d => d.data());
     const totalApps = apps.length;
     const hiredCount = apps.filter(a => a.status === 'Hired').length;
     const pendingCount = apps.filter(a => a.status === 'Pending').length;
-
-    const jobsSnap = await getDocs(collection(db, 'jobPosts'));
-    const jobs = jobsSnap.docs.map(d => d.data());
     const liveJobs = jobs.filter(j => j.status === 'live').length;
     const totalPosters = new Set(jobs.map(j => j.userId)).size;
-
-    const reqsSnap = await getDocs(collection(db, 'requests'));
-    const reqs = reqsSnap.docs.map(d => d.data());
     const approvedConnect = reqs.filter(r => r.type === 'employerConnect' && r.status === 'approved').length;
     const approvedResume = reqs.filter(r => r.type === 'resumeDownload' && r.status === 'approved').length;
     const approvedContact = reqs.filter(r => r.type === 'contact' && r.status === 'approved').length;
-
-    // Resumes built via Resume Studio
-    let resumesBuilt = [];
-    try { const rs = await getDocs(collection(db, 'aiResumes')); resumesBuilt = rs.docs.map(d => ({ id:d.id, ...d.data() })); } catch(_) {}
     const totalResumes = resumesBuilt.length;
     const resumesWithPhoto = resumesBuilt.filter(r => r.photo && r.photo.length > 50).length;
-
-    // Feedback / ratings
-    let feedbacks = [];
-    try { const fb = await getDocs(collection(db, 'feedback')); feedbacks = fb.docs.map(d => ({ id:d.id, ...d.data() })); } catch(_) {}
     const totalFeedback = feedbacks.length;
     const ratedFeedback = feedbacks.filter(f => typeof f.rating === 'number' && f.rating > 0);
     const avgRating = ratedFeedback.length ? (ratedFeedback.reduce((s,f) => s + f.rating, 0) / ratedFeedback.length) : 0;
     const ratingPct = Math.round((avgRating / 5) * 100);
-
     const totalRevenue = primeUsers * 499;
 
-    // Store raw data for detail modals
     revenueRawData = { users, apps, jobs, reqs, resumesBuilt, feedbacks, avgRating };
 
     document.getElementById('revenueStats').innerHTML = `
@@ -1488,18 +1724,23 @@ async function loadRevenue() {
       ${statCard('fa-file-alt','Resumes Built', totalResumes, `${resumesWithPhoto} with photo · click for list`,'resumesBuilt')}
       ${statCard('fa-star','Total Feedback', totalFeedback, ratedFeedback.length?`${ratingPct}% avg rating (${avgRating.toFixed(1)}/5)`:'No ratings yet','feedbacks')}`;
 
-    // Average stats
-    const days = 30;
+    // Average stats — use actual day span
+    const spanDays = (() => {
+      if (window.__revFromMs && window.__revToMs) return Math.max(1, Math.ceil((window.__revToMs - window.__revFromMs)/86400000));
+      return 30;
+    })();
     document.getElementById('avgStats').innerHTML = `
-      ${statCard('fa-user-plus','Avg. Signup/Day', (totalUsers/days).toFixed(1),'Last 30 days')}
-      ${statCard('fa-crown','Avg. Prime Sale/Day', (primeUsers/days).toFixed(1),'Per day')}
-      ${statCard('fa-briefcase','Avg. Job Post/Day', (liveJobs/days).toFixed(1),'Per day')}
-      ${statCard('fa-paper-plane','Avg. Apply/Day', (totalApps/days).toFixed(1),'Per day')}
-      ${statCard('fa-check','Avg. Hired/Day', (hiredCount/days).toFixed(1),'Per day')}`;
+      ${statCard('fa-user-plus','Avg. Signup/Day', (totalUsers/spanDays).toFixed(1),`Over ${spanDays} days`)}
+      ${statCard('fa-crown','Avg. Prime Sale/Day', (primeUsers/spanDays).toFixed(1),'Per day')}
+      ${statCard('fa-briefcase','Avg. Job Post/Day', (jobs.length/spanDays).toFixed(1),'Per day')}
+      ${statCard('fa-paper-plane','Avg. Apply/Day', (totalApps/spanDays).toFixed(1),'Per day')}
+      ${statCard('fa-check','Avg. Hired/Day', (hiredCount/spanDays).toFixed(1),'Per day')}`;
 
-    document.getElementById('revenueChartFallback').textContent = `Total Revenue from ${primeUsers} Prime memberships: ₹${totalRevenue.toLocaleString()}`;
+    // Line chart
+    renderMembershipLineChart(primeUsersList);
   } catch(e) {
-    document.getElementById('revenueStats').innerHTML = '<div style="color:var(--danger)">Error loading stats</div>';
+    console.error('loadRevenue err:', e);
+    document.getElementById('revenueStats').innerHTML = '<div style="color:var(--danger)">Error loading stats: '+(e.message||'')+'</div>';
   }
 }
 
@@ -4320,8 +4561,26 @@ function _renderOwnerBranchReportPreview(r) {
   overlay.id = 'ownerBrPreview';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;overflow-y:auto;padding:20px';
   const kpi = (l,v,c) => `<div style="background:#fff;border:1px solid #eee;border-top:3px solid ${c};border-radius:8px;padding:14px;text-align:center"><div style="font-size:24px;font-weight:800;color:${c}">${v}</div><div style="font-size:11px;color:#666;text-transform:uppercase;letter-spacing:1px;margin-top:4px">${l}</div></div>`;
+  const reqByT = r.requestsByType || {};
+  const reqPct = r.requestPercents || {};
+  const overall = r.overallPercents || {};
+  const promo = r.promotedActivity || [];
+  const reqRow = (label, t, color) => {
+    const o = reqByT[t] || { total:0, approved:0, rejected:0, pending:0, acceptedBy:[] };
+    const pct = reqPct[t] || 0;
+    const acceptedBy = (o.acceptedBy||[]).slice(0,5).map(a => `${esc(a.name)} <span style="color:#666">(${a.count})</span>`).join(', ') || '<span style="color:#999">— none —</span>';
+    return `<tr style="border-bottom:1px solid #eee">
+      <td style="padding:8px"><span style="display:inline-block;width:10px;height:10px;background:${color};border-radius:2px;margin-right:6px"></span>${label}</td>
+      <td style="padding:8px;text-align:right;font-weight:700">${o.total}</td>
+      <td style="padding:8px;text-align:right;color:#22c55e">${o.approved}</td>
+      <td style="padding:8px;text-align:right;color:#ef4444">${o.rejected}</td>
+      <td style="padding:8px;text-align:right;color:#a855f7">${o.pending}</td>
+      <td style="padding:8px;text-align:right;color:#666">${pct}%</td>
+      <td style="padding:8px;font-size:12px;color:#444">${acceptedBy}</td>
+    </tr>`;
+  };
   overlay.innerHTML = `
-    <div style="max-width:900px;margin:0 auto;background:#fff;color:#222;border-radius:14px;box-shadow:0 14px 60px rgba(0,0,0,0.6);overflow:hidden;font-family:'Segoe UI',Roboto,sans-serif">
+    <div style="max-width:1000px;margin:0 auto;background:#fff;color:#222;border-radius:14px;box-shadow:0 14px 60px rgba(0,0,0,0.6);overflow:hidden;font-family:'Segoe UI',Roboto,sans-serif">
       <div style="background:linear-gradient(135deg,#e94560,#a8324a);color:#fff;padding:22px 28px;display:flex;justify-content:space-between;align-items:center">
         <div>
           <div style="font-size:11px;letter-spacing:2px;opacity:0.8;text-transform:uppercase">Hospitality Careers — Owner View</div>
@@ -4330,27 +4589,87 @@ function _renderOwnerBranchReportPreview(r) {
         <button onclick="document.getElementById('ownerBrPreview').remove()" style="background:rgba(255,255,255,0.2);color:#fff;border:none;width:36px;height:36px;border-radius:50%;font-size:22px;cursor:pointer">&times;</button>
       </div>
       <div style="padding:24px 28px">
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px">
-          ${kpi('Total Actions', r.totalActions||0, '#e94560')}
-          ${kpi('Audit Logs', r.auditCount||0, '#3b82f6')}
-          ${kpi('Job Posts', r.jobsCount||0, '#22c55e')}
-          ${kpi('Requests', r.reqsCount||0, '#a855f7')}
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:18px">
+          ${kpi('Workshops', r.workshopCount||0, '#06b6d4')}
+          ${kpi('Users Joined', r.usersJoinedCount||0, '#3b82f6')}
+          ${kpi('Jobs Posted', r.jobsPostedCount||0, '#22c55e')}
+          ${kpi('Jobs Applied', r.jobsAppliedCount||0, '#f59e0b')}
+          ${kpi('Memberships', r.membershipsCount||0, '#a855f7')}
+          ${kpi('Revenue', '₹'+(r.membershipsRevenue||0).toLocaleString(), '#16a34a')}
         </div>
         <div style="background:#f7f7fa;border-left:4px solid #e94560;padding:12px 14px;border-radius:6px;font-size:13px;margin-bottom:20px">
           <div><strong>Generated by:</strong> ${esc(r.generatedByName||'')} · <em>${esc(r.generatedByRole||'')}</em></div>
           <div><strong>Date range:</strong> ${esc(fromS)} → ${esc(toS)}</div>
           <div><strong>Locations covered:</strong> ${esc(states)}</div>
         </div>
-        <h3 style="font-size:15px;margin:18px 0 10px;color:#e94560;border-bottom:2px solid #e94560;padding-bottom:4px">Per-Member Activity</h3>
+
+        <h3 style="font-size:15px;margin:18px 0 10px;color:#e94560;border-bottom:2px solid #e94560;padding-bottom:4px">📊 Overall Performance</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:20px">
+          ${kpi('Hire Rate', (overall.hired||0)+'%', '#22c55e')}
+          ${kpi('Request Approval Rate', (overall.approvedReq||0)+'%', '#3b82f6')}
+          ${kpi('Prime Conversion', (overall.primeConv||0)+'%', '#a855f7')}
+        </div>
+
+        <h3 style="font-size:15px;margin:18px 0 10px;color:#e94560;border-bottom:2px solid #e94560;padding-bottom:4px">📥 Requests by Type (with Acceptors)</h3>
         <table style="width:100%;border-collapse:collapse;font-size:13px">
-          <thead><tr style="background:#f3f3f8"><th style="padding:8px;text-align:left">Name</th><th style="padding:8px;text-align:left">Role</th><th style="padding:8px;text-align:right">Actions</th></tr></thead>
-          <tbody>${perActor.length ? perActor.map(p=>`<tr style="border-bottom:1px solid #eee"><td style="padding:8px">${esc(p.name||'')}</td><td style="padding:8px;color:#666">${esc(p.role||'')}</td><td style="padding:8px;text-align:right;font-weight:700">${p.count||0}</td></tr>`).join('') : '<tr><td colspan="3" style="padding:14px;text-align:center;color:#888">No member activity captured.</td></tr>'}</tbody>
+          <thead><tr style="background:#f3f3f8">
+            <th style="padding:8px;text-align:left">Type</th>
+            <th style="padding:8px;text-align:right">Total</th>
+            <th style="padding:8px;text-align:right">Approved</th>
+            <th style="padding:8px;text-align:right">Rejected</th>
+            <th style="padding:8px;text-align:right">Pending</th>
+            <th style="padding:8px;text-align:right">Share</th>
+            <th style="padding:8px;text-align:left">Accepted By</th>
+          </tr></thead>
+          <tbody>
+            ${reqRow('Employer Connect','employerConnect','#3b82f6')}
+            ${reqRow('Contact Reveal','contact','#06b6d4')}
+            ${reqRow('Resume Download','resumeDownload','#a855f7')}
+            ${reqRow('Membership','membership','#16a34a')}
+            ${reqRow('Job Post','jobPost','#f59e0b')}
+          </tbody>
         </table>
-        <h3 style="font-size:15px;margin:24px 0 10px;color:#e94560;border-bottom:2px solid #e94560;padding-bottom:4px">Per-State Activity</h3>
+
+        <h3 style="font-size:15px;margin:24px 0 10px;color:#e94560;border-bottom:2px solid #e94560;padding-bottom:4px">👥 Promoted Persons (Online Time + Work)</h3>
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead><tr style="background:#f3f3f8">
+            <th style="padding:8px;text-align:left">Name</th>
+            <th style="padding:8px;text-align:left">Role</th>
+            <th style="padding:8px;text-align:right">Actions</th>
+            <th style="padding:8px;text-align:right">Approved</th>
+            <th style="padding:8px;text-align:right">Rejected</th>
+            <th style="padding:8px;text-align:right">Online (min)</th>
+            <th style="padding:8px;text-align:left">Work Breakdown</th>
+          </tr></thead>
+          <tbody>
+            ${promo.length ? promo.map(p => {
+              const breakdown = Object.entries(p.breakdown||{}).slice(0,4).map(([k,v])=>`${esc(k)}: ${v}`).join(', ');
+              return `<tr style="border-bottom:1px solid #eee">
+                <td style="padding:8px;font-weight:600">${esc(p.name||'')}</td>
+                <td style="padding:8px;color:#666">${esc(p.role||'')}</td>
+                <td style="padding:8px;text-align:right;font-weight:700">${p.actions||0}</td>
+                <td style="padding:8px;text-align:right;color:#22c55e">${p.approved||0}</td>
+                <td style="padding:8px;text-align:right;color:#ef4444">${p.rejected||0}</td>
+                <td style="padding:8px;text-align:right">${p.onlineMin||0}</td>
+                <td style="padding:8px;font-size:12px;color:#555">${breakdown||'<span style="color:#999">—</span>'}</td>
+              </tr>`;
+            }).join('') : '<tr><td colspan="7" style="padding:14px;text-align:center;color:#888">No promoted activity in this range.</td></tr>'}
+          </tbody>
+        </table>
+
+        <h3 style="font-size:15px;margin:24px 0 10px;color:#e94560;border-bottom:2px solid #e94560;padding-bottom:4px">📍 Per-State Activity</h3>
         <table style="width:100%;border-collapse:collapse;font-size:13px">
           <thead><tr style="background:#f3f3f8"><th style="padding:8px;text-align:left">State / Location</th><th style="padding:8px;text-align:right">Actions</th></tr></thead>
           <tbody>${perState.length ? perState.map(s=>`<tr style="border-bottom:1px solid #eee"><td style="padding:8px">${esc(s.state||'')}</td><td style="padding:8px;text-align:right;font-weight:700">${s.count||0}</td></tr>`).join('') : '<tr><td colspan="2" style="padding:14px;text-align:center;color:#888">No state activity captured.</td></tr>'}</tbody>
         </table>
+
+        ${(r.workshops && r.workshops.length) ? `
+        <h3 style="font-size:15px;margin:24px 0 10px;color:#e94560;border-bottom:2px solid #e94560;padding-bottom:4px">🎓 Workshops</h3>
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead><tr style="background:#f3f3f8"><th style="padding:8px;text-align:left">Title</th><th style="padding:8px;text-align:left">State</th><th style="padding:8px;text-align:left">When</th></tr></thead>
+          <tbody>${r.workshops.map(w=>`<tr style="border-bottom:1px solid #eee"><td style="padding:8px">${esc(w.title||'')}</td><td style="padding:8px;color:#666">${esc(w.state||'')}</td><td style="padding:8px;color:#666">${w.when ? new Date(w.when).toLocaleString() : ''}</td></tr>`).join('')}</tbody>
+        </table>` : ''}
+
         <div style="margin-top:24px;display:flex;gap:10px;justify-content:flex-end">
           <button onclick="ownerDownloadBranchReport('${r.id}')" style="background:#e94560;color:#fff;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-weight:700"><i class="fas fa-download"></i> Download PDF</button>
           <button onclick="document.getElementById('ownerBrPreview').remove()" style="background:#eee;color:#333;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-weight:600">Close</button>
@@ -4765,6 +5084,7 @@ window.exportLocationCompare = async function() {
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="js/i18n.js"></script>
 <script src="js/chatbot.js"></script>
 <script src="js/pwa-install.js"></script>

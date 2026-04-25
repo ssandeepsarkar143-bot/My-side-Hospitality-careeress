@@ -229,9 +229,9 @@ const LANGS = [
   { code: 'bn', name: 'BN', full: 'বাংলা', flag: '🟢' }
 ];
 
-const initialUrlLang = new URLSearchParams(location.search).get('lang');
-let lang = LANGS.some(l => l.code === initialUrlLang) ? initialUrlLang : (localStorage.getItem('hc_ui_lang') || 'en');
-if (initialUrlLang && LANGS.some(l => l.code === initialUrlLang)) localStorage.setItem('hc_ui_lang', initialUrlLang);
+// Language feature has been removed — site is English-only.
+let lang = 'en';
+try { localStorage.setItem('hc_ui_lang', 'en'); } catch(_) {}
 
 function t(key) { return (T[lang] && T[lang][key]) || (T.en && T.en[key]) || key; }
 
@@ -683,8 +683,11 @@ function setupAutoMutationObserver() {
   } catch(e) { console.warn('mut obs failed:', e.message); }
 }
 
-// Build switcher widget
+// Build switcher widget — DISABLED (language feature removed by user request).
+// Function is kept as a no-op so any existing call sites continue to work.
 function buildSwitcher() {
+  return; // language switcher intentionally disabled
+  /* eslint-disable no-unreachable */
   if (document.getElementById('hc-lang-switcher')) return;
   const sw = document.createElement('div');
   sw.id = 'hc-lang-switcher';

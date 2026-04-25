@@ -97,15 +97,65 @@
       <!-- ADMIN MAIN DASHBOARD -->
       <div id="sec-dashboard" class="page-section active">
         <div class="section-title" style="color:#e94560"><i class="fas fa-tachometer-alt" style="-webkit-text-fill-color:#e94560"></i> Admin Dashboard</div>
-        <div id="adminDashContent">
-          <div id="adminUserControl" class="hidden">
-            <div class="card-title" style="color:#e94560;font-size:16px;margin-bottom:16px"><i class="fas fa-users"></i> User Control</div>
-            <div class="table-wrapper">
-              <table>
-                <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th><th>Membership</th></tr></thead>
-                <tbody id="adminUsersBody"><tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
-              </table>
+        <div id="adminRevenueDashboard" class="hidden">
+          <!-- FILTER BAR (admin) -->
+          <div class="card" style="padding:14px 16px;margin-bottom:16px;background:linear-gradient(135deg,rgba(233,69,96,0.08),rgba(233,69,96,0.02));border:1px solid rgba(233,69,96,0.3);border-radius:10px">
+            <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end">
+              <div style="flex:1;min-width:200px">
+                <label style="font-size:11px;color:#e94560;font-weight:600;text-transform:uppercase;letter-spacing:0.6px">📅 Date Range</label>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+                  <button class="btn btn-sm adRev-preset" data-preset="today" onclick="adSetRevPreset('today')" style="font-size:11px;padding:5px 10px">Today</button>
+                  <button class="btn btn-sm adRev-preset" data-preset="7d" onclick="adSetRevPreset('7d')" style="font-size:11px;padding:5px 10px">7 Days</button>
+                  <button class="btn btn-sm adRev-preset active" data-preset="30d" onclick="adSetRevPreset('30d')" style="font-size:11px;padding:5px 10px">30 Days</button>
+                  <button class="btn btn-sm adRev-preset" data-preset="90d" onclick="adSetRevPreset('90d')" style="font-size:11px;padding:5px 10px">90 Days</button>
+                  <button class="btn btn-sm adRev-preset" data-preset="1y" onclick="adSetRevPreset('1y')" style="font-size:11px;padding:5px 10px">1 Year</button>
+                  <button class="btn btn-sm adRev-preset" data-preset="all" onclick="adSetRevPreset('all')" style="font-size:11px;padding:5px 10px">All</button>
+                </div>
+                <div style="display:flex;gap:6px;align-items:center;margin-top:8px">
+                  <input type="date" id="adRevFromDate" class="form-control" style="padding:5px 8px;font-size:12px;max-width:140px" onchange="adApplyRevenueFilters()"/>
+                  <span style="color:var(--gray);font-size:11px">to</span>
+                  <input type="date" id="adRevToDate" class="form-control" style="padding:5px 8px;font-size:12px;max-width:140px" onchange="adApplyRevenueFilters()"/>
+                </div>
+              </div>
+              <div style="flex:1;min-width:240px;position:relative">
+                <label style="font-size:11px;color:#e94560;font-weight:600;text-transform:uppercase;letter-spacing:0.6px">📍 Allocated Locations</label>
+                <button type="button" id="adRevLocBtn" onclick="adToggleRevLocDropdown()" class="form-control" style="width:100%;text-align:left;padding:8px 10px;font-size:12px;cursor:pointer;background:#1a1a2e;color:#fff;border:1px solid rgba(233,69,96,0.3);margin-top:6px;display:flex;justify-content:space-between;align-items:center">
+                  <span id="adRevLocBtnLabel">All my allocated states</span>
+                  <i class="fas fa-chevron-down" style="font-size:10px;color:var(--gray)"></i>
+                </button>
+                <div id="adRevLocDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:#1a1a2e;border:1px solid rgba(233,69,96,0.4);border-radius:8px;margin-top:4px;max-height:280px;overflow:hidden;z-index:50;box-shadow:0 8px 24px rgba(0,0,0,0.5)">
+                  <div style="padding:8px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;gap:6px">
+                    <input type="text" id="adRevLocSearch" placeholder="Search state…" oninput="adFilterRevLocList()" class="form-control" style="flex:1;padding:5px 8px;font-size:12px;background:#0d0d1a;color:#fff;border:1px solid rgba(255,255,255,0.1)"/>
+                    <button class="btn btn-sm" style="font-size:11px;padding:4px 8px" onclick="adRevSelectAllLocs(true)">All</button>
+                    <button class="btn btn-sm" style="font-size:11px;padding:4px 8px;background:rgba(255,255,255,0.1);color:#fff" onclick="adRevSelectAllLocs(false)">None</button>
+                  </div>
+                  <div id="adRevLocList" style="max-height:200px;overflow-y:auto;padding:6px"></div>
+                </div>
+                <div id="adRevLocHint" style="font-size:10px;color:var(--gray);margin-top:4px"></div>
+              </div>
+              <div>
+                <button class="btn btn-primary" onclick="loadAdminRevenue()" style="font-size:12px;padding:8px 16px;background:linear-gradient(135deg,#e94560,#c0334d);border:none"><i class="fas fa-sync-alt"></i> Apply / Refresh</button>
+              </div>
             </div>
+          </div>
+          <div class="stats-grid" id="adminRevenueStats"></div>
+          <div class="stats-grid" id="adminAvgStats" style="margin-top:14px"></div>
+          <div style="margin-top:18px;background:#1a1a2e;padding:18px;border-radius:10px;border:1px solid rgba(233,69,96,0.2)">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;color:#e94560;font-weight:700;font-size:14px">
+              <span><i class="fas fa-chart-line"></i> Membership Sales Over Time (My Allocated States)</span>
+              <span style="font-size:11px;color:var(--gray);font-weight:400" id="adRevChartRangeLabel"></span>
+            </div>
+            <div style="position:relative;height:280px"><canvas id="adminRevenueChart"></canvas></div>
+            <div id="adminRevenueChartFallback" style="text-align:center;color:var(--gray);padding:14px;font-size:12px"></div>
+          </div>
+        </div>
+        <div id="adminUserControl" class="hidden" style="margin-top:18px">
+          <div class="card-title" style="color:#e94560;font-size:16px;margin-bottom:16px"><i class="fas fa-users"></i> Recent Users (My States)</div>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th><th>Membership</th></tr></thead>
+              <tbody id="adminUsersBody"><tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -459,6 +509,15 @@ function setupAuthority() {
     document.getElementById('nav_userControl_wrap').style.display = 'block';
     document.getElementById('adminUserControl').classList.remove('hidden');
     loadAdminUsers();
+    // Phase 11 — show Revenue Dashboard restricted to allocated locations
+    const revWrap = document.getElementById('adminRevenueDashboard');
+    if (revWrap) {
+      revWrap.classList.remove('hidden');
+      window.__adRevAuthPerms = auth_perms;
+      window.__adRevAllowedStates = (adminData?.locations || []).slice();
+      // Init filter to last 30 days and load
+      try { adSetRevPreset('30d'); } catch(e) { console.warn('adSetRevPreset', e); }
+    }
   }
   if (auth_perms.connectEmployer) { document.getElementById('nav_connectReqs').classList.remove('hidden'); document.getElementById('auth_sections_header').style.display='block'; }
   if (auth_perms.contact) { document.getElementById('nav_contactReqs').classList.remove('hidden'); document.getElementById('auth_sections_header').style.display='block'; }
@@ -599,6 +658,233 @@ window.renderAdminUsers = function() {
   const empty = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">No users in your allocated state(s)</td></tr>';
   if (document.getElementById('adminUsersBody')) document.getElementById('adminUsersBody').innerHTML = html || empty;
   if (document.getElementById('adminUsersBody2')) document.getElementById('adminUsersBody2').innerHTML = html || empty;
+};
+
+// ───── PHASE 11 — ADMIN REVENUE DASHBOARD (allocated locations only) ─────
+window.__adRevFromMs = null;
+window.__adRevToMs = null;
+window.__adRevAllowedStates = window.__adRevAllowedStates || [];
+window.__adRevSelectedStates = new Set();
+let __adRevChartInstance = null;
+
+window.adSetRevPreset = function(preset) {
+  document.querySelectorAll('.adRev-preset').forEach(b => b.classList.toggle('active', b.dataset.preset === preset));
+  const now = new Date();
+  const fromEl = document.getElementById('adRevFromDate');
+  const toEl = document.getElementById('adRevToDate');
+  const fmt = d => d.toISOString().slice(0,10);
+  if (preset === 'all') { fromEl.value = ''; toEl.value = ''; }
+  else {
+    const days = preset === 'today' ? 0 : (preset === '7d' ? 7 : preset === '30d' ? 30 : preset === '90d' ? 90 : preset === '1y' ? 365 : 30);
+    const from = new Date(now); from.setDate(from.getDate() - days);
+    fromEl.value = fmt(from); toEl.value = fmt(now);
+  }
+  adApplyRevenueFilters();
+};
+
+window.adApplyRevenueFilters = function() {
+  const fromVal = document.getElementById('adRevFromDate').value;
+  const toVal = document.getElementById('adRevToDate').value;
+  window.__adRevFromMs = fromVal ? new Date(fromVal+'T00:00:00').getTime() : null;
+  window.__adRevToMs = toVal ? new Date(toVal+'T23:59:59').getTime() : null;
+  loadAdminRevenue();
+};
+
+window.adToggleRevLocDropdown = function() {
+  const dd = document.getElementById('adRevLocDropdown');
+  const open = dd.style.display === 'block';
+  dd.style.display = open ? 'none' : 'block';
+  if (!open) adBuildRevLocList();
+};
+function adBuildRevLocList(filter='') {
+  const allowed = window.__adRevAllowedStates || [];
+  const hint = document.getElementById('adRevLocHint');
+  if (hint) hint.textContent = allowed.length ? `${allowed.length} state(s) allocated to you` : 'No states allocated yet';
+  const list = allowed.filter(s => s.toLowerCase().includes(filter.toLowerCase()));
+  const sel = window.__adRevSelectedStates;
+  document.getElementById('adRevLocList').innerHTML = list.map(s => {
+    const checked = sel.has(s) ? 'checked' : '';
+    return `<label style="display:flex;align-items:center;gap:8px;padding:6px 10px;cursor:pointer;border-radius:4px;color:#fff;font-size:12px">
+      <input type="checkbox" ${checked} onchange="adToggleRevLoc('${s.replace(/'/g,"\\'")}', this.checked)" style="cursor:pointer">${s}
+    </label>`;
+  }).join('') || '<div style="padding:14px;text-align:center;color:var(--gray);font-size:12px">No states allocated</div>';
+}
+window.adFilterRevLocList = function() { adBuildRevLocList(document.getElementById('adRevLocSearch').value); };
+window.adToggleRevLoc = function(state, on) {
+  if (on) window.__adRevSelectedStates.add(state); else window.__adRevSelectedStates.delete(state);
+  adUpdateRevLocLabel();
+};
+window.adRevSelectAllLocs = function(all) {
+  const allowed = window.__adRevAllowedStates || [];
+  if (all) allowed.forEach(s => window.__adRevSelectedStates.add(s));
+  else window.__adRevSelectedStates.clear();
+  adBuildRevLocList(document.getElementById('adRevLocSearch').value);
+  adUpdateRevLocLabel();
+};
+function adUpdateRevLocLabel() {
+  const n = window.__adRevSelectedStates.size;
+  const allowed = window.__adRevAllowedStates || [];
+  const label = document.getElementById('adRevLocBtnLabel');
+  if (n === 0) label.textContent = `All my allocated states (${allowed.length})`;
+  else if (n === allowed.length) label.textContent = `All ${n} selected`;
+  else label.textContent = `${n} state${n>1?'s':''} selected`;
+}
+function adGetRevSelectedStates() {
+  const allowed = window.__adRevAllowedStates || [];
+  if (window.__adRevSelectedStates.size === 0) return allowed.slice();
+  return [...window.__adRevSelectedStates];
+}
+function adGetDocDateMs(d) {
+  return d?.createdAt?.toDate?.()?.getTime?.()
+      || d?.appliedAt?.toDate?.()?.getTime?.()
+      || d?.postedAt?.toDate?.()?.getTime?.()
+      || d?.purchasedAt?.toDate?.()?.getTime?.()
+      || d?.requestedAt?.toDate?.()?.getTime?.()
+      || d?.timestamp?.toDate?.()?.getTime?.()
+      || (typeof d?.createdAt === 'number' ? d.createdAt : 0);
+}
+function adGetDocStates(d) {
+  const arr = [];
+  if (Array.isArray(d.locations)) arr.push(...d.locations);
+  ['state','location','jobState','requestState','jobLocation'].forEach(k => { if (d[k] && typeof d[k] === 'string') arr.push(d[k]); });
+  return arr;
+}
+function adPassRevFilter(d) {
+  const ms = adGetDocDateMs(d);
+  if (window.__adRevFromMs && (!ms || ms < window.__adRevFromMs)) return false;
+  if (window.__adRevToMs && (!ms || ms > window.__adRevToMs)) return false;
+  // allocated-states gate (always)
+  const sel = adGetRevSelectedStates();
+  if (sel.length === 0) return false;
+  const states = adGetDocStates(d);
+  if (!states.length) return false;
+  const lc = sel.map(s => s.toLowerCase());
+  return states.some(s => lc.some(t => s.toLowerCase().includes(t) || t.includes(s.toLowerCase())));
+}
+
+function adStatCard(icon, label, value, sub, color) {
+  const c = color || '#e94560';
+  return `<div class="stat-card" style="border-left:3px solid ${c}">
+    <div style="display:flex;align-items:center;gap:10px"><i class="fas ${icon}" style="color:${c};font-size:20px"></i><div style="font-size:11px;color:var(--gray);text-transform:uppercase">${label}</div></div>
+    <div style="font-size:24px;font-weight:700;margin-top:6px">${value}</div>
+    <div style="font-size:11px;color:var(--gray);margin-top:2px">${sub||''}</div>
+  </div>`;
+}
+
+function adRenderMembershipChart(primeUsers) {
+  const fallback = document.getElementById('adminRevenueChartFallback');
+  const ctx = document.getElementById('adminRevenueChart')?.getContext?.('2d');
+  if (!ctx || typeof Chart === 'undefined') {
+    if (fallback) fallback.textContent = `Total Revenue from ${primeUsers.length} memberships in your states: ₹${(primeUsers.length*499).toLocaleString()}`;
+    return;
+  }
+  const fromMs = window.__adRevFromMs || (primeUsers.reduce((min,u)=>{ const m=adGetDocDateMs(u); return m && (!min||m<min) ? m : min; }, null) || (Date.now() - 30*86400000));
+  const toMs = window.__adRevToMs || Date.now();
+  const span = toMs - fromMs;
+  let bucketDays;
+  if (span <= 60*86400000) bucketDays = 1;
+  else if (span <= 180*86400000) bucketDays = 7;
+  else bucketDays = 30;
+  const bucketMs = bucketDays * 86400000;
+  const labels = []; const counts = []; const revenues = [];
+  for (let t = fromMs; t <= toMs; t += bucketMs) {
+    const d = new Date(t);
+    labels.push(bucketDays === 1 ? d.toLocaleDateString('en-IN', { day:'2-digit', month:'short' })
+      : bucketDays === 7 ? d.toLocaleDateString('en-IN', { day:'2-digit', month:'short' })
+      : d.toLocaleDateString('en-IN', { month:'short', year:'2-digit' }));
+    counts.push(0); revenues.push(0);
+  }
+  primeUsers.forEach(u => {
+    const m = adGetDocDateMs(u); if (!m) return;
+    const i = Math.floor((m - fromMs)/bucketMs);
+    if (i >= 0 && i < counts.length) { counts[i]+=1; revenues[i]+=499; }
+  });
+  const rangeLbl = document.getElementById('adRevChartRangeLabel');
+  if (rangeLbl) rangeLbl.textContent = `${labels[0]||''} → ${labels[labels.length-1]||''}  ·  ${bucketDays===1?'daily':bucketDays===7?'weekly':'monthly'} buckets`;
+  if (__adRevChartInstance) { __adRevChartInstance.destroy(); __adRevChartInstance = null; }
+  __adRevChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets: [
+      { label: 'Memberships', data: counts, borderColor: '#e94560', backgroundColor: 'rgba(233,69,96,0.18)', borderWidth: 2.5, tension: 0.35, fill: true, pointRadius: 3, pointBackgroundColor: '#e94560', yAxisID: 'y' },
+      { label: 'Revenue (₹)', data: revenues, borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.08)', borderWidth: 2, tension: 0.35, fill: false, pointRadius: 2, borderDash: [5,3], yAxisID: 'y1' }
+    ]},
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { labels: { color: '#fff', font: { size: 12 } } }, tooltip: { backgroundColor: '#000', titleColor: '#e94560', bodyColor: '#fff' } },
+      scales: {
+        x: { ticks: { color: '#bbb', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+        y: { position: 'left', beginAtZero: true, ticks: { color: '#e94560', stepSize: 1 }, title: { display: true, text: 'Memberships', color: '#e94560' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+        y1: { position: 'right', beginAtZero: true, ticks: { color: '#22c55e', callback: v => '₹'+v }, title: { display: true, text: 'Revenue', color: '#22c55e' }, grid: { drawOnChartArea: false } }
+      }
+    }
+  });
+  if (fallback) fallback.style.display = 'none';
+}
+
+window.loadAdminRevenue = async function() {
+  const perms = window.__adRevAuthPerms || (adminData?.authorities || {});
+  try {
+    const [usersS, appsS, jobsS, reqsS] = await Promise.all([
+      getDocs(collection(db, 'users')),
+      getDocs(collection(db, 'applications')),
+      getDocs(collection(db, 'jobPosts')),
+      getDocs(collection(db, 'requests'))
+    ]);
+    let users = usersS.docs.map(d => ({ id:d.id, ...d.data() }));
+    let apps = appsS.docs.map(d => ({ id:d.id, ...d.data() }));
+    let jobs = jobsS.docs.map(d => ({ id:d.id, ...d.data() }));
+    let reqs = reqsS.docs.map(d => ({ id:d.id, ...d.data() }));
+    let resumes = []; try { const rs = await getDocs(collection(db, 'aiResumes')); resumes = rs.docs.map(d => ({ id:d.id, ...d.data() })); } catch(_) {}
+
+    users   = users.filter(adPassRevFilter);
+    apps    = apps.filter(adPassRevFilter);
+    jobs    = jobs.filter(adPassRevFilter);
+    reqs    = reqs.filter(adPassRevFilter);
+    resumes = resumes.filter(adPassRevFilter);
+
+    const totalUsers = users.length;
+    const primeList = users.filter(u => u.role === 'Prime');
+    const primeUsers = primeList.length;
+    const normalUsers = users.filter(u => u.role === 'User').length;
+    const totalApps = apps.length;
+    const hiredCount = apps.filter(a => a.status === 'Hired').length;
+    const pendingCount = apps.filter(a => a.status === 'Pending').length;
+    const liveJobs = jobs.filter(j => j.status === 'live').length;
+    const connectApproved = reqs.filter(r => r.type === 'employerConnect' && r.status === 'approved').length;
+    const resumeApproved = reqs.filter(r => r.type === 'resumeDownload' && r.status === 'approved').length;
+    const contactApproved = reqs.filter(r => r.type === 'contact' && r.status === 'approved').length;
+    const totalResumes = resumes.length;
+    const totalRevenue = primeUsers * 499;
+
+    // Permission-gated stat cards
+    const cards = [];
+    if (perms.dashboard) cards.push(adStatCard('fa-users','Users (My States)', totalUsers, `${normalUsers} normal · ${primeUsers} prime`));
+    if (perms.membership) cards.push(adStatCard('fa-crown','Prime Members', primeUsers, 'In allocated states'));
+    if (perms.membership) cards.push(adStatCard('fa-rupee-sign','Revenue', '₹'+totalRevenue.toLocaleString(), 'From memberships', '#22c55e'));
+    if (perms.jobList || perms.jobPost) cards.push(adStatCard('fa-briefcase','Live Jobs', liveJobs, `${jobs.length} total in range`));
+    if (perms.dashboard) cards.push(adStatCard('fa-paper-plane','Applications', totalApps, `${hiredCount} hired · ${pendingCount} pending`));
+    if (perms.connectEmployer) cards.push(adStatCard('fa-link','Connect Approved', connectApproved, 'Employer connects'));
+    if (perms.resumeDownload) cards.push(adStatCard('fa-file-download','Resume Approved', resumeApproved, 'Resume downloads'));
+    if (perms.contact) cards.push(adStatCard('fa-phone','Contact Approved', contactApproved, 'Contact reveals'));
+    if (perms.resumeRecords) cards.push(adStatCard('fa-file-alt','AI Resumes Built', totalResumes, 'Resume Studio'));
+
+    document.getElementById('adminRevenueStats').innerHTML = cards.join('') ||
+      '<div style="color:var(--gray);padding:20px">No permissions enabled. Ask your Owner/OpsMgr to grant authorities.</div>';
+
+    const spanDays = (window.__adRevFromMs && window.__adRevToMs)
+      ? Math.max(1, Math.ceil((window.__adRevToMs - window.__adRevFromMs)/86400000)) : 30;
+    document.getElementById('adminAvgStats').innerHTML = `
+      ${adStatCard('fa-user-plus','Avg Signups/Day', (totalUsers/spanDays).toFixed(1), `Over ${spanDays} days`)}
+      ${adStatCard('fa-crown','Avg Prime/Day', (primeUsers/spanDays).toFixed(1), 'Per day', '#22c55e')}
+      ${adStatCard('fa-paper-plane','Avg Applies/Day', (totalApps/spanDays).toFixed(1), 'Per day')}
+      ${adStatCard('fa-check','Avg Hired/Day', (hiredCount/spanDays).toFixed(1), 'Per day')}`;
+
+    adRenderMembershipChart(primeList);
+  } catch(e) {
+    console.error('loadAdminRevenue', e);
+    document.getElementById('adminRevenueStats').innerHTML = '<div style="color:var(--danger)">Error loading: '+(e.message||'')+'</div>';
+  }
 };
 
 // MY MPIN
@@ -1398,11 +1684,14 @@ window.generateBranchReport = async function(period) {
   } else { return; }
   if (status) status.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Collecting activity from your locations…';
   try {
-    // Pull auditLog (broad), then filter by overlap of states
-    const [allAudit, allJobs, allReqs] = await Promise.all([
-      getDocs(query(collection(db, 'auditLog'), orderBy('at', 'desc'), limit(1500))),
+    // Pull broad data, then filter by date+state
+    const [allAudit, allJobs, allReqs, allUsers, allApps, allWorkshops] = await Promise.all([
+      getDocs(query(collection(db, 'auditLog'), orderBy('at', 'desc'), limit(2000))),
       getDocs(collection(db, 'jobPosts')),
-      getDocs(collection(db, 'requests'))
+      getDocs(collection(db, 'requests')),
+      getDocs(collection(db, 'users')),
+      getDocs(collection(db, 'applications')),
+      getDocs(collection(db, 'workshops')).catch(()=>({ docs:[] }))
     ]);
     const inStates = (arr) => {
       if (isOpMgr && (!states || !states.length)) return true;
@@ -1410,23 +1699,53 @@ window.generateBranchReport = async function(period) {
       const a = Array.isArray(arr) ? arr : [arr];
       return a.some(x => states.includes(x));
     };
+    const inRange = ms => ms && ms >= from.getTime() && ms <= to.getTime();
     const audit = allAudit.docs.map(d => ({ id: d.id, ...d.data() }))
       .filter(a => {
         const t = a.at?.toMillis?.() || a.at?.seconds * 1000 || 0;
-        if (t < from.getTime() || t > to.getTime()) return false;
+        if (!inRange(t)) return false;
         return inStates(a.states) || (isOpMgr && (!a.states || !a.states.length));
       });
     const jobs = allJobs.docs.map(d => ({ id: d.id, ...d.data() }))
       .filter(j => {
         const t = j.approvedAt?.toMillis?.() || j.createdAt?.toMillis?.() || 0;
-        if (t < from.getTime() || t > to.getTime()) return false;
+        if (!inRange(t)) return false;
         return inStates([j.state]);
       });
     const reqs = allReqs.docs.map(d => ({ id: d.id, ...d.data() }))
       .filter(r => {
         const t = r.approvedAt?.toMillis?.() || r.createdAt?.toMillis?.() || 0;
-        if (t < from.getTime() || t > to.getTime()) return false;
+        if (!inRange(t)) return false;
         return inStates([r.state]) || inStates([r.location]) || (isOpMgr);
+      });
+    // Users joined in range + within state
+    const usersJoined = allUsers.docs.map(d => ({ id:d.id, ...d.data() }))
+      .filter(u => {
+        const t = u.createdAt?.toMillis?.() || 0;
+        if (!inRange(t)) return false;
+        return inStates([u.state]);
+      });
+    // Apps in range + within state (job state via jobLocation/jobState/state)
+    const appsInRange = allApps.docs.map(d => ({ id:d.id, ...d.data() }))
+      .filter(a => {
+        const t = a.appliedAt?.toMillis?.() || a.createdAt?.toMillis?.() || 0;
+        if (!inRange(t)) return false;
+        return inStates([a.jobState||a.jobLocation||a.state]) || isOpMgr;
+      });
+    // Workshops in range + within state
+    const workshops = allWorkshops.docs.map(d => ({ id:d.id, ...d.data() }))
+      .filter(w => {
+        const t = w.scheduledAt?.toMillis?.() || w.createdAt?.toMillis?.() || w.startsAt?.toMillis?.() || 0;
+        if (!inRange(t)) return false;
+        return inStates([w.state]) || (Array.isArray(w.locations) && w.locations.some(s=>states.includes(s))) || isOpMgr;
+      });
+    // Memberships purchased in range = Prime users that turned prime within range and live in allocated states
+    const memberships = allUsers.docs.map(d => ({ id:d.id, ...d.data() }))
+      .filter(u => {
+        const t = u.primeAt?.toMillis?.() || u.purchasedAt?.toMillis?.() || u.createdAt?.toMillis?.() || 0;
+        if (u.role !== 'Prime') return false;
+        if (!inRange(t)) return false;
+        return inStates([u.state]) || isOpMgr;
       });
     // Per-actor aggregation (from audit log)
     const perActor = {};
@@ -1436,6 +1755,45 @@ window.generateBranchReport = async function(period) {
       perActor[k].count++;
       perActor[k].actions[a.action || 'Other'] = (perActor[k].actions[a.action || 'Other'] || 0) + 1;
     });
+    // Promoted persons in this location with online time + per-action work details
+    const promotedInLoc = allUsers.docs.map(d=>({ id:d.id, ...d.data() }))
+      .filter(u => u.role === 'Admin' && (Array.isArray(u.locations) ? u.locations.some(s=>states.includes(s)) : false));
+    const promoActivity = promotedInLoc.map(p => {
+      const acts = audit.filter(a => a.byUid === p.id);
+      const counts = {}; acts.forEach(a => counts[a.action||'Other']=(counts[a.action||'Other']||0)+1);
+      // Online time estimate: sum onlineSeconds field if exists, else from acts span (first→last in range)
+      let onlineMin = 0;
+      if (typeof p.onlineSecondsTotal === 'number') {
+        onlineMin = Math.round(p.onlineSecondsTotal / 60);
+      } else if (acts.length) {
+        const ts = acts.map(a => a.at?.toMillis?.() || 0).filter(Boolean).sort();
+        onlineMin = ts.length >= 2 ? Math.round((ts[ts.length-1] - ts[0]) / 60000) : Math.max(5, acts.length * 2);
+      }
+      // What they accepted/approved
+      const approved = acts.filter(a => /approved|accept|hire|grant/i.test(a.action||'')).length;
+      const rejected = acts.filter(a => /reject|deny|block/i.test(a.action||'')).length;
+      return { uid: p.id, name: p.displayName||p.email||'Promoted', role: p.adminRole || 'Admin',
+        actions: acts.length, onlineMin, approved, rejected, breakdown: counts };
+    }).sort((a,b)=>b.actions-a.actions);
+    // Requests by type with who approved
+    const reqTypes = ['employerConnect','contact','resumeDownload','membership','jobPost'];
+    const reqsByType = {};
+    reqTypes.forEach(t => {
+      const list = reqs.filter(r => r.type === t);
+      const approved = list.filter(r => r.status === 'approved');
+      const acceptedBy = {};
+      approved.forEach(a => {
+        const k = a.approvedByName || a.handledBy || a.approvedBy || 'Unknown';
+        acceptedBy[k] = (acceptedBy[k]||0) + 1;
+      });
+      reqsByType[t] = {
+        total: list.length,
+        approved: approved.length,
+        rejected: list.filter(r => r.status === 'rejected').length,
+        pending: list.filter(r => !r.status || r.status === 'pending').length,
+        acceptedBy: Object.entries(acceptedBy).sort((a,b)=>b[1]-a[1]).map(([n,c])=>({name:n, count:c}))
+      };
+    });
     // Per-state aggregation
     const perState = {};
     [...audit, ...jobs.map(j=>({states:[j.state],action:'Job Posted'})), ...reqs.map(r=>({states:[r.state||r.location],action:r.type||'Request'}))].forEach(x => {
@@ -1443,6 +1801,17 @@ window.generateBranchReport = async function(period) {
       ss.filter(Boolean).forEach(s => { if (!perState[s]) perState[s] = 0; perState[s]++; });
     });
     const totalActions = audit.length + jobs.length + reqs.length;
+    // Percentages
+    const totalReqs = reqs.length || 1;
+    const reqPercents = {};
+    reqTypes.forEach(t => { reqPercents[t] = +((reqsByType[t].total / totalReqs) * 100).toFixed(1); });
+    const apps_total = appsInRange.length || 1;
+    const hiredCount = appsInRange.filter(a => a.status==='Hired').length;
+    const overallPct = {
+      hired: +((hiredCount / apps_total) * 100).toFixed(1),
+      approvedReq: +((reqs.filter(r=>r.status==='approved').length / totalReqs) * 100).toFixed(1),
+      primeConv: +((memberships.length / Math.max(1, usersJoined.length)) * 100).toFixed(1)
+    };
 
     // Build summary record (PDF created on-demand from preview)
     const summary = {
@@ -1452,6 +1821,19 @@ window.generateBranchReport = async function(period) {
       generatedByName: currentUser?.displayName || currentUser?.email || '',
       generatedByRole: role,
       totalActions, auditCount: audit.length, jobsCount: jobs.length, reqsCount: reqs.length,
+      // Phase 11 enriched fields
+      workshopCount: workshops.length,
+      workshops: workshops.slice(0, 20).map(w => ({ title: w.title||w.name||'(untitled)', state: w.state||'', when: w.scheduledAt?.toDate?.()?.toISOString() || w.startsAt?.toDate?.()?.toISOString() || '' })),
+      usersJoinedCount: usersJoined.length,
+      usersJoinedSample: usersJoined.slice(0, 30).map(u => ({ name: u.displayName||u.email||'', state: u.state||'', joined: u.createdAt?.toDate?.()?.toISOString()||'' })),
+      jobsAppliedCount: appsInRange.length,
+      jobsPostedCount: jobs.length,
+      requestsByType: reqsByType,
+      requestPercents: reqPercents,
+      membershipsCount: memberships.length,
+      membershipsRevenue: memberships.length * 499,
+      promotedActivity: promoActivity.slice(0, 30),
+      overallPercents: overallPct,
       perActor: Object.values(perActor).sort((a,b)=>b.count-a.count).slice(0, 25),
       perState: Object.entries(perState).sort((a,b)=>b[1]-a[1]).map(([s,c])=>({state:s,count:c})).slice(0, 30),
       timeline: audit.slice(0, 60).map(a => ({
@@ -1585,16 +1967,34 @@ window.adPreviewBranchReport = function(id) {
 
 // Renders a clean professional preview overlay for a branch report record
 function showBranchReportPreview(r) {
-  const fromS = r.from?.toDate?.()?.toLocaleString() || '';
-  const toS = r.to?.toDate?.()?.toLocaleString() || '';
+  const fromS = r.from?.toDate?.()?.toLocaleString() || (r.from instanceof Date ? r.from.toLocaleString() : '');
+  const toS = r.to?.toDate?.()?.toLocaleString() || (r.to instanceof Date ? r.to.toLocaleString() : '');
   const states = (r.states||[]).join(', ') || 'All India';
   const perActor = (r.perActor||[]).slice(0, 30);
   const perState = (r.perState||[]).slice(0, 30);
+  const reqByT = r.requestsByType || {};
+  const reqPct = r.requestPercents || {};
+  const overall = r.overallPercents || {};
+  const promo = r.promotedActivity || [];
+  const reqRow = (label, t, color) => {
+    const o = reqByT[t] || { total:0, approved:0, rejected:0, pending:0, acceptedBy:[] };
+    const pct = reqPct[t] || 0;
+    const acceptedBy = (o.acceptedBy||[]).slice(0,5).map(a => `${escapeHtml(a.name)} <span style="color:#666">(${a.count})</span>`).join(', ') || '<span style="color:#999">— none —</span>';
+    return `<tr style="border-bottom:1px solid #eee">
+      <td style="padding:8px"><span style="display:inline-block;width:10px;height:10px;background:${color};border-radius:2px;margin-right:6px"></span>${label}</td>
+      <td style="padding:8px;text-align:right;font-weight:700">${o.total}</td>
+      <td style="padding:8px;text-align:right;color:#22c55e">${o.approved}</td>
+      <td style="padding:8px;text-align:right;color:#ef4444">${o.rejected}</td>
+      <td style="padding:8px;text-align:right;color:#a855f7">${o.pending}</td>
+      <td style="padding:8px;text-align:right;color:#666">${pct}%</td>
+      <td style="padding:8px;font-size:12px;color:#444">${acceptedBy}</td>
+    </tr>`;
+  };
   const overlay = document.createElement('div');
   overlay.id = 'brPreviewOverlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;overflow-y:auto;padding:20px';
   overlay.innerHTML = `
-    <div style="max-width:900px;margin:0 auto;background:#fff;color:#222;border-radius:14px;box-shadow:0 14px 60px rgba(0,0,0,0.6);overflow:hidden;font-family:'Segoe UI',Roboto,sans-serif">
+    <div style="max-width:1000px;margin:0 auto;background:#fff;color:#222;border-radius:14px;box-shadow:0 14px 60px rgba(0,0,0,0.6);overflow:hidden;font-family:'Segoe UI',Roboto,sans-serif">
       <div style="background:linear-gradient(135deg,#e94560,#a8324a);color:#fff;padding:22px 28px;display:flex;justify-content:space-between;align-items:center">
         <div>
           <div style="font-size:11px;letter-spacing:2px;opacity:0.8;text-transform:uppercase">Hospitality Careers</div>
@@ -1603,31 +2003,95 @@ function showBranchReportPreview(r) {
         <button onclick="document.getElementById('brPreviewOverlay').remove()" style="background:rgba(255,255,255,0.2);color:#fff;border:none;width:36px;height:36px;border-radius:50%;font-size:22px;cursor:pointer">&times;</button>
       </div>
       <div style="padding:24px 28px">
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px">
-          ${kpiCard('Total Actions', r.totalActions||0, '#e94560')}
-          ${kpiCard('Audit Logs', r.auditCount||0, '#3b82f6')}
-          ${kpiCard('Job Posts', r.jobsCount||0, '#22c55e')}
-          ${kpiCard('Requests', r.reqsCount||0, '#a855f7')}
+        <!-- Top KPI grid -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:18px">
+          ${kpiCard('Workshops', r.workshopCount||0, '#06b6d4')}
+          ${kpiCard('Users Joined', r.usersJoinedCount||0, '#3b82f6')}
+          ${kpiCard('Jobs Posted', r.jobsPostedCount||0, '#22c55e')}
+          ${kpiCard('Jobs Applied', r.jobsAppliedCount||0, '#f59e0b')}
+          ${kpiCard('Memberships', r.membershipsCount||0, '#a855f7')}
+          ${kpiCard('Revenue', '₹'+(r.membershipsRevenue||0).toLocaleString(), '#16a34a')}
         </div>
         <div style="background:#f7f7fa;border-left:4px solid #e94560;padding:12px 14px;border-radius:6px;font-size:13px;margin-bottom:20px">
           <div><strong>Generated by:</strong> ${escapeHtml(r.generatedByName||'')} · <em>${escapeHtml(r.generatedByRole||'')}</em></div>
           <div><strong>Date range:</strong> ${escapeHtml(fromS)} → ${escapeHtml(toS)}</div>
           <div><strong>Locations covered:</strong> ${escapeHtml(states)}</div>
         </div>
-        <h3 style="font-size:15px;margin:18px 0 10px;color:#e94560;border-bottom:2px solid #e94560;padding-bottom:4px">Per-Member Activity</h3>
+
+        <!-- Overall percentages -->
+        <h3 style="font-size:15px;margin:18px 0 10px;color:#e94560;border-bottom:2px solid #e94560;padding-bottom:4px">📊 Overall Performance</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:20px">
+          ${kpiCard('Hire Rate', (overall.hired||0)+'%', '#22c55e')}
+          ${kpiCard('Request Approval Rate', (overall.approvedReq||0)+'%', '#3b82f6')}
+          ${kpiCard('Prime Conversion', (overall.primeConv||0)+'%', '#a855f7')}
+        </div>
+
+        <!-- Requests by type -->
+        <h3 style="font-size:15px;margin:18px 0 10px;color:#e94560;border-bottom:2px solid #e94560;padding-bottom:4px">📥 Requests by Type (with Acceptors)</h3>
         <table style="width:100%;border-collapse:collapse;font-size:13px">
-          <thead><tr style="background:#f3f3f8"><th style="padding:8px;text-align:left">Name</th><th style="padding:8px;text-align:left">Role</th><th style="padding:8px;text-align:right">Actions</th></tr></thead>
+          <thead><tr style="background:#f3f3f8">
+            <th style="padding:8px;text-align:left">Type</th>
+            <th style="padding:8px;text-align:right">Total</th>
+            <th style="padding:8px;text-align:right">Approved</th>
+            <th style="padding:8px;text-align:right">Rejected</th>
+            <th style="padding:8px;text-align:right">Pending</th>
+            <th style="padding:8px;text-align:right">Share</th>
+            <th style="padding:8px;text-align:left">Accepted By</th>
+          </tr></thead>
           <tbody>
-            ${perActor.length ? perActor.map(p=>`<tr style="border-bottom:1px solid #eee"><td style="padding:8px">${escapeHtml(p.name||'')}</td><td style="padding:8px;color:#666">${escapeHtml(p.role||'')}</td><td style="padding:8px;text-align:right;font-weight:700">${p.count||0}</td></tr>`).join('') : '<tr><td colspan="3" style="padding:14px;text-align:center;color:#888">No member activity captured.</td></tr>'}
+            ${reqRow('Employer Connect','employerConnect','#3b82f6')}
+            ${reqRow('Contact Reveal','contact','#06b6d4')}
+            ${reqRow('Resume Download','resumeDownload','#a855f7')}
+            ${reqRow('Membership','membership','#16a34a')}
+            ${reqRow('Job Post','jobPost','#f59e0b')}
           </tbody>
         </table>
-        <h3 style="font-size:15px;margin:24px 0 10px;color:#e94560;border-bottom:2px solid #e94560;padding-bottom:4px">Per-State Activity</h3>
+
+        <!-- Promoted persons in this location -->
+        <h3 style="font-size:15px;margin:24px 0 10px;color:#e94560;border-bottom:2px solid #e94560;padding-bottom:4px">👥 Promoted Persons (Online Time + Work)</h3>
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead><tr style="background:#f3f3f8">
+            <th style="padding:8px;text-align:left">Name</th>
+            <th style="padding:8px;text-align:left">Role</th>
+            <th style="padding:8px;text-align:right">Actions</th>
+            <th style="padding:8px;text-align:right">Approved</th>
+            <th style="padding:8px;text-align:right">Rejected</th>
+            <th style="padding:8px;text-align:right">Online (min)</th>
+            <th style="padding:8px;text-align:left">Work Breakdown</th>
+          </tr></thead>
+          <tbody>
+            ${promo.length ? promo.map(p => {
+              const breakdown = Object.entries(p.breakdown||{}).slice(0,4).map(([k,v])=>`${escapeHtml(k)}: ${v}`).join(', ');
+              return `<tr style="border-bottom:1px solid #eee">
+                <td style="padding:8px;font-weight:600">${escapeHtml(p.name||'')}</td>
+                <td style="padding:8px;color:#666">${escapeHtml(p.role||'')}</td>
+                <td style="padding:8px;text-align:right;font-weight:700">${p.actions||0}</td>
+                <td style="padding:8px;text-align:right;color:#22c55e">${p.approved||0}</td>
+                <td style="padding:8px;text-align:right;color:#ef4444">${p.rejected||0}</td>
+                <td style="padding:8px;text-align:right">${p.onlineMin||0}</td>
+                <td style="padding:8px;font-size:12px;color:#555">${breakdown||'<span style="color:#999">—</span>'}</td>
+              </tr>`;
+            }).join('') : '<tr><td colspan="7" style="padding:14px;text-align:center;color:#888">No promoted persons in your locations.</td></tr>'}
+          </tbody>
+        </table>
+
+        <!-- Per-State Activity -->
+        <h3 style="font-size:15px;margin:24px 0 10px;color:#e94560;border-bottom:2px solid #e94560;padding-bottom:4px">📍 Per-State Activity</h3>
         <table style="width:100%;border-collapse:collapse;font-size:13px">
           <thead><tr style="background:#f3f3f8"><th style="padding:8px;text-align:left">State / Location</th><th style="padding:8px;text-align:right">Actions</th></tr></thead>
           <tbody>
             ${perState.length ? perState.map(s=>`<tr style="border-bottom:1px solid #eee"><td style="padding:8px">${escapeHtml(s.state||'')}</td><td style="padding:8px;text-align:right;font-weight:700">${s.count||0}</td></tr>`).join('') : '<tr><td colspan="2" style="padding:14px;text-align:center;color:#888">No state activity captured.</td></tr>'}
           </tbody>
         </table>
+
+        <!-- Workshops in range -->
+        ${(r.workshops && r.workshops.length) ? `
+        <h3 style="font-size:15px;margin:24px 0 10px;color:#e94560;border-bottom:2px solid #e94560;padding-bottom:4px">🎓 Workshops</h3>
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead><tr style="background:#f3f3f8"><th style="padding:8px;text-align:left">Title</th><th style="padding:8px;text-align:left">State</th><th style="padding:8px;text-align:left">When</th></tr></thead>
+          <tbody>${r.workshops.map(w=>`<tr style="border-bottom:1px solid #eee"><td style="padding:8px">${escapeHtml(w.title||'')}</td><td style="padding:8px;color:#666">${escapeHtml(w.state||'')}</td><td style="padding:8px;color:#666">${w.when ? new Date(w.when).toLocaleString() : ''}</td></tr>`).join('')}</tbody>
+        </table>` : ''}
+
         <div style="margin-top:24px;display:flex;gap:10px;justify-content:flex-end">
           <button onclick="downloadBranchReportPDF('${r.id}')" style="background:#e94560;color:#fff;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-weight:700"><i class="fas fa-download"></i> Download PDF</button>
           <button onclick="document.getElementById('brPreviewOverlay').remove()" style="background:#eee;color:#333;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-weight:600">Close</button>
@@ -1663,6 +2127,7 @@ function kpiCard(label, val, color) {
     </a>
   </div>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="js/i18n.js"></script>
 <script src="js/chatbot.js"></script>
 <script src="js/pwa-install.js"></script>
