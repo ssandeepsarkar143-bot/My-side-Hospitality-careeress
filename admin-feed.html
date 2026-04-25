@@ -86,6 +86,18 @@
       <div class="sidebar-item hidden" id="nav_managePromoted" onclick="showSection('managePromoted')"><i class="fas fa-user-shield"></i> Promoted Admins</div>
       <div class="sidebar-item hidden" id="nav_manageMpin" onclick="showSection('manageMpin')"><i class="fas fa-key"></i> Manage MPINs</div>
       <div class="sidebar-item hidden" id="nav_auditLog" onclick="showSection('auditLog')"><i class="fas fa-history"></i> Change Log</div>
+      <div class="sidebar-section hidden" id="nav_operations_header">Operations (My States)</div>
+      <div class="sidebar-item hidden" id="nav_walletTopups" onclick="showSection('walletTopups')"><i class="fas fa-wallet"></i> Wallet Top-ups</div>
+      <div class="sidebar-item hidden" id="nav_walletWithdrawals" onclick="showSection('walletWithdrawals')"><i class="fas fa-money-bill-transfer"></i> Wallet Withdrawals</div>
+      <div class="sidebar-item hidden" id="nav_walletRecords" onclick="showSection('walletRecords')"><i class="fas fa-coins"></i> Wallet Records</div>
+      <div class="sidebar-item hidden" id="nav_coupons" onclick="showSection('coupons')"><i class="fas fa-ticket"></i> Create &amp; Send Coupons</div>
+      <div class="sidebar-item hidden" id="nav_discounts" onclick="showSection('discounts')"><i class="fas fa-percent"></i> Discounts &amp; Offers</div>
+      <div class="sidebar-item hidden" id="nav_referrals" onclick="showSection('referrals')"><i class="fas fa-gift"></i> Refer &amp; Earn</div>
+      <div class="sidebar-item hidden" id="nav_engagement" onclick="showSection('engagement')"><i class="fas fa-bullhorn"></i> Engagement Tools</div>
+      <div class="sidebar-item hidden" id="nav_enquiries" onclick="showSection('enquiries')"><i class="fas fa-question-circle"></i> Enquiries</div>
+      <div class="sidebar-item hidden" id="nav_feedback" onclick="showSection('feedback')"><i class="fas fa-star"></i> Feedback</div>
+      <div class="sidebar-item hidden" id="nav_content" onclick="showSection('content')"><i class="fas fa-file-alt"></i> Site Content</div>
+      <div class="sidebar-item hidden" id="nav_settings" onclick="showSection('settings')"><i class="fas fa-cog"></i> Site Settings</div>
       <div class="sidebar-section">Communication</div>
       <div class="sidebar-item" id="nav_chatbox" onclick="showSection('chatbox')"><i class="fas fa-comments"></i> Chatbox <span id="chatboxBadge" style="display:none;background:#ef4444;color:#fff;font-size:10px;padding:2px 7px;border-radius:10px;margin-left:6px">0</span></div>
       <div class="sidebar-item hidden" id="nav_reportsCenter" onclick="showSection('reportsCenter')"><i class="fas fa-file-pdf"></i> Reports Center</div>
@@ -321,6 +333,179 @@
         </div>
       </div>
 
+      <!-- ============ OPERATIONS — Wallet / Coupons / Engagement / Enquiries / Feedback / Content / Settings ============ -->
+      <!-- All sections below are gated by auth_perms AND filtered to the admin's allocated states. -->
+
+      <!-- WALLET TOPUPS -->
+      <div id="sec-walletTopups" class="page-section">
+        <div class="section-title" style="color:#e94560"><i class="fas fa-wallet" style="-webkit-text-fill-color:#e94560"></i> HC Wallet Top-up Requests <span id="adWalletTopupScope" style="font-size:11px;color:var(--gray);font-weight:400;margin-left:8px"></span></div>
+        <div class="stats-grid" id="adWalletTopupStats" style="margin-bottom:16px"></div>
+        <div class="card mb-16"><p style="font-size:12px;color:var(--gray);margin-bottom:0">Approve UTR to instantly credit user's HC Wallet (1 pt = ₹1). Only requests from users in your allocated states are shown.</p></div>
+        <div class="table-wrapper"><table>
+          <thead><tr><th>User</th><th>Email</th><th>State</th><th>Amount</th><th>UTR</th><th>Submitted</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="adWalletTopupsBody"><tr><td colspan="8" style="text-align:center;color:var(--gray);padding:20px">Loading…</td></tr></tbody>
+        </table></div>
+      </div>
+
+      <!-- WALLET WITHDRAWALS -->
+      <div id="sec-walletWithdrawals" class="page-section">
+        <div class="section-title" style="color:#e94560"><i class="fas fa-money-bill-transfer" style="-webkit-text-fill-color:#e94560"></i> HC Wallet Withdrawals <span id="adWalletWdScope" style="font-size:11px;color:var(--gray);font-weight:400;margin-left:8px"></span></div>
+        <div class="stats-grid" id="adWalletWdStats" style="margin-bottom:16px"></div>
+        <div class="card mb-16"><p style="font-size:12px;color:var(--gray);margin-bottom:0">After paying via UPI, click <b>Mark Paid</b>. <b>Reject</b> auto-refunds points back to the user's wallet. Only requests from users in your allocated states are shown.</p></div>
+        <div class="table-wrapper"><table>
+          <thead><tr><th>User</th><th>Email</th><th>State</th><th>Amount</th><th>UPI</th><th>Submitted</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="adWalletWdBody"><tr><td colspan="8" style="text-align:center;color:var(--gray);padding:20px">Loading…</td></tr></tbody>
+        </table></div>
+      </div>
+
+      <!-- WALLET RECORDS (read-only ledger) -->
+      <div id="sec-walletRecords" class="page-section">
+        <div class="section-title" style="color:#e94560"><i class="fas fa-coins" style="-webkit-text-fill-color:#e94560"></i> Wallet Transaction Records <span id="adWalletRecScope" style="font-size:11px;color:var(--gray);font-weight:400;margin-left:8px"></span></div>
+        <div class="stats-grid" id="adWalletRecStats" style="margin-bottom:16px"></div>
+        <div class="card mb-16"><p style="font-size:12px;color:var(--gray);margin-bottom:0">Read-only ledger of every wallet transaction (top-up / referral / Prime payment / refund) for users in your allocated states.</p></div>
+        <div class="table-wrapper"><table>
+          <thead><tr><th>User</th><th>State</th><th>Type</th><th>Amount</th><th>Note</th><th>When</th></tr></thead>
+          <tbody id="adWalletRecBody"><tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">Loading…</td></tr></tbody>
+        </table></div>
+      </div>
+
+      <!-- COUPONS — create & send -->
+      <div id="sec-coupons" class="page-section">
+        <div class="section-title" style="color:#e94560"><i class="fas fa-ticket" style="-webkit-text-fill-color:#e94560"></i> Create &amp; Send Coupons <span id="adCpnScope" style="font-size:11px;color:var(--gray);font-weight:400;margin-left:8px"></span></div>
+        <div class="stats-grid" id="adCpnStats" style="margin-bottom:16px"></div>
+        <div class="card mb-16">
+          <div class="card-title"><i class="fas fa-plus-circle"></i> Create New Coupon</div>
+          <p style="font-size:12px;color:var(--gray);margin-bottom:12px">Coupons you create can only be sent to users inside your allocated states. Discount coupons auto-apply on the Membership page; trial / free-month coupons instantly upgrade the user to Prime on claim.</p>
+          <div class="grid-2">
+            <div class="form-group"><label>Coupon Type</label>
+              <select id="adCpnType" class="form-control">
+                <option value="discount">💸 Discount (₹ OFF on Prime)</option>
+                <option value="trial">⏰ Free Prime Trial (X days)</option>
+                <option value="freeMonth">🎁 1 Month Free Prime</option>
+              </select></div>
+            <div class="form-group"><label id="adCpnValueLabel">Discount Amount (₹)</label>
+              <input type="number" id="adCpnValue" class="form-control" placeholder="e.g. 100" min="1"/></div>
+          </div>
+          <div class="grid-2">
+            <div class="form-group"><label>Coupon Title (visible to user)</label>
+              <input type="text" id="adCpnTitle" class="form-control" placeholder="e.g. Diwali Special — ₹100 OFF"/></div>
+            <div class="form-group"><label>Expires in (days)</label>
+              <input type="number" id="adCpnExpDays" class="form-control" value="30" min="1"/></div>
+          </div>
+          <div class="form-group"><label>Message to user (optional)</label>
+            <input type="text" id="adCpnMsg" class="form-control" placeholder="Short note shown with the coupon"/></div>
+          <div class="form-group"><label>Send To (within my states)</label>
+            <select id="adCpnTarget" class="form-control">
+              <option value="">-- Select target --</option>
+              <option value="all_users">📢 All Users in my states</option>
+              <option value="normal">👤 Normal Users only</option>
+              <option value="all_prime">👑 All Prime Members</option>
+              <option value="single_email">✉️ Specific User (by email)</option>
+            </select></div>
+          <div class="form-group" id="adCpnEmailWrap" style="display:none">
+            <label>Target User Email</label>
+            <input type="email" id="adCpnEmail" class="form-control" placeholder="user@example.com"/>
+          </div>
+          <button class="btn btn-primary" onclick="adCreateCouponBatch()"><i class="fas fa-paper-plane"></i> Create &amp; Send Coupon</button>
+          <div id="adCpnMsgBox" class="alert mt-8"></div>
+        </div>
+        <div class="card-title"><i class="fas fa-list"></i> Coupons I Sent</div>
+        <div class="table-wrapper"><table>
+          <thead><tr><th>Code</th><th>Title</th><th>Type</th><th>Value</th><th>Target</th><th>Status</th><th>Created</th><th>Expires</th><th>Action</th></tr></thead>
+          <tbody id="adCouponsBody"><tr><td colspan="9" style="text-align:center;color:var(--gray);padding:20px">Loading…</td></tr></tbody>
+        </table></div>
+      </div>
+
+      <!-- DISCOUNTS & OFFERS (read-only summary) -->
+      <div id="sec-discounts" class="page-section">
+        <div class="section-title" style="color:#e94560"><i class="fas fa-percent" style="-webkit-text-fill-color:#e94560"></i> Discounts &amp; Offers</div>
+        <div class="card mb-16"><p style="font-size:12px;color:var(--gray);margin-bottom:0">Site-wide Prime membership discounts are managed by the Owner. Below shows the currently active offer.</p></div>
+        <div class="card" id="adDiscountsCard"><div style="text-align:center;color:var(--gray);padding:30px"><i class="fas fa-spinner fa-spin"></i> Loading…</div></div>
+      </div>
+
+      <!-- REFER & EARN RECORDS (filtered) -->
+      <div id="sec-referrals" class="page-section">
+        <div class="section-title" style="color:#e94560"><i class="fas fa-gift" style="-webkit-text-fill-color:#e94560"></i> Refer &amp; Earn Records <span id="adRefScope" style="font-size:11px;color:var(--gray);font-weight:400;margin-left:8px"></span></div>
+        <div class="stats-grid" id="adRefStats" style="margin-bottom:16px"></div>
+        <div class="card mb-16"><p style="font-size:12px;color:var(--gray);margin-bottom:0">Read-only view of referral activity for users in your allocated states. Reward configuration is owner-only.</p></div>
+        <div class="table-wrapper"><table>
+          <thead><tr><th>Referrer</th><th>State</th><th>Referred Email</th><th>Status</th><th>When</th></tr></thead>
+          <tbody id="adRefBody"><tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">Loading…</td></tr></tbody>
+        </table></div>
+      </div>
+
+      <!-- ENGAGEMENT TOOLS — send notifications to users -->
+      <div id="sec-engagement" class="page-section">
+        <div class="section-title" style="color:#e94560"><i class="fas fa-bullhorn" style="-webkit-text-fill-color:#e94560"></i> Engagement Tools <span id="adEngScope" style="font-size:11px;color:var(--gray);font-weight:400;margin-left:8px"></span></div>
+        <div class="card mb-16">
+          <div class="card-title"><i class="fas fa-paper-plane"></i> Send Notification</div>
+          <p style="font-size:12px;color:var(--gray);margin-bottom:12px">Push an in-app notification to users in your allocated states. Use this for announcements, drives, walk-in interview invites etc.</p>
+          <div class="grid-2">
+            <div class="form-group"><label>Audience</label>
+              <select id="adEngAudience" class="form-control">
+                <option value="all_users">📢 All Users in my states</option>
+                <option value="normal">👤 Normal Users only</option>
+                <option value="all_prime">👑 Prime Members only</option>
+                <option value="single_email">✉️ Specific User (by email)</option>
+              </select></div>
+            <div class="form-group"><label>Severity</label>
+              <select id="adEngType" class="form-control">
+                <option value="info">ℹ️ Info</option>
+                <option value="success">✅ Success</option>
+                <option value="warning">⚠️ Warning</option>
+                <option value="danger">🛑 Danger</option>
+              </select></div>
+          </div>
+          <div class="form-group" id="adEngEmailWrap" style="display:none"><label>Target Email</label>
+            <input type="email" id="adEngEmail" class="form-control" placeholder="user@example.com"/></div>
+          <div class="form-group"><label>Message</label>
+            <textarea id="adEngMsg" class="form-control" rows="3" placeholder="What do you want to tell them?"></textarea></div>
+          <button class="btn btn-primary" onclick="adSendEngagementNotif()"><i class="fas fa-paper-plane"></i> Send Notification</button>
+          <div id="adEngMsgBox" class="alert mt-8"></div>
+        </div>
+        <div class="card-title"><i class="fas fa-history"></i> My Recent Sends</div>
+        <div class="table-wrapper"><table>
+          <thead><tr><th>Message</th><th>Audience</th><th>Type</th><th>Sent</th></tr></thead>
+          <tbody id="adEngBody"><tr><td colspan="4" style="text-align:center;color:var(--gray);padding:20px">Loading…</td></tr></tbody>
+        </table></div>
+      </div>
+
+      <!-- ENQUIRIES -->
+      <div id="sec-enquiries" class="page-section">
+        <div class="section-title" style="color:#e94560"><i class="fas fa-question-circle" style="-webkit-text-fill-color:#e94560"></i> Enquiries <span id="adEnqScope" style="font-size:11px;color:var(--gray);font-weight:400;margin-left:8px"></span></div>
+        <div class="stats-grid" id="adEnqStats" style="margin-bottom:16px"></div>
+        <div class="card mb-16"><p style="font-size:12px;color:var(--gray);margin-bottom:0">Enquiries raised by users in your allocated states (about top-ups, withdrawals, coupons etc.). Resolve and notify the user.</p></div>
+        <div class="table-wrapper"><table>
+          <thead><tr><th>User</th><th>Email</th><th>State</th><th>Topic</th><th>Question</th><th>Status</th><th>Submitted</th><th>Action</th></tr></thead>
+          <tbody id="adEnqBody"><tr><td colspan="8" style="text-align:center;color:var(--gray);padding:20px">Loading…</td></tr></tbody>
+        </table></div>
+      </div>
+
+      <!-- FEEDBACK -->
+      <div id="sec-feedback" class="page-section">
+        <div class="section-title" style="color:#e94560"><i class="fas fa-star" style="-webkit-text-fill-color:#e94560"></i> User Feedback <span id="adFbScope" style="font-size:11px;color:var(--gray);font-weight:400;margin-left:8px"></span></div>
+        <div class="stats-grid" id="adFbStats" style="margin-bottom:16px"></div>
+        <div class="card mb-16"><p style="font-size:12px;color:var(--gray);margin-bottom:0">Feedback &amp; ratings from users in your allocated states. Toggle public visibility for testimonials.</p></div>
+        <div class="table-wrapper"><table>
+          <thead><tr><th>User</th><th>State</th><th>Rating</th><th>Feedback</th><th>Public?</th><th>Submitted</th><th>Action</th></tr></thead>
+          <tbody id="adFbBody"><tr><td colspan="7" style="text-align:center;color:var(--gray);padding:20px">Loading…</td></tr></tbody>
+        </table></div>
+      </div>
+
+      <!-- SITE CONTENT (read-only summary) -->
+      <div id="sec-content" class="page-section">
+        <div class="section-title" style="color:#e94560"><i class="fas fa-file-alt" style="-webkit-text-fill-color:#e94560"></i> Site Content</div>
+        <div class="card mb-16"><p style="font-size:12px;color:var(--gray);margin-bottom:0">View the public site content (About / Hero / FAQs). Editing is owner-only.</p></div>
+        <div class="card" id="adContentCard"><div style="text-align:center;color:var(--gray);padding:30px"><i class="fas fa-spinner fa-spin"></i> Loading…</div></div>
+      </div>
+
+      <!-- SITE SETTINGS (read-only summary for admin) -->
+      <div id="sec-settings" class="page-section">
+        <div class="section-title" style="color:#e94560"><i class="fas fa-cog" style="-webkit-text-fill-color:#e94560"></i> Site Settings</div>
+        <div class="card mb-16"><p style="font-size:12px;color:var(--gray);margin-bottom:0">View key site settings (UPI ID, membership price, referral reward etc.). Editing is owner-only.</p></div>
+        <div class="card" id="adSettingsCard"><div style="text-align:center;color:var(--gray);padding:30px"><i class="fas fa-spinner fa-spin"></i> Loading…</div></div>
+      </div>
+
       <!-- ============ REPORTS CENTER (Branch Head / Op Mgr — generate location reports) ============ -->
       <div id="sec-reportsCenter" class="page-section">
         <div class="section-title" style="color:#e94560"><i class="fas fa-file-pdf" style="-webkit-text-fill-color:#e94560"></i> Reports Center — My Locations</div>
@@ -405,7 +590,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, doc, getDoc, getDocs, setDoc, collection, query, where, orderBy, limit, updateDoc, deleteDoc, addDoc, serverTimestamp, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, getDoc, getDocs, setDoc, collection, query, where, orderBy, limit, updateDoc, deleteDoc, addDoc, serverTimestamp, onSnapshot, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCuAuc9qhA7D_-Lqt-69pbG81KTIiDFVpg",
@@ -528,6 +713,33 @@ function setupAuthority() {
   if (auth_perms.jobPost) { document.getElementById('nav_jobRequests').classList.remove('hidden'); }
   if (auth_perms.jobList) { document.getElementById('nav_jobList').classList.remove('hidden'); }
   if (auth_perms.resumeRecords) { document.getElementById('nav_resumeRecords').classList.remove('hidden'); document.getElementById('auth_sections_header').style.display='block'; loadAdResumeRecords(); }
+
+  // Operations sections — each gated by its own permission, data location-filtered.
+  const opsHeader = document.getElementById('nav_operations_header');
+  // Permission keys MUST match owner-feed ALL_AUTHS so the owner's "Edit Promoted User" checkboxes drive these.
+  const opsPerms = [
+    ['walletTopups','nav_walletTopups'],
+    ['walletWithdrawals','nav_walletWithdrawals'],
+    ['walletRecords','nav_walletRecords'],
+    ['coupons','nav_coupons'],
+    ['discounts','nav_discounts'],
+    ['referrals','nav_referrals'],
+    ['engagement','nav_engagement'],
+    ['enquiries','nav_enquiries'],
+    ['feedback','nav_feedback'],
+    ['content','nav_content'],
+    ['settings','nav_settings']
+  ];
+  let __opsAnyShown = false;
+  opsPerms.forEach(([perm, navId]) => {
+    if (auth_perms[perm]) {
+      const el = document.getElementById(navId);
+      if (el) { el.classList.remove('hidden'); __opsAnyShown = true; }
+    }
+  });
+  if (__opsAnyShown) opsHeader.classList.remove('hidden');
+  // Snapshot allocated states for ops loaders (mirrors revenue dashboard)
+  if (!window.__adRevAllowedStates) window.__adRevAllowedStates = (adminData?.locations || []).slice();
   // Operations Manager / Branch Head extras
   const adminRole = adminData?.adminRole || '';
   const isOpMgr = adminRole === 'Operations Manager';
@@ -581,6 +793,17 @@ window.showSection = function(name) {
     case 'resumeRecords': loadAdResumeRecords(); break;
     case 'chatbox': refreshChatboxInbox(); break;
     case 'reportsCenter': loadMyBranchReports(); break;
+    case 'walletTopups': adLoadWalletTopups(); break;
+    case 'walletWithdrawals': adLoadWalletWithdrawals(); break;
+    case 'walletRecords': adLoadWalletRecords(); break;
+    case 'coupons': adLoadCouponsSection(); break;
+    case 'discounts': adLoadDiscounts(); break;
+    case 'referrals': adLoadReferrals(); break;
+    case 'engagement': adLoadEngagement(); break;
+    case 'enquiries': adLoadEnquiries(); break;
+    case 'feedback': adLoadFeedback(); break;
+    case 'content': adLoadContent(); break;
+    case 'settings': adLoadSettings(); break;
   }
 };
 
@@ -2109,6 +2332,534 @@ function kpiCard(label, val, color) {
     <div style="font-size:24px;font-weight:800;color:${color}">${val}</div>
     <div style="font-size:11px;color:#666;text-transform:uppercase;letter-spacing:1px;margin-top:4px">${label}</div>
   </div>`;
+}
+
+/* =====================================================================
+   ADMIN OPERATIONS — Wallet / Coupons / Engagement / Enquiries / Feedback / Content / Settings
+   All data is filtered by adminData.locations (allocated states).
+   Permissions are enforced both via UI gating in setupAuthority() AND
+   defensively at action time below.
+   ===================================================================== */
+
+let __adUsersCache = null;
+async function adGetUsersMap() {
+  if (__adUsersCache) return __adUsersCache;
+  const snap = await getDocs(collection(db, 'users'));
+  const map = new Map();
+  snap.docs.forEach(d => map.set(d.id, { id: d.id, ...d.data() }));
+  __adUsersCache = map;
+  return map;
+}
+function adAllowedStates() { return (window.__adRevAllowedStates || adminData?.locations || []); }
+function adAllowedFor(user) {
+  const allowed = adAllowedStates();
+  if (!allowed.length) return true;
+  if (!user) return false;
+  const userStates = new Set([user.state, ...(user.locations||[])].filter(Boolean));
+  for (const s of allowed) if (userStates.has(s)) return true;
+  return false;
+}
+function adScopeLabel() {
+  const a = adAllowedStates();
+  return a.length ? `📍 ${a.length === 1 ? a[0] : a.length + ' states'}` : '🌐 All India';
+}
+async function adFilterByUserState(items) {
+  const allowed = adAllowedStates();
+  if (!allowed.length) return items.map(r => ({ ...r, __user: null }));
+  const map = await adGetUsersMap();
+  return items
+    .map(r => ({ ...r, __user: map.get(r.uid) || null }))
+    .filter(r => adAllowedFor(r.__user));
+}
+function adHasPerm(p) { return !!(adminData?.authorities && adminData.authorities[p]); }
+
+async function adSendNotification(userId, message, type='info', extras={}) {
+  try {
+    await addDoc(collection(db, 'notifications'), {
+      userId: userId || '', message, type, read: false,
+      broadcast: !!extras.broadcast, targetRole: extras.targetRole || '',
+      createdAt: serverTimestamp(), createdBy: currentUser?.uid || 'admin', createdByRole: 'admin'
+    });
+  } catch(_) {}
+}
+
+/* ---------- WALLET TOPUPS ---------- */
+async function adLoadWalletTopups() {
+  if (!adHasPerm('walletTopups')) return;
+  const tbody = document.getElementById('adWalletTopupsBody');
+  document.getElementById('adWalletTopupScope').textContent = adScopeLabel();
+  try {
+    const snap = await getDocs(collection(db, 'walletTopups'));
+    let items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    items = await adFilterByUserState(items);
+    items.sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0));
+    let pendingCnt=0, pendingAmt=0, approvedAmt=0;
+    items.forEach(r => { if (r.status==='pending') { pendingCnt++; pendingAmt+=r.amount||0; } if (r.status==='approved') approvedAmt+=r.amount||0; });
+    document.getElementById('adWalletTopupStats').innerHTML = `
+      <div class="stat-card"><div class="stat-label">Pending</div><div class="stat-value">${pendingCnt}</div></div>
+      <div class="stat-card"><div class="stat-label">Pending Amount</div><div class="stat-value">₹${pendingAmt}</div></div>
+      <div class="stat-card"><div class="stat-label">Total Approved</div><div class="stat-value">₹${approvedAmt}</div></div>
+      <div class="stat-card"><div class="stat-label">Total Records</div><div class="stat-value">${items.length}</div></div>`;
+    if (!items.length) { tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--gray);padding:20px">No top-up requests in your states yet</td></tr>'; return; }
+    tbody.innerHTML = items.map(r => `<tr>
+      <td>${r.name||r.__user?.displayName||'—'}</td>
+      <td>${r.email||r.__user?.email||'—'}</td>
+      <td>${r.__user?.state||'—'}</td>
+      <td><b>₹${r.amount||0}</b></td>
+      <td style="font-size:11px;color:#e94560;font-weight:600">${r.utr||'—'}</td>
+      <td style="font-size:11px">${r.createdAt?.toDate?.()?.toLocaleString()||'—'}</td>
+      <td><span class="badge badge-${r.status==='approved'?'approved':r.status==='rejected'?'rejected':'pending'}">${r.status}</span></td>
+      <td>${r.status==='pending'?`
+        <button class="btn btn-sm btn-success" onclick="adApproveTopup('${r.id}','${r.uid}',${r.amount||0})">Approve</button>
+        <button class="btn btn-sm btn-danger" onclick="adRejectTopup('${r.id}','${r.uid}')">Reject</button>`:'Done'}</td>
+    </tr>`).join('');
+  } catch(e) { console.warn('adLoadWalletTopups', e); tbody.innerHTML=`<tr><td colspan="8" style="color:#ef4444;text-align:center;padding:20px">Failed: ${e.message}</td></tr>`; }
+}
+window.adApproveTopup = async function(id, uid, amount) {
+  if (!adHasPerm('walletTopups')) return showToast('No permission','error');
+  if (!uid || !amount) return showToast('Invalid top-up data','error');
+  try {
+    const map = await adGetUsersMap();
+    if (!adAllowedFor(map.get(uid))) return showToast('User outside your allocated states','error');
+    await updateDoc(doc(db,'walletTopups',id), { status:'approved', approvedBy: currentUser.uid, approvedAt: serverTimestamp() });
+    await updateDoc(doc(db,'users',uid), { walletBalance: increment(amount) });
+    await addDoc(collection(db,'walletTransactions'), { uid, type:'topup', amount, note:`Wallet top-up approved (₹${amount})`, ref:id, createdAt: serverTimestamp() });
+    await adSendNotification(uid, `💰 Your HC Wallet has been credited with ${amount} points (₹${amount}).`, 'success');
+    await logAdminAudit('wallet_topup_approve', `Approved ₹${amount} top-up`, { targetUid: uid, payload: { id, amount } });
+    showToast('Top-up approved & wallet credited');
+    adLoadWalletTopups();
+  } catch(e) { showToast('Failed: '+e.message,'error'); }
+};
+window.adRejectTopup = async function(id, uid) {
+  if (!adHasPerm('walletTopups')) return showToast('No permission','error');
+  try {
+    const map = await adGetUsersMap();
+    if (!adAllowedFor(map.get(uid))) return showToast('User outside your allocated states','error');
+    await updateDoc(doc(db,'walletTopups',id), { status:'rejected', approvedBy: currentUser.uid, approvedAt: serverTimestamp() });
+    if (uid) await adSendNotification(uid, `❌ Your wallet top-up request was rejected.`, 'danger');
+    await logAdminAudit('wallet_topup_reject', `Rejected top-up`, { targetUid: uid, payload: { id } });
+    showToast('Top-up rejected','error');
+    adLoadWalletTopups();
+  } catch(e) { showToast('Failed: '+e.message,'error'); }
+};
+
+/* ---------- WALLET WITHDRAWALS ---------- */
+async function adLoadWalletWithdrawals() {
+  if (!adHasPerm('walletWithdrawals')) return;
+  const tbody = document.getElementById('adWalletWdBody');
+  document.getElementById('adWalletWdScope').textContent = adScopeLabel();
+  try {
+    const snap = await getDocs(collection(db, 'walletWithdrawals'));
+    let items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    items = await adFilterByUserState(items);
+    items.sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0));
+    let pendingCnt=0, pendingAmt=0, paidAmt=0, rejCnt=0;
+    items.forEach(r => { if (r.status==='pending'){pendingCnt++;pendingAmt+=r.amount||0;} else if (r.status==='approved') paidAmt+=r.amount||0; else if (r.status==='rejected') rejCnt++; });
+    document.getElementById('adWalletWdStats').innerHTML = `
+      <div class="stat-card"><div class="stat-label">Pending</div><div class="stat-value">${pendingCnt}</div></div>
+      <div class="stat-card"><div class="stat-label">Pending Amount</div><div class="stat-value">₹${pendingAmt}</div></div>
+      <div class="stat-card"><div class="stat-label">Total Paid Out</div><div class="stat-value">₹${paidAmt}</div></div>
+      <div class="stat-card"><div class="stat-label">Rejected</div><div class="stat-value">${rejCnt}</div></div>`;
+    if (!items.length) { tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--gray);padding:20px">No withdrawal requests in your states yet</td></tr>'; return; }
+    tbody.innerHTML = items.map(r => `<tr>
+      <td>${r.name||r.__user?.displayName||'—'}</td>
+      <td>${r.email||r.__user?.email||'—'}</td>
+      <td>${r.__user?.state||'—'}</td>
+      <td><b>₹${r.amount||0}</b></td>
+      <td style="font-size:11px;color:#e94560;font-weight:600">${r.upi||'—'}</td>
+      <td style="font-size:11px">${r.createdAt?.toDate?.()?.toLocaleString()||'—'}</td>
+      <td><span class="badge badge-${r.status==='approved'?'approved':r.status==='rejected'?'rejected':'pending'}">${r.status}</span></td>
+      <td>${r.status==='pending'?`
+        <button class="btn btn-sm btn-success" onclick="adApproveWithdrawal('${r.id}','${r.uid}',${r.amount||0},'${(r.upi||'').replace(/'/g,'')}')">Mark Paid</button>
+        <button class="btn btn-sm btn-danger" onclick="adRejectWithdrawal('${r.id}','${r.uid}',${r.amount||0})">Reject (Refund)</button>`:'Done'}</td>
+    </tr>`).join('');
+  } catch(e) { console.warn(e); tbody.innerHTML=`<tr><td colspan="8" style="color:#ef4444;text-align:center;padding:20px">Failed: ${e.message}</td></tr>`; }
+}
+window.adApproveWithdrawal = async function(id, uid, amount, upi) {
+  if (!adHasPerm('walletWithdrawals')) return showToast('No permission','error');
+  if (!confirm(`Confirm: You have paid ₹${amount} to ${upi}?`)) return;
+  try {
+    const map = await adGetUsersMap();
+    if (!adAllowedFor(map.get(uid))) return showToast('User outside your allocated states','error');
+    await updateDoc(doc(db,'walletWithdrawals',id), { status:'approved', approvedBy: currentUser.uid, approvedAt: serverTimestamp() });
+    await adSendNotification(uid, `✅ Your withdrawal of ₹${amount} has been paid to ${upi}.`, 'success');
+    await logAdminAudit('wallet_withdraw_paid', `Paid ₹${amount} to ${upi}`, { targetUid: uid, payload: { id, amount, upi } });
+    showToast('Withdrawal marked paid'); adLoadWalletWithdrawals();
+  } catch(e) { showToast('Failed: '+e.message,'error'); }
+};
+window.adRejectWithdrawal = async function(id, uid, amount) {
+  if (!adHasPerm('walletWithdrawals')) return showToast('No permission','error');
+  if (!confirm(`Reject and refund ₹${amount} back to user's wallet?`)) return;
+  try {
+    const map = await adGetUsersMap();
+    if (!adAllowedFor(map.get(uid))) return showToast('User outside your allocated states','error');
+    await updateDoc(doc(db,'walletWithdrawals',id), { status:'rejected', approvedBy: currentUser.uid, approvedAt: serverTimestamp() });
+    await updateDoc(doc(db,'users',uid), { walletBalance: increment(amount) });
+    await addDoc(collection(db,'walletTransactions'), { uid, type:'refund', amount, note:`Withdrawal rejected — ₹${amount} refunded`, ref:id, createdAt: serverTimestamp() });
+    await adSendNotification(uid, `❌ Your withdrawal request was rejected. ${amount} pts (₹${amount}) refunded.`, 'danger');
+    await logAdminAudit('wallet_withdraw_reject', `Rejected & refunded ₹${amount}`, { targetUid: uid, payload: { id, amount } });
+    showToast('Rejected & refunded','error'); adLoadWalletWithdrawals();
+  } catch(e) { showToast('Failed: '+e.message,'error'); }
+};
+
+/* ---------- WALLET RECORDS (read-only) ---------- */
+async function adLoadWalletRecords() {
+  if (!adHasPerm('walletRecords')) return;
+  const tbody = document.getElementById('adWalletRecBody');
+  document.getElementById('adWalletRecScope').textContent = adScopeLabel();
+  try {
+    const snap = await getDocs(collection(db, 'walletTransactions'));
+    let items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    items = await adFilterByUserState(items);
+    items.sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0));
+    let credit=0, debit=0;
+    items.forEach(r => { const a = r.amount||0; if (['topup','referral','refund','bonus'].includes(r.type)) credit+=a; else debit+=a; });
+    document.getElementById('adWalletRecStats').innerHTML = `
+      <div class="stat-card"><div class="stat-label">Total Records</div><div class="stat-value">${items.length}</div></div>
+      <div class="stat-card"><div class="stat-label">Total Credits</div><div class="stat-value">₹${credit}</div></div>
+      <div class="stat-card"><div class="stat-label">Total Debits</div><div class="stat-value">₹${debit}</div></div>`;
+    if (!items.length) { tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">No transactions in your states</td></tr>'; return; }
+    tbody.innerHTML = items.slice(0,200).map(r => `<tr>
+      <td style="font-size:11px">${r.__user?.displayName||r.__user?.email||r.uid||'—'}</td>
+      <td>${r.__user?.state||'—'}</td>
+      <td><span class="badge badge-${['topup','referral','refund','bonus'].includes(r.type)?'approved':'pending'}">${r.type||'—'}</span></td>
+      <td><b>₹${r.amount||0}</b></td>
+      <td style="font-size:11px">${r.note||'—'}</td>
+      <td style="font-size:11px">${r.createdAt?.toDate?.()?.toLocaleString()||'—'}</td>
+    </tr>`).join('');
+  } catch(e) { console.warn(e); tbody.innerHTML=`<tr><td colspan="6" style="color:#ef4444;text-align:center;padding:20px">Failed: ${e.message}</td></tr>`; }
+}
+
+/* ---------- COUPONS ---------- */
+function adGenCouponCode() {
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  let s = 'HC-'; for (let i=0;i<6;i++) s += chars[Math.floor(Math.random()*chars.length)];
+  return s;
+}
+document.addEventListener('change', (e) => {
+  if (e.target?.id === 'adCpnType') {
+    const t = e.target.value;
+    const lbl = document.getElementById('adCpnValueLabel');
+    const wrap = document.getElementById('adCpnValue')?.parentElement;
+    if (!lbl || !wrap) return;
+    if (t === 'discount') { lbl.textContent='Discount Amount (₹)'; wrap.style.display='block'; }
+    else if (t === 'trial') { lbl.textContent='Trial Duration (days)'; wrap.style.display='block'; }
+    else { wrap.style.display='none'; }
+  }
+  if (e.target?.id === 'adCpnTarget') {
+    document.getElementById('adCpnEmailWrap').style.display = e.target.value === 'single_email' ? 'block' : 'none';
+  }
+  if (e.target?.id === 'adEngAudience') {
+    document.getElementById('adEngEmailWrap').style.display = e.target.value === 'single_email' ? 'block' : 'none';
+  }
+});
+
+async function adLoadCouponsSection() {
+  if (!adHasPerm('coupons')) return;
+  document.getElementById('adCpnScope').textContent = adScopeLabel();
+  const tbody = document.getElementById('adCouponsBody');
+  try {
+    const snap = await getDocs(collection(db, 'coupons'));
+    // Show only coupons created by THIS admin (so admins don't manage owner's coupons)
+    const myCoupons = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(c => c.createdBy === currentUser?.uid).sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0));
+    const total = myCoupons.length;
+    const claimed = myCoupons.filter(c => c.status==='claimed').length;
+    const available = myCoupons.filter(c => c.status==='available').length;
+    document.getElementById('adCpnStats').innerHTML = `
+      <div class="stat-card"><div class="stat-label">My Coupons Sent</div><div class="stat-value">${total}</div></div>
+      <div class="stat-card"><div class="stat-label">Available</div><div class="stat-value">${available}</div></div>
+      <div class="stat-card"><div class="stat-label">Claimed</div><div class="stat-value">${claimed}</div></div>`;
+    if (!total) { tbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--gray);padding:20px">You have not sent any coupons yet</td></tr>'; return; }
+    tbody.innerHTML = myCoupons.map(c => `<tr>
+      <td style="font-size:11px;color:#e94560;font-weight:700">${c.code||'—'}</td>
+      <td style="font-size:12px">${c.title||'—'}</td>
+      <td>${c.type||'—'}</td>
+      <td>${c.value?'₹'+c.value:(c.days?c.days+' days':'—')}</td>
+      <td style="font-size:11px">${c.targetEmail||c.target||'—'}</td>
+      <td><span class="badge badge-${c.status==='claimed'?'approved':c.status==='expired'?'rejected':'pending'}">${c.status||'—'}</span></td>
+      <td style="font-size:11px">${c.createdAt?.toDate?.()?.toLocaleDateString()||'—'}</td>
+      <td style="font-size:11px">${c.expiresAt?.toDate?.()?.toLocaleDateString()||'—'}</td>
+      <td>${c.status==='available'?`<button class="btn btn-sm btn-danger" onclick="adCancelCoupon('${c.id}')">Cancel</button>`:'—'}</td>
+    </tr>`).join('');
+  } catch(e) { console.warn(e); tbody.innerHTML=`<tr><td colspan="9" style="color:#ef4444;text-align:center;padding:20px">Failed: ${e.message}</td></tr>`; }
+}
+window.adCancelCoupon = async function(id) {
+  if (!adHasPerm('coupons')) return showToast('No permission','error');
+  if (!confirm('Cancel this coupon?')) return;
+  try { await deleteDoc(doc(db,'coupons',id)); showToast('Coupon cancelled'); adLoadCouponsSection(); }
+  catch(e) { showToast('Failed: '+e.message,'error'); }
+};
+window.adCreateCouponBatch = async function() {
+  if (!adHasPerm('coupons')) return showToast('No permission','error');
+  const box = document.getElementById('adCpnMsgBox');
+  box.className = 'alert mt-8'; box.textContent = '';
+  const type = document.getElementById('adCpnType').value;
+  const value = parseInt(document.getElementById('adCpnValue').value, 10) || 0;
+  const title = document.getElementById('adCpnTitle').value.trim();
+  const expDays = parseInt(document.getElementById('adCpnExpDays').value, 10) || 30;
+  const message = document.getElementById('adCpnMsg').value.trim();
+  const target = document.getElementById('adCpnTarget').value;
+  const email = document.getElementById('adCpnEmail').value.trim();
+  if (!title) { box.classList.add('alert-danger'); box.textContent='Please enter a coupon title.'; return; }
+  if (!target) { box.classList.add('alert-danger'); box.textContent='Please choose a target audience.'; return; }
+  if ((type === 'discount' || type === 'trial') && value <= 0) { box.classList.add('alert-danger'); box.textContent='Please enter a valid value.'; return; }
+
+  try {
+    const map = await adGetUsersMap();
+    let targets = [];
+    const allowed = adAllowedStates();
+    const inScope = (u) => !allowed.length || adAllowedFor(u);
+    for (const [uid, u] of map.entries()) {
+      if (!inScope(u)) continue;
+      const role = (u.role||'user').toLowerCase();
+      if (target === 'all_users') targets.push({ uid, email: u.email });
+      else if (target === 'normal' && role === 'user' && !u.tag) targets.push({ uid, email: u.email });
+      else if (target === 'all_prime' && (u.tag && /^Prime/i.test(u.tag) || role === 'prime')) targets.push({ uid, email: u.email });
+      else if (target === 'single_email' && u.email && u.email.toLowerCase() === email.toLowerCase()) targets.push({ uid, email: u.email });
+    }
+    if (target === 'single_email' && !targets.length) { box.classList.add('alert-danger'); box.textContent='No matching user in your allocated states with that email.'; return; }
+    if (!targets.length) { box.classList.add('alert-danger'); box.textContent='No matching users found in your allocated states.'; return; }
+
+    const expiresAt = new Date(Date.now() + expDays * 86400000);
+    let sent = 0;
+    for (const t of targets) {
+      const code = adGenCouponCode();
+      await addDoc(collection(db,'coupons'), {
+        code, title, type, value: type==='discount'?value:0, days: type==='trial'?value:0,
+        message, status: 'available', target, targetEmail: t.email, targetUid: t.uid,
+        createdBy: currentUser.uid, createdByRole: 'admin',
+        createdAt: serverTimestamp(), expiresAt
+      });
+      await adSendNotification(t.uid, `🎁 You have a new coupon: ${title}. Open My Coupons to claim.`, 'info');
+      sent++;
+    }
+    await logAdminAudit('coupon_create', `Sent ${sent} coupon(s) — ${title}`, { payload: { type, value, target } });
+    box.classList.add('alert-success'); box.textContent = `✅ Sent ${sent} coupon(s) successfully.`;
+    document.getElementById('adCpnTitle').value=''; document.getElementById('adCpnMsg').value=''; document.getElementById('adCpnEmail').value='';
+    adLoadCouponsSection();
+  } catch(e) { box.classList.add('alert-danger'); box.textContent='Failed: '+e.message; }
+};
+
+/* ---------- DISCOUNTS (read-only) ---------- */
+async function adLoadDiscounts() {
+  if (!adHasPerm('discounts')) return;
+  const card = document.getElementById('adDiscountsCard');
+  try {
+    const snap = await getDoc(doc(db,'siteSettings','membership'));
+    if (!snap.exists()) { card.innerHTML='<div style="text-align:center;color:var(--gray);padding:30px">No discount configured.</div>'; return; }
+    const s = snap.data();
+    card.innerHTML = `
+      <div class="grid-2">
+        <div><label style="font-size:11px;color:var(--gray)">Base Price</label><div style="font-size:22px;font-weight:800;color:#e94560">₹${s.basePrice||499}</div></div>
+        <div><label style="font-size:11px;color:var(--gray)">Active Discount</label><div style="font-size:22px;font-weight:800;color:#22c55e">${s.discount?'₹'+s.discount+' OFF':'—'}</div></div>
+        <div><label style="font-size:11px;color:var(--gray)">Final Price</label><div style="font-size:22px;font-weight:800;color:#fff">₹${(s.basePrice||499) - (s.discount||0)}</div></div>
+        <div><label style="font-size:11px;color:var(--gray)">Offer Title</label><div style="font-size:14px">${s.offerTitle||'—'}</div></div>
+      </div>
+      <p style="font-size:11px;color:var(--gray);margin-top:14px"><i class="fas fa-info-circle"></i> Discount rules are owner-managed.</p>`;
+  } catch(e) { card.innerHTML=`<div style="color:#ef4444;padding:20px">Failed: ${e.message}</div>`; }
+}
+
+/* ---------- REFERRALS (read-only, location-filtered) ---------- */
+async function adLoadReferrals() {
+  if (!adHasPerm('referrals')) return;
+  document.getElementById('adRefScope').textContent = adScopeLabel();
+  const tbody = document.getElementById('adRefBody');
+  try {
+    const snap = await getDocs(collection(db,'referrals'));
+    let items = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+    // referrals doc has referrerUid — filter by referrer's state
+    const map = await adGetUsersMap();
+    const allowed = adAllowedStates();
+    if (allowed.length) items = items.filter(r => adAllowedFor(map.get(r.referrerUid)));
+    items.sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0));
+    const total = items.length;
+    const conv = items.filter(r => r.status === 'converted').length;
+    const rewarded = items.filter(r => r.rewarded).length;
+    document.getElementById('adRefStats').innerHTML = `
+      <div class="stat-card"><div class="stat-label">Total Referrals</div><div class="stat-value">${total}</div></div>
+      <div class="stat-card"><div class="stat-label">Prime Conversions</div><div class="stat-value">${conv}</div></div>
+      <div class="stat-card"><div class="stat-label">Rewarded</div><div class="stat-value">${rewarded}</div></div>`;
+    if (!total) { tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">No referrals in your states yet</td></tr>'; return; }
+    tbody.innerHTML = items.slice(0,200).map(r => {
+      const ref = map.get(r.referrerUid);
+      return `<tr>
+        <td style="font-size:12px">${ref?.displayName||ref?.email||'—'}</td>
+        <td>${ref?.state||'—'}</td>
+        <td style="font-size:12px">${r.referredEmail||'—'}</td>
+        <td><span class="badge badge-${r.status==='converted'?'approved':'pending'}">${r.status||'pending'}</span></td>
+        <td style="font-size:11px">${r.createdAt?.toDate?.()?.toLocaleString()||'—'}</td>
+      </tr>`;
+    }).join('');
+  } catch(e) { console.warn(e); tbody.innerHTML=`<tr><td colspan="5" style="color:#ef4444;text-align:center;padding:20px">Failed: ${e.message}</td></tr>`; }
+}
+
+/* ---------- ENGAGEMENT — send notifications ---------- */
+async function adLoadEngagement() {
+  if (!adHasPerm('engagement')) return;
+  document.getElementById('adEngScope').textContent = adScopeLabel();
+  const tbody = document.getElementById('adEngBody');
+  try {
+    const snap = await getDocs(collection(db,'notifications'));
+    const mine = snap.docs.map(d => ({ id:d.id, ...d.data() })).filter(n => n.createdBy === currentUser?.uid).sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0)).slice(0,50);
+    if (!mine.length) { tbody.innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--gray);padding:20px">You have not sent any notifications yet</td></tr>'; return; }
+    tbody.innerHTML = mine.map(n => `<tr>
+      <td style="font-size:12px;max-width:380px">${n.message||''}</td>
+      <td>${n.broadcast ? (n.targetRole||'All') : 'Single User'}</td>
+      <td><span class="badge badge-${n.type==='success'?'approved':n.type==='danger'?'rejected':'pending'}">${n.type||'info'}</span></td>
+      <td style="font-size:11px">${n.createdAt?.toDate?.()?.toLocaleString()||'—'}</td>
+    </tr>`).join('');
+  } catch(e) { console.warn(e); }
+}
+window.adSendEngagementNotif = async function() {
+  if (!adHasPerm('engagement')) return showToast('No permission','error');
+  const box = document.getElementById('adEngMsgBox');
+  box.className='alert mt-8'; box.textContent='';
+  const audience = document.getElementById('adEngAudience').value;
+  const type = document.getElementById('adEngType').value;
+  const email = document.getElementById('adEngEmail').value.trim();
+  const msg = document.getElementById('adEngMsg').value.trim();
+  if (!msg) { box.classList.add('alert-danger'); box.textContent='Please type a message.'; return; }
+  try {
+    const map = await adGetUsersMap();
+    let targets = [];
+    for (const [uid, u] of map.entries()) {
+      if (!adAllowedFor(u)) continue;
+      const role = (u.role||'user').toLowerCase();
+      if (audience === 'all_users') targets.push(uid);
+      else if (audience === 'normal' && role === 'user' && !u.tag) targets.push(uid);
+      else if (audience === 'all_prime' && (u.tag && /^Prime/i.test(u.tag) || role === 'prime')) targets.push(uid);
+      else if (audience === 'single_email' && u.email && u.email.toLowerCase() === email.toLowerCase()) targets.push(uid);
+    }
+    if (!targets.length) { box.classList.add('alert-danger'); box.textContent='No matching users in your allocated states.'; return; }
+    let sent = 0;
+    for (const uid of targets) { await adSendNotification(uid, msg, type, { broadcast: false }); sent++; }
+    await logAdminAudit('engagement_notify', `Sent notification to ${sent} user(s)`, { payload: { audience, type } });
+    box.classList.add('alert-success'); box.textContent=`✅ Sent to ${sent} user(s).`;
+    document.getElementById('adEngMsg').value=''; document.getElementById('adEngEmail').value='';
+    adLoadEngagement();
+  } catch(e) { box.classList.add('alert-danger'); box.textContent='Failed: '+e.message; }
+};
+
+/* ---------- ENQUIRIES ---------- */
+async function adLoadEnquiries() {
+  if (!adHasPerm('enquiries')) return;
+  document.getElementById('adEnqScope').textContent = adScopeLabel();
+  const tbody = document.getElementById('adEnqBody');
+  try {
+    const snap = await getDocs(collection(db,'enquiries'));
+    let items = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+    items = await adFilterByUserState(items);
+    items.sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0));
+    const open = items.filter(r => r.status !== 'resolved').length;
+    const resolved = items.filter(r => r.status === 'resolved').length;
+    document.getElementById('adEnqStats').innerHTML = `
+      <div class="stat-card"><div class="stat-label">Open</div><div class="stat-value">${open}</div></div>
+      <div class="stat-card"><div class="stat-label">Resolved</div><div class="stat-value">${resolved}</div></div>
+      <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value">${items.length}</div></div>`;
+    if (!items.length) { tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--gray);padding:20px">No enquiries in your states</td></tr>'; return; }
+    tbody.innerHTML = items.map(r => `<tr>
+      <td>${r.userName||r.__user?.displayName||'—'}</td>
+      <td style="font-size:12px">${r.userEmail||r.__user?.email||'—'}</td>
+      <td>${r.__user?.state||'—'}</td>
+      <td><span class="badge badge-pending">${r.topic||r.type||'general'}</span></td>
+      <td style="font-size:12px;max-width:280px">${r.message||r.question||'—'}</td>
+      <td><span class="badge badge-${r.status==='resolved'?'approved':'pending'}">${r.status||'open'}</span></td>
+      <td style="font-size:11px">${r.createdAt?.toDate?.()?.toLocaleString()||'—'}</td>
+      <td>${r.status!=='resolved'?`<button class="btn btn-sm btn-success" onclick="adResolveEnquiry('${r.id}','${r.uid}')">Resolve</button>`:'Done'}</td>
+    </tr>`).join('');
+  } catch(e) { console.warn(e); tbody.innerHTML=`<tr><td colspan="8" style="color:#ef4444;text-align:center;padding:20px">Failed: ${e.message}</td></tr>`; }
+}
+window.adResolveEnquiry = async function(id, uid) {
+  if (!adHasPerm('enquiries')) return showToast('No permission','error');
+  const reply = prompt('Resolution note (will be sent as notification to user):');
+  if (reply === null) return;
+  try {
+    await updateDoc(doc(db,'enquiries',id), { status:'resolved', resolvedBy: currentUser.uid, resolvedAt: serverTimestamp(), resolution: reply||'' });
+    if (uid) await adSendNotification(uid, `✅ Your enquiry has been resolved.${reply?' Note: '+reply:''}`, 'success');
+    await logAdminAudit('enquiry_resolve', `Resolved enquiry`, { targetUid: uid, payload: { id, reply } });
+    showToast('Enquiry resolved'); adLoadEnquiries();
+  } catch(e) { showToast('Failed: '+e.message,'error'); }
+};
+
+/* ---------- FEEDBACK ---------- */
+async function adLoadFeedback() {
+  if (!adHasPerm('feedback')) return;
+  document.getElementById('adFbScope').textContent = adScopeLabel();
+  const tbody = document.getElementById('adFbBody');
+  try {
+    const snap = await getDocs(collection(db,'feedback'));
+    let items = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+    items = await adFilterByUserState(items);
+    items.sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0));
+    const total = items.length;
+    const avg = total ? (items.reduce((s,r) => s + (r.rating||0), 0) / total).toFixed(1) : '0.0';
+    const pub = items.filter(r => r.public).length;
+    document.getElementById('adFbStats').innerHTML = `
+      <div class="stat-card"><div class="stat-label">Total Feedback</div><div class="stat-value">${total}</div></div>
+      <div class="stat-card"><div class="stat-label">Avg Rating</div><div class="stat-value">${avg} ⭐</div></div>
+      <div class="stat-card"><div class="stat-label">Public Testimonials</div><div class="stat-value">${pub}</div></div>`;
+    if (!total) { tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--gray);padding:20px">No feedback in your states yet</td></tr>'; return; }
+    tbody.innerHTML = items.map(r => `<tr>
+      <td>${r.userName||r.__user?.displayName||r.__user?.email||'—'}</td>
+      <td>${r.__user?.state||'—'}</td>
+      <td style="color:#fbbf24">${'⭐'.repeat(r.rating||0)}</td>
+      <td style="font-size:12px;max-width:320px">${r.message||r.comment||'—'}</td>
+      <td><span class="badge badge-${r.public?'approved':'pending'}">${r.public?'Public':'Private'}</span></td>
+      <td style="font-size:11px">${r.createdAt?.toDate?.()?.toLocaleString()||'—'}</td>
+      <td><button class="btn btn-sm" style="background:#3b82f6;color:#fff" onclick="adToggleFeedbackPublic('${r.id}',${!r.public})">${r.public?'Hide':'Show'}</button></td>
+    </tr>`).join('');
+  } catch(e) { console.warn(e); tbody.innerHTML=`<tr><td colspan="7" style="color:#ef4444;text-align:center;padding:20px">Failed: ${e.message}</td></tr>`; }
+}
+window.adToggleFeedbackPublic = async function(id, makePublic) {
+  if (!adHasPerm('feedback')) return showToast('No permission','error');
+  try {
+    await updateDoc(doc(db,'feedback',id), { public: !!makePublic, lastEditedBy: currentUser.uid, lastEditedAt: serverTimestamp() });
+    await logAdminAudit('feedback_visibility', `Toggled feedback public=${makePublic}`, { payload: { id, makePublic } });
+    showToast(makePublic?'Made public':'Hidden'); adLoadFeedback();
+  } catch(e) { showToast('Failed: '+e.message,'error'); }
+};
+
+/* ---------- CONTENT (read-only) ---------- */
+async function adLoadContent() {
+  if (!adHasPerm('content')) return;
+  const card = document.getElementById('adContentCard');
+  try {
+    const snap = await getDoc(doc(db,'siteContent','settings'));
+    if (!snap.exists()) { card.innerHTML='<div style="text-align:center;color:var(--gray);padding:30px">No site content configured.</div>'; return; }
+    const s = snap.data();
+    card.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:14px">
+        ${s.heroTitle?`<div><label style="font-size:11px;color:var(--gray)">Hero Title</label><div style="font-size:16px;font-weight:700">${s.heroTitle}</div></div>`:''}
+        ${s.heroSub?`<div><label style="font-size:11px;color:var(--gray)">Hero Subtitle</label><div style="font-size:13px">${s.heroSub}</div></div>`:''}
+        ${s.aboutText?`<div><label style="font-size:11px;color:var(--gray)">About Text</label><div style="font-size:12px;color:rgba(255,255,255,0.85);max-height:140px;overflow:auto">${s.aboutText}</div></div>`:''}
+        ${[1,2,3].map(i => s['faq'+i+'q']?`<div><label style="font-size:11px;color:var(--gray)">FAQ ${i}</label><div style="font-size:13px;font-weight:600">${s['faq'+i+'q']}</div><div style="font-size:12px;color:rgba(255,255,255,0.7)">${s['faq'+i+'a']||''}</div></div>`:'').join('')}
+      </div>
+      <p style="font-size:11px;color:var(--gray);margin-top:14px"><i class="fas fa-info-circle"></i> Site content is owner-managed. Read-only here.</p>`;
+  } catch(e) { card.innerHTML=`<div style="color:#ef4444;padding:20px">Failed: ${e.message}</div>`; }
+}
+
+/* ---------- SETTINGS (read-only) ---------- */
+async function adLoadSettings() {
+  if (!adHasPerm('settings')) return;
+  const card = document.getElementById('adSettingsCard');
+  try {
+    const [memSnap, refSnap, upiSnap] = await Promise.all([
+      getDoc(doc(db,'siteSettings','membership')),
+      getDoc(doc(db,'siteSettings','referral')),
+      getDoc(doc(db,'siteSettings','upi'))
+    ]);
+    const m = memSnap.exists() ? memSnap.data() : {};
+    const r = refSnap.exists() ? refSnap.data() : {};
+    const u = upiSnap.exists() ? upiSnap.data() : {};
+    card.innerHTML = `
+      <div class="grid-2">
+        <div><label style="font-size:11px;color:var(--gray)">Membership Base Price</label><div style="font-size:20px;font-weight:800;color:#e94560">₹${m.basePrice||499}</div></div>
+        <div><label style="font-size:11px;color:var(--gray)">Active Discount</label><div style="font-size:20px;font-weight:800;color:#22c55e">${m.discount?'₹'+m.discount+' OFF':'—'}</div></div>
+        <div><label style="font-size:11px;color:var(--gray)">Referral Reward (per side)</label><div style="font-size:20px;font-weight:800;color:#fbbf24">${r.points||10} pts</div></div>
+        <div><label style="font-size:11px;color:var(--gray)">UPI ID</label><div style="font-size:14px;color:#fff;word-break:break-all">${u.upiId||'—'}</div></div>
+      </div>
+      <p style="font-size:11px;color:var(--gray);margin-top:14px"><i class="fas fa-info-circle"></i> Site settings are owner-managed. Read-only here.</p>`;
+  } catch(e) { card.innerHTML=`<div style="color:#ef4444;padding:20px">Failed: ${e.message}</div>`; }
 }
 
 </script>

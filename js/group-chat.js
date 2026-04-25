@@ -114,6 +114,11 @@ const GroupChat = {
       .gc-crop-actions button.apply { background:linear-gradient(135deg,#d4af37,#b8941f); color:#0a0a14; border:none;
         padding:8px 16px; border-radius:8px; cursor:pointer; font-size:12px; font-weight:700; }
       .gc-head .gc-title { flex:1; font-weight:700; color:#d4af37; font-size:15px; }
+      .gc-head .gc-min, .gc-thread-head .gc-min { font-size:24px; font-weight:700; line-height:1; padding:0 10px; color:rgba(255,255,255,0.8); }
+      .gc-head .gc-close, .gc-thread-head .gc-close { font-size:16px; padding:4px 10px; color:rgba(255,255,255,0.8); border-radius:6px; }
+      .gc-head .gc-min:hover, .gc-head .gc-close:hover, .gc-thread-head .gc-min:hover, .gc-thread-head .gc-close:hover { color:#fff; background:rgba(255,255,255,0.12); }
+      .gc-fab.gc-pulse { animation:gcPulse 1.4s ease-out 2; }
+      @keyframes gcPulse { 0%{box-shadow:0 0 0 0 rgba(212,175,55,0.7)} 70%{box-shadow:0 0 0 18px rgba(212,175,55,0)} 100%{box-shadow:0 0 0 0 rgba(212,175,55,0)} }
       .gc-head button { background:transparent; border:none; color:#fff; cursor:pointer; font-size:18px;
         width:32px; height:32px; border-radius:8px; }
       .gc-head button:hover { background:rgba(255,255,255,0.08); }
@@ -223,8 +228,8 @@ const GroupChat = {
       <div id="gc-list-view">
         <div class="gc-head" id="gc-list-head">
           <div class="gc-title"><i class="fas fa-users"></i> My Group Chats</div>
-          <button onclick="GroupChat.minimizePanel()" title="Minimize"><i class="fas fa-window-minimize" style="font-size:13px"></i></button>
-          <button onclick="GroupChat.togglePanel()" title="Close">&times;</button>
+          <button class="gc-min" onclick="GroupChat.minimizePanel()" title="Minimize">−</button>
+          <button class="gc-close" onclick="GroupChat.togglePanel()" title="Close">✕</button>
         </div>
         <div class="gc-body"><div class="gc-grouplist" id="gc-grouplist">
           <div class="gc-empty">Loading your groups…</div>
@@ -237,8 +242,8 @@ const GroupChat = {
             <div class="gc-thread-title" id="gc-thread-title">Group</div>
             <div class="gc-thread-sub" id="gc-thread-sub">—</div>
           </div>
-          <button onclick="GroupChat.minimizePanel()" title="Minimize"><i class="fas fa-window-minimize" style="font-size:13px"></i></button>
-          <button onclick="GroupChat.togglePanel()" title="Close">&times;</button>
+          <button class="gc-min" onclick="GroupChat.minimizePanel()" title="Minimize">−</button>
+          <button class="gc-close" onclick="GroupChat.togglePanel()" title="Close">✕</button>
         </div>
         <div id="gc-meeting-bar"></div>
         <div class="gc-toolbar" id="gc-toolbar"></div>
@@ -276,6 +281,11 @@ const GroupChat = {
     const p = document.getElementById('gc-panel');
     if (p) p.classList.remove('open');
     // Don't close the thread — preserve the state so re-opening returns to the same place
+    const fab = document.getElementById('gc-fab');
+    if (fab) {
+      fab.classList.add('gc-pulse');
+      setTimeout(() => fab.classList.remove('gc-pulse'), 3000);
+    }
   },
 
   // ---------------------- DRAGGABLE ----------------------
