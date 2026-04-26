@@ -497,7 +497,68 @@ document.addEventListener('touchmove', onDragMove, { passive: false });
 document.addEventListener('mouseup', onDragEnd);
 document.addEventListener('touchend', onDragEnd);
 
-btn.addEventListener('click', () => {
+// ---- Floating bubble drag (matches group chat FAB behaviour) ----
+let btnDragging = false, btnMoved = false, btnStartX = 0, btnStartY = 0, btnOrigLeft = 0, btnOrigTop = 0;
+function onBtnDragStart(e) {
+  const touch = e.touches?.[0];
+  const cx = touch ? touch.clientX : e.clientX;
+  const cy = touch ? touch.clientY : e.clientY;
+  const r = btn.getBoundingClientRect();
+  btnOrigLeft = r.left; btnOrigTop = r.top;
+  btnStartX = cx; btnStartY = cy;
+  btnDragging = true; btnMoved = false;
+  document.addEventListener('mousemove', onBtnDragMove);
+  document.addEventListener('mouseup', onBtnDragEnd);
+  document.addEventListener('touchmove', onBtnDragMove, { passive: false });
+  document.addEventListener('touchend', onBtnDragEnd);
+}
+function onBtnDragMove(e) {
+  if (!btnDragging) return;
+  const touch = e.touches?.[0];
+  const cx = touch ? touch.clientX : e.clientX;
+  const cy = touch ? touch.clientY : e.clientY;
+  const dx = cx - btnStartX, dy = cy - btnStartY;
+  if (Math.abs(dx) + Math.abs(dy) > 4) btnMoved = true;
+  let nl = btnOrigLeft + dx, nt = btnOrigTop + dy;
+  const w = btn.offsetWidth, h = btn.offsetHeight, m = 4;
+  nl = Math.max(m, Math.min(window.innerWidth - w - m, nl));
+  nt = Math.max(m, Math.min(window.innerHeight - h - m, nt));
+  btn.style.left = nl + 'px'; btn.style.top = nt + 'px';
+  btn.style.right = 'auto'; btn.style.bottom = 'auto';
+  e.preventDefault?.();
+}
+function onBtnDragEnd() {
+  if (!btnDragging) return;
+  btnDragging = false;
+  document.removeEventListener('mousemove', onBtnDragMove);
+  document.removeEventListener('mouseup', onBtnDragEnd);
+  document.removeEventListener('touchmove', onBtnDragMove);
+  document.removeEventListener('touchend', onBtnDragEnd);
+  if (btnMoved) {
+    try { localStorage.setItem('hc_btn_pos', JSON.stringify({ left: btn.style.left, top: btn.style.top })); } catch(_){}
+  }
+}
+btn.addEventListener('mousedown', onBtnDragStart);
+btn.addEventListener('touchstart', onBtnDragStart, { passive: false });
+
+// Restore saved bubble position (only if it was parked in the bottom half — otherwise reset)
+try {
+  const raw = localStorage.getItem('hc_btn_pos');
+  if (raw) {
+    const p = JSON.parse(raw);
+    const t = parseFloat(p?.top);
+    if (isFinite(t) && t >= window.innerHeight * 0.55 && p?.left) {
+      btn.style.left = p.left; btn.style.top = p.top;
+      btn.style.right = 'auto'; btn.style.bottom = 'auto';
+    } else {
+      localStorage.removeItem('hc_btn_pos');
+    }
+  }
+} catch(_){}
+
+btn.addEventListener('click', (e) => {
+  // Suppress click immediately following a drag
+  if (btnMoved) { btnMoved = false; e.preventDefault?.(); e.stopPropagation?.(); return; }
   if (win.style.display === 'flex') {
     win.style.display = 'none';
   } else {

@@ -173,8 +173,8 @@
           <div class="card-title" style="color:#e94560;font-size:16px;margin-bottom:16px"><i class="fas fa-users"></i> Recent Users (My States)</div>
           <div class="table-wrapper">
             <table>
-              <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th><th>Membership</th></tr></thead>
-              <tbody id="adminUsersBody"><tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
+              <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th><th>Membership</th><th>Action</th></tr></thead>
+              <tbody id="adminUsersBody"><tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
             </table>
           </div>
         </div>
@@ -191,7 +191,7 @@
         <div class="section-title" style="color:#e94560"><i class="fas fa-users" style="-webkit-text-fill-color:#e94560"></i> User Control</div>
         <div class="table-wrapper">
           <table>
-            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th><th>Membership</th></tr></thead>
+            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th><th>Membership</th><th>Action</th></tr></thead>
             <tbody id="adminUsersBody2"></tbody>
           </table>
         </div>
@@ -544,6 +544,37 @@
     </div>
 
     <!-- Edit Role Modal -->
+    <!-- PROMOTE USER → ADMIN MODAL (admins with the 'promote' authority) -->
+    <div class="modal-overlay" id="adminPromoteModal">
+      <div class="modal-box" style="max-width:540px;max-height:88vh;overflow-y:auto">
+        <div class="modal-header">
+          <div class="modal-title" style="color:#22c55e"><i class="fas fa-user-shield"></i> Promote User to Admin</div>
+          <button class="modal-close" onclick="document.getElementById('adminPromoteModal').classList.remove('active')">&times;</button>
+        </div>
+        <div id="apTargetName" style="font-size:14px;color:#22c55e;margin-bottom:14px;font-weight:600"></div>
+        <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.25);border-radius:8px;padding:10px 12px;font-size:12px;color:rgba(255,255,255,0.85);margin-bottom:14px">
+          <i class="fas fa-info-circle" style="color:#22c55e"></i> You can only assign roles allowed for your tier and states from your own allocations. A default MPIN <strong>0000</strong> will be issued — the new admin will be asked to change it on first login.
+        </div>
+        <div class="form-group"><label>Role / Designation</label>
+          <select id="ap_role" class="form-control"></select>
+        </div>
+        <div class="form-group"><label>Allocated States <span style="font-size:11px;color:var(--gray)">(only your states can be assigned)</span></label>
+          <div id="ap_statesBox" style="max-height:140px;overflow-y:auto;background:rgba(255,255,255,0.04);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px"></div>
+        </div>
+        <div class="form-group"><label>Starter Authorities <span style="font-size:11px;color:var(--gray)">(can be expanded later by Owner / OpsMgr)</span></label>
+          <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px">
+            <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="ap_a_dashboard" checked/> User Control</label>
+            <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="ap_a_jobPost"/> Approve Job Posts</label>
+            <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="ap_a_contact"/> Approve Contact</label>
+            <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="ap_a_resumeDownload"/> Approve Resume DL</label>
+            <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="ap_a_membership"/> Approve Membership</label>
+            <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="ap_a_connectEmployer"/> Approve Connect</label>
+          </div>
+        </div>
+        <button class="btn btn-primary w-full" style="background:#22c55e" onclick="confirmAdminPromote()"><i class="fas fa-check"></i> Promote to Admin</button>
+      </div>
+    </div>
+
     <div class="modal-overlay" id="editRoleModal">
       <div class="modal-box" style="max-width:520px;max-height:85vh;overflow-y:auto">
         <div class="modal-header"><div class="modal-title" style="color:#e94560"><i class="fas fa-edit"></i> Edit Admin Role</div><button class="modal-close" onclick="document.getElementById('editRoleModal').classList.remove('active')">&times;</button></div>
@@ -1019,13 +1050,21 @@ window.renderAdminUsers = function() {
       return target.some(t => (u.state||'').toLowerCase().includes(t.toLowerCase()) || t.toLowerCase().includes((u.state||'').toLowerCase()));
     });
   }
-  const html = users.map(u => `<tr>
-    <td>${u.displayName||'N/A'}</td><td>${u.email}</td>
-    <td><span class="badge badge-pending">${u.role}</span></td>
-    <td>${u.createdAt?.toDate?.()?.toLocaleDateString()||'N/A'}</td>
-    <td>${u.membershipCount||0}x</td>
-  </tr>`).join('');
-  const empty = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">No users in your allocated state(s)</td></tr>';
+  const canPromote = !!(adminData?.authorities?.promote);
+  const html = users.map(u => {
+    const isUser = (u.role || '').toLowerCase() === 'user';
+    const action = (canPromote && isUser && u.id !== currentUser.uid)
+      ? `<button class="btn btn-sm" style="background:#22c55e;color:#fff;font-size:11px;padding:5px 10px" onclick="openAdminPromoteUser('${u.id}')"><i class="fas fa-user-shield"></i> Promote</button>`
+      : `<span style="color:var(--gray);font-size:11px">—</span>`;
+    return `<tr>
+      <td>${u.displayName||'N/A'}</td><td>${u.email}</td>
+      <td><span class="badge badge-pending">${u.role}</span></td>
+      <td>${u.createdAt?.toDate?.()?.toLocaleDateString()||'N/A'}</td>
+      <td>${u.membershipCount||0}x</td>
+      <td>${action}</td>
+    </tr>`;
+  }).join('');
+  const empty = '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">No users in your allocated state(s)</td></tr>';
   if (document.getElementById('adminUsersBody')) document.getElementById('adminUsersBody').innerHTML = html || empty;
   if (document.getElementById('adminUsersBody2')) document.getElementById('adminUsersBody2').innerHTML = html || empty;
 };
@@ -1438,6 +1477,115 @@ window.openAdminEditRole = async function(adminId) {
     return `<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" class="er_state_cb" value="${safe}" ${preSel.has(s)?'checked':''}/><span>${s}</span></label>`;
   }).join('') || '<div style="color:var(--gray)">You have no allocated states</div>';
   document.getElementById('editRoleModal').classList.add('active');
+};
+
+// PROMOTE USER → ADMIN (admins with the 'promote' authority can run this on users in their states)
+window.openAdminPromoteUser = async function(userId) {
+  if (!adminData?.authorities?.promote) { showToast('You do not have permission to promote users.', 'error'); return; }
+  const target = (__cachedUsers || []).find(u => u.id === userId);
+  if (!target) { showToast('User not found.', 'error'); return; }
+  if ((target.role || '').toLowerCase() !== 'user') { showToast('This account is not a regular user.', 'error'); return; }
+  // Honour Owner's delegation config based on this admin's tier
+  const myRole = adminData?.adminRole || '';
+  const tierKey = myRole === 'Operations Manager' ? 'opManager' : (myRole === 'Branch Head' ? 'branchHead' : null);
+  let allowedRoles = ['Admin','Team Leader','Accountant','Recruiter','Support Executive','Marketing Manager'];
+  if (tierKey) {
+    try {
+      const cfgSnap = await getDoc(doc(db, 'siteContent', 'delegationConfig'));
+      if (cfgSnap.exists()) {
+        const cfg = cfgSnap.data()[tierKey];
+        if (cfg?.roles?.length) allowedRoles = cfg.roles;
+      }
+    } catch(_){}
+  }
+  // Defensive: never allow assigning roles equal to or higher than your own
+  allowedRoles = allowedRoles.filter(r => r !== 'Operations Manager' && r !== 'Branch Head' && r !== myRole);
+  if (!allowedRoles.length) allowedRoles = ['Admin'];
+  window.__adPendingPromoteUid = userId;
+  document.getElementById('apTargetName').textContent = `Promoting: ${target.displayName || target.email}`;
+  const sel = document.getElementById('ap_role');
+  sel.innerHTML = allowedRoles.map(r => `<option value="${r}">${r}</option>`).join('');
+  // Pre-tick states the user already lives in (intersected with my allocated states)
+  const myStates = adminAllocatedStates();
+  const userStateLc = (target.state || '').toLowerCase();
+  const preSel = new Set(myStates.filter(s => s.toLowerCase() === userStateLc || userStateLc.includes(s.toLowerCase()) || s.toLowerCase().includes(userStateLc)));
+  document.getElementById('ap_statesBox').innerHTML = myStates.map(s => {
+    const safe = s.replace(/"/g,'&quot;');
+    return `<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" class="ap_state_cb" value="${safe}" ${preSel.has(s)?'checked':''}/><span>${s}</span></label>`;
+  }).join('') || '<div style="color:var(--gray)">You have no allocated states</div>';
+  document.getElementById('adminPromoteModal').classList.add('active');
+};
+
+window.confirmAdminPromote = async function() {
+  if (!adminData?.authorities?.promote) { showToast('You do not have permission to promote users.', 'error'); return; }
+  const uid = window.__adPendingPromoteUid; if (!uid) return;
+  const target = (__cachedUsers || []).find(u => u.id === uid);
+  if (!target) { showToast('User not found.', 'error'); return; }
+  if ((target.role || '').toLowerCase() !== 'user') { showToast('This account is no longer a regular user.', 'error'); return; }
+  const newRole = document.getElementById('ap_role').value;
+  const newStates = Array.from(document.querySelectorAll('.ap_state_cb:checked')).map(c => c.value);
+  if (!newStates.length) { showToast('Pick at least one state from your allocated locations.', 'error'); return; }
+  // Defensive role-tier checks
+  const myRole = adminData?.adminRole || '';
+  if (newRole === 'Operations Manager' || newRole === 'Branch Head' || newRole === myRole) {
+    showToast('Not allowed to assign that role.', 'error'); return;
+  }
+  // Defensive state check — every selected state must be inside admin's allocated states
+  const myStates = (adminAllocatedStates() || []).map(s => s.toLowerCase());
+  const bad = newStates.find(s => !myStates.includes(s.toLowerCase()));
+  if (bad) { showToast(`State "${bad}" is outside your allocated locations.`, 'error'); return; }
+
+  const authorities = {
+    dashboard:        !!document.getElementById('ap_a_dashboard')?.checked,
+    jobPost:          !!document.getElementById('ap_a_jobPost')?.checked,
+    contact:          !!document.getElementById('ap_a_contact')?.checked,
+    resumeDownload:   !!document.getElementById('ap_a_resumeDownload')?.checked,
+    membership:       !!document.getElementById('ap_a_membership')?.checked,
+    connectEmployer:  !!document.getElementById('ap_a_connectEmployer')?.checked
+  };
+  try {
+    await updateDoc(doc(db, 'users', uid), {
+      role: 'Admin', tag: 'Admin',
+      adminRole: newRole,
+      locations: newStates,
+      authorities,
+      promotedAt: serverTimestamp(),
+      promotedBy: currentUser.uid,
+      promotedByName: adminData?.displayName || currentUser.email || ''
+    });
+    // Auto-issue default MPIN 0000 (must change on first login) if none exists yet
+    let createdDefaultMpin = false;
+    try {
+      const ex = await getDoc(doc(db, 'mpins', uid));
+      if (!ex.exists()) {
+        await setDoc(doc(db, 'mpins', uid), {
+          mpin: '0000', mustChange: true, isDefault: true,
+          createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+          setBy: currentUser.uid
+        });
+        createdDefaultMpin = true;
+      }
+    } catch(_){}
+    try {
+      await addDoc(collection(db, 'notifications'), {
+        uid, targetUid: uid,
+        type: 'promotion',
+        title: '🎉 You have been promoted to Admin',
+        message: `Welcome ${target.displayName||target.email}! You are now ${newRole} for ${newStates.join(', ')}. Default MPIN is 0000 — please change it after first login.`,
+        severity: 'info', read: false, createdAt: serverTimestamp()
+      });
+    } catch(_){}
+    await logAdminAudit('User Promoted to Admin',
+      `${target.displayName||target.email} → ${newRole} (${newStates.join(', ')})${createdDefaultMpin?' [default MPIN 0000 issued]':''}`,
+      { targetUid: uid, targetName: target.displayName||target.email, states: newStates, payload: { role: newRole, authorities } });
+    showToast(`Promoted ${target.displayName||target.email} to ${newRole}!`);
+    document.getElementById('adminPromoteModal').classList.remove('active');
+    window.__adPendingPromoteUid = null;
+    loadAdminUsers();
+    if (typeof loadManagePromoted === 'function') loadManagePromoted();
+  } catch(e) {
+    showToast('Promotion failed: ' + e.message, 'error');
+  }
 };
 
 window.confirmEditRole = async function() {

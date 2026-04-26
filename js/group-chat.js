@@ -61,7 +61,7 @@ const GroupChat = {
     const css = document.createElement('style');
     css.id = 'gc-styles';
     css.textContent = `
-      .gc-fab { position:fixed; right:20px; bottom:24px; width:56px; height:56px; border-radius:50%;
+      .gc-fab { position:fixed; right:90px; bottom:24px; width:56px; height:56px; border-radius:50%;
         background:linear-gradient(135deg,#d4af37,#b8941f); color:#0a0a14; border:none; cursor:pointer;
         box-shadow:0 6px 20px rgba(212,175,55,0.45); z-index:9998; display:flex;
         align-items:center; justify-content:center; font-size:22px; transition:transform .2s; }
@@ -406,7 +406,15 @@ const GroupChat = {
     try {
       const raw = localStorage.getItem('hc_gc_fab_pos'); if (!raw) return;
       const p = JSON.parse(raw); const el = document.getElementById('gc-fab');
-      if (el && p?.left && p?.top) { el.style.left = p.left; el.style.top = p.top; el.style.right = 'auto'; el.style.bottom = 'auto'; }
+      if (!el || !p?.left || !p?.top) return;
+      // Validate: if a stale position has parked the bubble in the upper half of the
+      // viewport (above 55%), discard it and keep the default bottom-right position.
+      const topNum = parseFloat(p.top);
+      if (!isFinite(topNum) || topNum < window.innerHeight * 0.55) {
+        try { localStorage.removeItem('hc_gc_fab_pos'); } catch(_){}
+        return;
+      }
+      el.style.left = p.left; el.style.top = p.top; el.style.right = 'auto'; el.style.bottom = 'auto';
     } catch(_){}
   },
 
@@ -1073,21 +1081,73 @@ const GroupChat = {
     }, mime, quality);
   },
 
-  // Instant / optimistic upload: show the picture in the thread INSTANTLY using a local
-  // preview, then upload in background and quietly swap to the cloud URL.
+  // Compress an image File to a JPEG data URL — keeps under ~700KB so it fits in a Firestore doc.
+  // Bypasses Firebase Storage entirely (avoids CORS / retry-limit-exceeded issues for chat images).
+  async _compressToDataUrl(file, maxSide = 1280, startQuality = 0.72) {
+    const dataUrl = await new Promise((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onload = () => resolve(fr.result);
+      fr.onerror = () => reject(new Error('Could not read image'));
+      fr.readAsDataURL(file);
+    });
+    // If it's not an image, just return the raw dataURL (rare for chat).
+    if (!/^image\//.test(file.type || '')) return dataUrl;
+    const img = await new Promise((resolve, reject) => {
+      const i = new Image();
+      i.onload = () => resolve(i);
+      i.onerror = () => reject(new Error('Could not decode image'));
+      i.src = dataUrl;
+    });
+    let { width, height } = img;
+    const longest = Math.max(width, height);
+    if (longest > maxSide) {
+      const scale = maxSide / longest;
+      width = Math.round(width * scale);
+      height = Math.round(height * scale);
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = width; canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    // Use white background for transparent PNGs so JPEG looks right.
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, width, height);
+    ctx.drawImage(img, 0, 0, width, height);
+    // Try descending quality steps until we're under the safety cap (~700KB).
+    const cap = 700 * 1024;
+    let quality = startQuality;
+    let out = canvas.toDataURL('image/jpeg', quality);
+    while (out.length > cap && quality > 0.35) {
+      quality = Math.max(0.35, quality - 0.12);
+      out = canvas.toDataURL('image/jpeg', quality);
+    }
+    // If still too big, scale down further.
+    let scaleAttempts = 0;
+    while (out.length > cap && scaleAttempts < 3) {
+      width = Math.round(width * 0.8);
+      height = Math.round(height * 0.8);
+      canvas.width = width; canvas.height = height;
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0, width, height);
+      out = canvas.toDataURL('image/jpeg', quality);
+      scaleAttempts++;
+    }
+    return out;
+  },
+
+  // Instant upload: image is compressed locally and embedded directly in the Firestore
+  // message doc (no Firebase Storage hop) so it sends in zero perceived time and never
+  // hits CORS / retry-limit-exceeded.
   async uploadAndSend(file) {
     if (!this.currentGroupId || !this.currentUser) return;
     const u = this.currentUser;
     const myData = this.currentUserData || {};
     const groupId = this.currentGroupId;
 
-    // 1. Generate local preview (data URL) and show it instantly as a temporary message
+    // 1. Local preview — instant feedback
     const localUrl = URL.createObjectURL(file);
     const tempId = 'gc-tmp-' + Date.now() + '-' + Math.random().toString(36).slice(2,6);
     const box = document.getElementById('gc-messages');
     if (box) {
-      // Instant render: full opacity, no spinner — message looks "sent" the moment it's queued.
-      // The real cloud-backed message will replace this seamlessly when onSnapshot fires.
       const tempHtml = `<div class="gc-msg me" id="${tempId}">
         <img src="${localUrl}" alt="image" style="max-width:240px;border-radius:10px"/>
         <div class="gc-time"><i class="fas fa-check" style="opacity:0.6"></i></div>
@@ -1096,13 +1156,10 @@ const GroupChat = {
       box.scrollTop = box.scrollHeight;
     }
 
-    // 2. Upload in background — do NOT block sending UI
+    // 2. Compress + post in background (no blocking)
     (async () => {
       try {
-        const path = `chatUploads/${groupId}/${Date.now()}_${Math.random().toString(36).slice(2,8)}_${file.name||'image.png'}`;
-        const r = sRef(storage, path);
-        await uploadBytes(r, file);
-        const url = await getDownloadURL(r);
+        const url = await this._compressToDataUrl(file);
         await addDoc(collection(db, 'connectGroups', groupId, 'messages'), {
           senderUid: u.uid,
           senderName: myData.displayName || u.displayName || u.email,
@@ -1118,14 +1175,13 @@ const GroupChat = {
           lastMessageBy: u.uid,
           lastMessageByName: myData.displayName || u.email
         });
-        // Real message will arrive via onSnapshot and re-render — wipe the placeholder
         document.getElementById(tempId)?.remove();
         try { URL.revokeObjectURL(localUrl); } catch(_){}
       } catch(e) {
         const t = document.getElementById(tempId);
-        if (t) t.innerHTML = `<div style="color:#ef4444;font-size:11px;padding:6px">❌ Upload failed: ${this.escape(e.message)} — tap to retry</div>`;
+        if (t) t.innerHTML = `<div style="color:#ef4444;font-size:11px;padding:6px">❌ Send failed: ${this.escape(e.message)} — tap to retry</div>`;
         if (t) t.onclick = () => { t.remove(); this.uploadAndSend(file); };
-        console.warn('image upload failed:', e);
+        console.warn('image send failed:', e);
       }
     })();
   },
@@ -1193,10 +1249,8 @@ const GroupChat = {
       box.scrollTop = box.scrollHeight;
     }
     try {
-      const path = `chatUploads/${groupId}/${Date.now()}_${Math.random().toString(36).slice(2,8)}_${file.name||'image.png'}`;
-      const r = sRef(storage, path);
-      await uploadBytes(r, file);
-      const url = await getDownloadURL(r);
+      // Compress + embed as dataURL — no Firebase Storage hop, no CORS, no retry-limit errors.
+      const url = await this._compressToDataUrl(file);
       await addDoc(collection(db, 'connectGroups', groupId, 'messages'), {
         senderUid: u.uid,
         senderName: myData.displayName || u.displayName || u.email,
@@ -1217,8 +1271,8 @@ const GroupChat = {
       try { URL.revokeObjectURL(localUrl); } catch(_){}
     } catch(e) {
       const t = document.getElementById(tempId);
-      if (t) t.innerHTML = `<div style="color:#ef4444;font-size:11px;padding:6px">❌ Upload failed: ${this.escape(e.message)}</div>`;
-      console.warn('image upload failed:', e);
+      if (t) t.innerHTML = `<div style="color:#ef4444;font-size:11px;padding:6px">❌ Send failed: ${this.escape(e.message)}</div>`;
+      console.warn('image send failed:', e);
     }
   },
 
