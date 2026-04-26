@@ -561,15 +561,8 @@
         <div class="form-group"><label>Allocated States <span style="font-size:11px;color:var(--gray)">(only your states can be assigned)</span></label>
           <div id="ap_statesBox" style="max-height:140px;overflow-y:auto;background:rgba(255,255,255,0.04);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px"></div>
         </div>
-        <div class="form-group"><label>Starter Authorities <span style="font-size:11px;color:var(--gray)">(can be expanded later by Owner / OpsMgr)</span></label>
-          <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px">
-            <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="ap_a_dashboard" checked/> User Control</label>
-            <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="ap_a_jobPost"/> Approve Job Posts</label>
-            <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="ap_a_contact"/> Approve Contact</label>
-            <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="ap_a_resumeDownload"/> Approve Resume DL</label>
-            <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="ap_a_membership"/> Approve Membership</label>
-            <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="ap_a_connectEmployer"/> Approve Connect</label>
-          </div>
+        <div class="form-group"><label>Starter Authorities <span style="font-size:11px;color:var(--gray)">(only authorities the Owner has delegated to your tier are shown)</span></label>
+          <div id="ap_authsBox" style="background:rgba(255,255,255,0.04);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;max-height:220px;overflow-y:auto"></div>
         </div>
         <button class="btn btn-primary w-full" style="background:#22c55e" onclick="confirmAdminPromote()"><i class="fas fa-check"></i> Promote to Admin</button>
       </div>
@@ -1051,11 +1044,21 @@ window.renderAdminUsers = function() {
     });
   }
   const canPromote = !!(adminData?.authorities?.promote);
+  const myRoleLc = (adminData?.adminRole || '').toLowerCase();
   const html = users.map(u => {
     const isUser = (u.role || '').toLowerCase() === 'user';
-    const action = (canPromote && isUser && u.id !== currentUser.uid)
-      ? `<button class="btn btn-sm" style="background:#22c55e;color:#fff;font-size:11px;padding:5px 10px" onclick="openAdminPromoteUser('${u.id}')"><i class="fas fa-user-shield"></i> Promote</button>`
-      : `<span style="color:var(--gray);font-size:11px">—</span>`;
+    const isAdmin = (u.role || '').toLowerCase() === 'admin';
+    // I can demote an Admin only if their adminRole is not Operations Manager / Branch Head and is not equal to my own
+    const targetRoleLc = (u.adminRole || '').toLowerCase();
+    const canDemoteThis = canPromote && isAdmin && u.id !== currentUser.uid
+      && targetRoleLc !== 'operations manager' && targetRoleLc !== 'branch head'
+      && targetRoleLc !== myRoleLc;
+    let action = `<span style="color:var(--gray);font-size:11px">—</span>`;
+    if (canPromote && isUser && u.id !== currentUser.uid) {
+      action = `<button class="btn btn-sm" style="background:#22c55e;color:#fff;font-size:11px;padding:5px 10px" onclick="openAdminPromoteUser('${u.id}')"><i class="fas fa-user-shield"></i> Promote</button>`;
+    } else if (canDemoteThis) {
+      action = `<button class="btn btn-sm" style="background:#ef4444;color:#fff;font-size:11px;padding:5px 10px" onclick="adminDemoteUser('${u.id}')"><i class="fas fa-user-minus"></i> Demote</button>`;
+    }
     return `<tr>
       <td>${u.displayName||'N/A'}</td><td>${u.email}</td>
       <td><span class="badge badge-pending">${u.role}</span></td>
@@ -1479,6 +1482,25 @@ window.openAdminEditRole = async function(adminId) {
   document.getElementById('editRoleModal').classList.add('active');
 };
 
+// Authority labels (mirrors owner's DELEGATABLE_AUTHS)
+const AP_AUTH_LABELS = {
+  dashboard:'User Control', connectEmployer:'Approve Connect Employer', resumeDownload:'Approve Resume Download',
+  contact:'Approve Contact Requests', membership:'Approve Membership', jobPost:'Approve Job Posts',
+  jobList:'Manage Job List', candidates:'Candidate List & Hiring',
+  walletTopups:'Wallet Top-ups', walletWithdrawals:'Wallet Withdrawals', walletRecords:'Wallet Records',
+  coupons:'Coupons', discounts:'Discounts & Offers', referrals:'Refer & Earn',
+  enquiries:'Enquiries', feedback:'Feedback', resumeRecords:'AI Resume Records',
+  engagement:'Engagement Tools', content:'Site Content'
+};
+
+async function _loadDelegationCfgForTier(tierKey) {
+  if (!tierKey) return null;
+  try {
+    const s = await getDoc(doc(db, 'siteContent', 'delegationConfig'));
+    return s.exists() ? (s.data()[tierKey] || null) : null;
+  } catch(_) { return null; }
+}
+
 // PROMOTE USER → ADMIN (admins with the 'promote' authority can run this on users in their states)
 window.openAdminPromoteUser = async function(userId) {
   if (!adminData?.authorities?.promote) { showToast('You do not have permission to promote users.', 'error'); return; }
@@ -1489,22 +1511,42 @@ window.openAdminPromoteUser = async function(userId) {
   const myRole = adminData?.adminRole || '';
   const tierKey = myRole === 'Operations Manager' ? 'opManager' : (myRole === 'Branch Head' ? 'branchHead' : null);
   let allowedRoles = ['Admin','Team Leader','Accountant','Recruiter','Support Executive','Marketing Manager'];
+  // Default allowed authorities = whatever I myself hold (never grant more than I have)
+  const myAuths = adminData?.authorities || {};
+  let allowedAuths = Object.keys(AP_AUTH_LABELS).filter(k => myAuths[k]);
   if (tierKey) {
-    try {
-      const cfgSnap = await getDoc(doc(db, 'siteContent', 'delegationConfig'));
-      if (cfgSnap.exists()) {
-        const cfg = cfgSnap.data()[tierKey];
-        if (cfg?.roles?.length) allowedRoles = cfg.roles;
-      }
-    } catch(_){}
+    const cfg = await _loadDelegationCfgForTier(tierKey);
+    if (cfg) {
+      if (Array.isArray(cfg.roles) && cfg.roles.length)  allowedRoles = cfg.roles;
+      // For OpsMgr/BranchHead: strict — only auths the Owner ticked AND that I hold
+      if (Array.isArray(cfg.auths))                       allowedAuths = cfg.auths.filter(k => myAuths[k]);
+    } else {
+      // No config saved by Owner yet → no granting power for delegated tiers
+      allowedAuths = [];
+    }
   }
   // Defensive: never allow assigning roles equal to or higher than your own
   allowedRoles = allowedRoles.filter(r => r !== 'Operations Manager' && r !== 'Branch Head' && r !== myRole);
   if (!allowedRoles.length) allowedRoles = ['Admin'];
+
   window.__adPendingPromoteUid = userId;
+  window.__adAllowedAuths = allowedAuths;
   document.getElementById('apTargetName').textContent = `Promoting: ${target.displayName || target.email}`;
   const sel = document.getElementById('ap_role');
   sel.innerHTML = allowedRoles.map(r => `<option value="${r}">${r}</option>`).join('');
+
+  // Render dynamic authority checkboxes from the allowed list
+  const ab = document.getElementById('ap_authsBox');
+  if (!allowedAuths.length) {
+    ab.innerHTML = `<div style="grid-column:1/-1;color:#f59e0b;font-size:12px;text-align:center;padding:10px"><i class="fas fa-exclamation-triangle"></i> Owner has not delegated any authorities to your tier yet — the new admin will start with view-only access.</div>`;
+  } else {
+    ab.innerHTML = allowedAuths.map(k => {
+      const lbl = AP_AUTH_LABELS[k] || k;
+      const def = (k === 'dashboard') ? 'checked' : '';
+      return `<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" class="ap_auth_cb" data-auth="${k}" ${def}/> ${lbl}</label>`;
+    }).join('');
+  }
+
   // Pre-tick states the user already lives in (intersected with my allocated states)
   const myStates = adminAllocatedStates();
   const userStateLc = (target.state || '').toLowerCase();
@@ -1535,14 +1577,13 @@ window.confirmAdminPromote = async function() {
   const bad = newStates.find(s => !myStates.includes(s.toLowerCase()));
   if (bad) { showToast(`State "${bad}" is outside your allocated locations.`, 'error'); return; }
 
-  const authorities = {
-    dashboard:        !!document.getElementById('ap_a_dashboard')?.checked,
-    jobPost:          !!document.getElementById('ap_a_jobPost')?.checked,
-    contact:          !!document.getElementById('ap_a_contact')?.checked,
-    resumeDownload:   !!document.getElementById('ap_a_resumeDownload')?.checked,
-    membership:       !!document.getElementById('ap_a_membership')?.checked,
-    connectEmployer:  !!document.getElementById('ap_a_connectEmployer')?.checked
-  };
+  // Read dynamic authority checkboxes — only authorities allowed by delegation can be granted
+  const allowedSet = new Set(window.__adAllowedAuths || []);
+  const authorities = {};
+  document.querySelectorAll('#ap_authsBox .ap_auth_cb').forEach(cb => {
+    const k = cb.dataset.auth;
+    if (allowedSet.has(k)) authorities[k] = !!cb.checked;
+  });
   try {
     await updateDoc(doc(db, 'users', uid), {
       role: 'Admin', tag: 'Admin',
@@ -1568,7 +1609,7 @@ window.confirmAdminPromote = async function() {
     } catch(_){}
     try {
       await addDoc(collection(db, 'notifications'), {
-        uid, targetUid: uid,
+        userId: uid,
         type: 'promotion',
         title: '🎉 You have been promoted to Admin',
         message: `Welcome ${target.displayName||target.email}! You are now ${newRole} for ${newStates.join(', ')}. Default MPIN is 0000 — please change it after first login.`,
@@ -1585,6 +1626,52 @@ window.confirmAdminPromote = async function() {
     if (typeof loadManagePromoted === 'function') loadManagePromoted();
   } catch(e) {
     showToast('Promotion failed: ' + e.message, 'error');
+  }
+};
+
+// DEMOTE ADMIN → USER (admin with the 'promote' authority can demote admins in their states,
+// but never an Operations Manager / Branch Head and never someone of equal-or-higher tier)
+window.adminDemoteUser = async function(uid) {
+  if (!adminData?.authorities?.promote) { showToast('You do not have permission to demote admins.', 'error'); return; }
+  const target = (__cachedUsers || []).find(u => u.id === uid);
+  if (!target) { showToast('User not found.', 'error'); return; }
+  if ((target.role || '').toLowerCase() !== 'admin') { showToast('That user is not an Admin.', 'error'); return; }
+  const myRole = adminData?.adminRole || '';
+  const tRole  = target.adminRole || '';
+  if (tRole === 'Operations Manager' || tRole === 'Branch Head' || tRole === myRole) {
+    showToast('You cannot demote an admin equal to or higher than your own role.', 'error'); return;
+  }
+  // Defensive: target must live in at least one of my allocated states
+  const myStates = (adminAllocatedStates() || []).map(s => s.toLowerCase());
+  const tStates = (target.locations || []).map(s => (s||'').toLowerCase());
+  if (myStates.length && !tStates.some(s => myStates.includes(s))) {
+    showToast('That admin is not in your allocated locations.', 'error'); return;
+  }
+  if (!confirm(`Demote ${target.displayName||target.email} (${tRole||'Admin'}) back to a regular User? Their MPIN will be cleared and all authorities removed.`)) return;
+  try {
+    await updateDoc(doc(db, 'users', uid), {
+      role: 'User', tag: 'User', adminRole: '', authorities: {}, locations: [],
+      demotedAt: serverTimestamp(),
+      demotedBy: currentUser.uid,
+      demotedByName: adminData?.displayName || currentUser.email || ''
+    });
+    try { await deleteDoc(doc(db, 'mpins', uid)); } catch(_){}
+    try {
+      await addDoc(collection(db, 'notifications'), {
+        userId: uid,
+        type: 'demotion',
+        title: 'ℹ️ Your admin access has been removed',
+        message: `Your ${tRole||'Admin'} role has been removed by ${adminData?.displayName||currentUser.email||'an admin'}. You are now a regular user.`,
+        severity: 'warning', read: false, createdAt: serverTimestamp()
+      });
+    } catch(_){}
+    await logAdminAudit('Admin Demoted', `${target.displayName||target.email} (${tRole||'Admin'}) → User (MPIN cleared)`,
+      { targetUid: uid, targetName: target.displayName||target.email, states: target.locations||[] });
+    showToast(`Demoted ${target.displayName||target.email} to User.`);
+    loadAdminUsers();
+    if (typeof loadManagePromoted === 'function') loadManagePromoted();
+  } catch(e) {
+    showToast('Demotion failed: ' + e.message, 'error');
   }
 };
 
