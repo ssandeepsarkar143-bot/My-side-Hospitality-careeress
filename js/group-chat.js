@@ -710,7 +710,12 @@ const GroupChat = {
       // resolve names
       const userDocs = await Promise.all(memberUids.map(uid => getDoc(doc(db, 'users', uid)).catch(() => null)));
       const nameByUid = {};
-      userDocs.forEach((d, i) => { if (d?.exists?.()) nameByUid[memberUids[i]] = d.data().displayName || d.data().email; else nameByUid[memberUids[i]] = memberUids[i].slice(0,8); });
+      userDocs.forEach((d, i) => {
+        const uid = memberUids[i];
+        const isOwn = uid === g?.ownerUid;
+        if (d?.exists?.()) nameByUid[uid] = d.data().displayName || (isOwn ? 'Owner' : 'Member');
+        else nameByUid[uid] = isOwn ? 'Owner' : 'Member';
+      });
       const overlay = document.createElement('div');
       overlay.className = 'gc-readby-modal';
       overlay.innerHTML = `<div class="gc-modal-card">
@@ -765,19 +770,21 @@ const GroupChat = {
         </div>` : ''}
         ${userDocs.map((d, i) => {
           const uid = memberUids[i];
-          const x = d?.exists?.() ? d.data() : { displayName: uid.slice(0,8) };
+          const x = d?.exists?.() ? d.data() : { displayName: 'Member' };
           const online = this.isOnline(uid);
-          const initial = (x.displayName || x.email || '?')[0].toUpperCase();
+          const isGroupOwner = uid === g.ownerUid;
+          // Hide email everywhere — show name only. For the owner show "Owner" if no displayName.
+          const safeName = x.displayName || (isGroupOwner ? 'Owner' : 'Member');
+          const initial = safeName[0].toUpperCase();
           const title = this.memberTitle(g, uid, x);
           const isChatAdmin = chatAdmins.includes(uid);
-          const isGroupOwner = uid === g.ownerUid;
           const adminBadge = isChatAdmin && !isGroupOwner ? '<span style="background:rgba(245,158,11,0.18);color:#f59e0b;font-size:9px;padding:2px 6px;border-radius:6px;margin-left:6px">⭐ Chat Admin</span>' : '';
           const adminBtn = isOwner && !isGroupOwner
             ? `<button class="btn btn-sm" style="background:${isChatAdmin?'#ef4444':'rgba(245,158,11,0.18)'};color:${isChatAdmin?'#fff':'#f59e0b'};font-size:10px" onclick="GroupChat.toggleChatAdmin('${groupId}','${uid}',${!isChatAdmin})">${isChatAdmin ? 'Remove Admin' : 'Make Admin'}</button>`
             : '';
           return `<div class="gc-readby-row">
             <div class="gc-mini-avatar" style="position:relative">${initial}${online?'<span style="position:absolute;bottom:-2px;right:-2px;width:9px;height:9px;background:#22c55e;border-radius:50%;border:2px solid #13131f"></span>':''}</div>
-            <div style="flex:1;color:#fff;font-size:13px">${this.escape(x.displayName || x.email || uid)}${adminBadge}<div style="font-size:10px;color:#d4af37">${this.escape(title)}</div></div>
+            <div style="flex:1;color:#fff;font-size:13px">${this.escape(safeName)}${adminBadge}<div style="font-size:10px;color:#d4af37">${this.escape(title)}</div></div>
             ${adminBtn || `<div style="font-size:10px;color:${online?'#22c55e':'#666'}">${online ? '● Online' : 'Offline'}</div>`}
           </div>`;
         }).join('')}
