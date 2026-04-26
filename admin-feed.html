@@ -31,7 +31,15 @@
         <input class="mpin-input" maxlength="1" type="password" inputmode="numeric"/>
       </div>
       <button class="btn btn-primary w-full" id="mpinSubmitBtn"><i class="fas fa-unlock-alt"></i> Unlock Dashboard</button>
+      <div id="mpinDefaultBanner" style="display:none;margin-top:12px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.4);padding:10px 12px;border-radius:8px;font-size:11px;color:#fbbf24;text-align:left">
+        <i class="fas fa-exclamation-triangle"></i> <strong>First-time access:</strong> Your default MPIN is <b>0000</b>. Please change it immediately after unlocking — open <b>Manage MPINs</b> and set a private 4-digit code.
+      </div>
       <div style="font-size:11px;color:var(--gray);text-align:center;margin-top:16px">MPIN set by your system Owner</div>
+      <div style="margin-top:14px;text-align:center">
+        <button type="button" id="mpinLogoutBtn" style="background:transparent;border:none;color:#ef4444;font-size:12px;cursor:pointer;text-decoration:underline">
+          <i class="fas fa-sign-out-alt"></i> Logout instead
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -632,12 +640,35 @@ document.getElementById('mpinSubmitBtn').addEventListener('click', async () => {
   }
   const snap = await getDoc(doc(db, 'mpins', currentUser.uid));
   if (snap.exists() && snap.data().mpin === mpin) {
+    // Persist a flag so the dashboard can show a banner if user is still on the default 0000.
+    if (snap.data().mustChange || snap.data().isDefault || mpin === '0000') {
+      window.__MPIN_MUST_CHANGE__ = true;
+    }
     unlockDashboard();
   } else {
     showMpinAlert('Incorrect MPIN. Contact your Owner to reset.');
     mpinInputs.forEach(i => { i.value = ''; }); mpinInputs[0].focus();
   }
 });
+
+// Logout link on the MPIN screen
+document.getElementById('mpinLogoutBtn')?.addEventListener('click', async () => {
+  try { await signOut(auth); } catch(_){}
+  window.location.href = 'index.html';
+});
+
+// Auto-show the "default 0000" banner so the user knows what to type the first time
+async function maybeShowDefaultMpinBanner() {
+  try {
+    if (!currentUser) return;
+    const snap = await getDoc(doc(db, 'mpins', currentUser.uid));
+    if (snap.exists() && (snap.data().mustChange || snap.data().isDefault || snap.data().mpin === '0000')) {
+      const b = document.getElementById('mpinDefaultBanner');
+      if (b) b.style.display = 'block';
+    }
+  } catch(_){}
+}
+window.maybeShowDefaultMpinBanner = maybeShowDefaultMpinBanner;
 
 function showMpinAlert(msg) {
   const el = document.getElementById('mpinAlert');
@@ -771,9 +802,123 @@ function setupAuthority() {
     // Reports Center for Branch Head + Op Mgr
     document.getElementById('nav_reportsCenter').classList.remove('hidden');
   }
+  // Phase 12 — Sub-admin management as a granular permission. When the owner ticks "Promote / Demote Admins"
+  // for a sub-admin, they can run the same Promote/Demote tools on users in their allocated locations
+  // (already enforced by Promotion Delegation config + location filter inside loadManagePromoted).
+  if (auth_perms.promote && !(isOpMgr || isBranchHead)) {
+    const npm = document.getElementById('nav_managePromoted');
+    if (npm) npm.classList.remove('hidden');
+    document.getElementById('nav_management_header').classList.remove('hidden');
+  }
+  // Phase 12 — Admin Working Dashboard permission: shows promoted admins active in this admin's allocated locations
+  if (auth_perms.adminWorking) {
+    ensureAdminWorkingNav();
+    document.getElementById('nav_management_header').classList.remove('hidden');
+  }
+  // First-login MPIN warning banner inside the dashboard (persists until owner/admin clears default)
+  if (window.__MPIN_MUST_CHANGE__) showInDashboardMpinBanner();
   // User Control state filter
   setupUserControlFilter();
 }
+
+// In-dashboard banner reminding the admin to change their default 0000 MPIN.
+function showInDashboardMpinBanner() {
+  if (document.getElementById('dashMpinBanner')) return;
+  const host = document.querySelector('#mainDashboard .container') || document.body;
+  const div = document.createElement('div');
+  div.id = 'dashMpinBanner';
+  div.style.cssText = 'background:linear-gradient(90deg,rgba(245,158,11,0.18),rgba(239,68,68,0.18));border:1px solid rgba(245,158,11,0.5);color:#fbbf24;padding:12px 16px;border-radius:8px;margin:16px 0;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px';
+  div.innerHTML = `<div><i class="fas fa-shield-alt"></i> <strong>Security notice:</strong> You are using the default MPIN <b>0000</b>. Please open <b>Manage MPIN</b> and change it to a private 4-digit code.</div>
+    <button onclick="showSection('manageMpin')" style="background:#f59e0b;color:#000;border:none;padding:6px 14px;border-radius:6px;font-weight:600;cursor:pointer;white-space:nowrap"><i class="fas fa-arrow-right"></i> Change Now</button>`;
+  host.insertBefore(div, host.firstChild);
+}
+
+// Inject the Admin Working sidebar item + section when the permission is granted (kept lazy so the DOM
+// stays clean for admins who don't have it).
+function ensureAdminWorkingNav() {
+  if (document.getElementById('nav_adminWorking')) {
+    document.getElementById('nav_adminWorking').classList.remove('hidden');
+    return;
+  }
+  const sidebar = document.getElementById('sidebar');
+  const header = document.getElementById('nav_management_header');
+  if (!sidebar || !header) return;
+  const item = document.createElement('div');
+  item.id = 'nav_adminWorking';
+  item.className = 'nav-item';
+  item.style.cursor = 'pointer';
+  item.innerHTML = '<i class="fas fa-user-shield"></i> Admin Working';
+  item.onclick = () => showSection('adminWorking');
+  // Insert right after Management header
+  header.parentNode.insertBefore(item, header.nextSibling);
+
+  // Inject section container if missing
+  if (!document.getElementById('sec-adminWorking')) {
+    const main = document.querySelector('.main-content') || document.body;
+    const sec = document.createElement('div');
+    sec.id = 'sec-adminWorking';
+    sec.className = 'page-section';
+    sec.innerHTML = `
+      <div class="card">
+        <div class="card-title"><span><i class="fas fa-user-shield"></i> Admin Working Dashboard</span>
+          <span style="font-size:12px;color:var(--gray);font-weight:normal">Sub-admins active in your allocated locations</span>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="data-table" style="width:100%">
+            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Locations</th><th>Promoted At</th></tr></thead>
+            <tbody id="adminWorkingScopedBody"><tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>`;
+    main.appendChild(sec);
+  }
+  // Hook into showSection to lazy-load the data
+  if (!window.__loadAdminWorkingScopedHooked) {
+    const origShow = window.showSection;
+    window.showSection = function(name) {
+      origShow(name);
+      if (name === 'adminWorking') loadAdminWorkingScoped();
+    };
+    window.__loadAdminWorkingScopedHooked = true;
+  }
+}
+
+async function loadAdminWorkingScoped() {
+  const body = document.getElementById('adminWorkingScopedBody');
+  if (!body) return;
+  body.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">Loading…</td></tr>';
+  try {
+    const allowed = (adminData?.locations || []).map(s => (s||'').toLowerCase());
+    const snap = await getDocs(collection(db, 'users'));
+    const rows = [];
+    snap.forEach(d => {
+      const u = d.data();
+      if (u.role !== 'Admin' || d.id === currentUser.uid) return;
+      const locs = Array.isArray(u.locations) ? u.locations : [];
+      // If this admin has no allocations, treat as "All India" → show only when current user also has all-India.
+      const hasOverlap = allowed.length === 0
+        ? locs.length === 0
+        : locs.some(l => allowed.includes((l||'').toLowerCase()));
+      if (!hasOverlap) return;
+      rows.push({ uid: d.id, ...u });
+    });
+    if (!rows.length) {
+      body.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">No sub-admins found in your allocated locations.</td></tr>';
+      return;
+    }
+    body.innerHTML = rows.map(r => `
+      <tr>
+        <td>${r.displayName || '—'}</td>
+        <td>${r.email || '—'}</td>
+        <td><span style="background:rgba(168,85,247,0.15);color:#c084fc;padding:3px 8px;border-radius:10px;font-size:11px">${r.adminRole || 'Admin'}</span></td>
+        <td>${(r.locations||[]).slice(0,3).join(', ') || 'All India'}${(r.locations||[]).length>3?` +${r.locations.length-3}`:''}</td>
+        <td style="font-size:11px;color:var(--gray)">${r.promotedAt?.toDate ? r.promotedAt.toDate().toLocaleDateString() : '—'}</td>
+      </tr>`).join('');
+  } catch(e) {
+    body.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#ef4444;padding:20px">Failed: ${e.message}</td></tr>`;
+  }
+}
+window.loadAdminWorkingScoped = loadAdminWorkingScoped;
 
 window.showSection = function(name) {
   document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
@@ -1660,6 +1805,7 @@ onAuthStateChanged(auth, async (user) => {
       document.querySelectorAll('.mpin-input').forEach(i => i.disabled = true);
     } else {
       document.getElementById('mpinScreen').style.display = 'block';
+      maybeShowDefaultMpinBanner();
     }
   } catch(e) {
     console.error('[admin-feed init]', e);

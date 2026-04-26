@@ -117,8 +117,12 @@ const GroupChat = {
       .gc-head .gc-min, .gc-thread-head .gc-min { font-size:24px; font-weight:700; line-height:1; padding:0 10px; color:rgba(255,255,255,0.8); }
       .gc-head .gc-close, .gc-thread-head .gc-close { font-size:16px; padding:4px 10px; color:rgba(255,255,255,0.8); border-radius:6px; }
       .gc-head .gc-min:hover, .gc-head .gc-close:hover, .gc-thread-head .gc-min:hover, .gc-thread-head .gc-close:hover { color:#fff; background:rgba(255,255,255,0.12); }
-      .gc-fab.gc-pulse { animation:gcPulse 1.4s ease-out 2; }
+      .gc-fab.gc-pulse { animation:gcPulse 1.4s ease-out 3; }
       @keyframes gcPulse { 0%{box-shadow:0 0 0 0 rgba(212,175,55,0.7)} 70%{box-shadow:0 0 0 18px rgba(212,175,55,0)} 100%{box-shadow:0 0 0 0 rgba(212,175,55,0)} }
+      /* Facebook-Messenger-style chat-head: a slightly bigger, rounder, jiggle-y bubble */
+      .gc-fab.gc-chathead { width:60px; height:60px; box-shadow:0 6px 22px rgba(0,0,0,0.45),0 0 0 3px rgba(212,175,55,0.35); animation:gcBob 2.2s ease-in-out infinite; }
+      .gc-fab.gc-chathead .gc-badge { width:22px; height:22px; line-height:22px; font-size:11px; }
+      @keyframes gcBob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
       .gc-head button { background:transparent; border:none; color:#fff; cursor:pointer; font-size:18px;
         width:32px; height:32px; border-radius:8px; }
       .gc-head button:hover { background:rgba(255,255,255,0.08); }
@@ -228,8 +232,8 @@ const GroupChat = {
       <div id="gc-list-view">
         <div class="gc-head" id="gc-list-head">
           <div class="gc-title"><i class="fas fa-users"></i> My Group Chats</div>
-          <button class="gc-min" onclick="GroupChat.minimizePanel()" title="Minimize">−</button>
-          <button class="gc-close" onclick="GroupChat.togglePanel()" title="Close">✕</button>
+          <button class="gc-min" onclick="GroupChat.minimizePanel()" title="Minimize to chat-head">−</button>
+          <button class="gc-close" onclick="GroupChat.closePanel()" title="Close chat">✕</button>
         </div>
         <div class="gc-body"><div class="gc-grouplist" id="gc-grouplist">
           <div class="gc-empty">Loading your groups…</div>
@@ -242,8 +246,8 @@ const GroupChat = {
             <div class="gc-thread-title" id="gc-thread-title">Group</div>
             <div class="gc-thread-sub" id="gc-thread-sub">—</div>
           </div>
-          <button class="gc-min" onclick="GroupChat.minimizePanel()" title="Minimize">−</button>
-          <button class="gc-close" onclick="GroupChat.togglePanel()" title="Close">✕</button>
+          <button class="gc-min" onclick="GroupChat.minimizePanel()" title="Minimize to chat-head">−</button>
+          <button class="gc-close" onclick="GroupChat.closePanel()" title="Close chat">✕</button>
         </div>
         <div id="gc-meeting-bar"></div>
         <div class="gc-toolbar" id="gc-toolbar"></div>
@@ -274,18 +278,55 @@ const GroupChat = {
   togglePanel() {
     const p = document.getElementById('gc-panel');
     p.classList.toggle('open');
-    if (!p.classList.contains('open')) this.closeThread();
+    if (p.classList.contains('open')) {
+      // Re-opening from the chat-head: clear minimized state + unread pulse
+      this._minimized = false;
+      const fab = document.getElementById('gc-fab');
+      if (fab) fab.classList.remove('gc-pulse','gc-chathead');
+      const badge = document.getElementById('gc-fab-badge');
+      if (badge) { badge.style.display = 'none'; badge.textContent = '0'; }
+      this._pendingUnread = 0;
+      // Ask permission for browser notifications the first time the user actually opens the chat
+      try {
+        if ('Notification' in window && Notification.permission === 'default') {
+          Notification.requestPermission().catch(()=>{});
+        }
+      } catch(_){}
+    } else {
+      this.closeThread();
+    }
   },
 
+  // Facebook-Messenger-style minimize: collapses to a floating chat-head bubble that pulses
+  // on new messages and re-opens the same thread on click.
   minimizePanel() {
     const p = document.getElementById('gc-panel');
     if (p) p.classList.remove('open');
-    // Don't close the thread — preserve the state so re-opening returns to the same place
+    this._minimized = true;
+    // Preserve the active thread so re-opening returns to the same place
     const fab = document.getElementById('gc-fab');
     if (fab) {
+      fab.classList.add('gc-chathead');
       fab.classList.add('gc-pulse');
       setTimeout(() => fab.classList.remove('gc-pulse'), 3000);
     }
+  },
+
+  // Real "close" button: tear down the panel state (close thread + listeners) and ask the
+  // browser to keep notifying the user of new messages even after the chat is dismissed.
+  closePanel() {
+    const p = document.getElementById('gc-panel');
+    if (p) p.classList.remove('open');
+    this._minimized = false;
+    this.closeThread();
+    const fab = document.getElementById('gc-fab');
+    if (fab) fab.classList.remove('gc-chathead');
+    // Best-effort: enable browser notifications so user is alerted to new messages
+    try {
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission().catch(()=>{});
+      }
+    } catch(_){}
   },
 
   // ---------------------- DRAGGABLE ----------------------
@@ -422,12 +463,49 @@ const GroupChat = {
     toast.onclick = () => { toast.remove(); this.togglePanel(); if (!document.getElementById('gc-panel').classList.contains('open')) this.togglePanel(); this.openThread(group.id); };
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 6000);
-    // Browser notification
+    // Pulse the chat-head bubble (Messenger style) when chat is minimized OR closed
+    const fab = document.getElementById('gc-fab');
+    if (fab) {
+      fab.classList.add('gc-pulse');
+      setTimeout(() => fab.classList.remove('gc-pulse'), 4000);
+    }
+    // Tab title flash so the user sees activity even while on another tab
+    if (document.hidden) {
+      this._flashTitle(`💬 New message — ${group.name}`);
+    }
+    // Browser notification (works after the user has granted permission, even when tab is closed/backgrounded)
     try {
       if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification(`${group.name} · ${msg.senderName||''}`, { body: (msg.text||'[image]').slice(0,120), icon: '/logo.png' });
+        const n = new Notification(`${group.name} · ${msg.senderName||''}`, {
+          body: (msg.text||'[image]').slice(0,120),
+          icon: '/logo.png',
+          tag: 'gc-' + group.id,
+          renotify: true
+        });
+        n.onclick = () => { try { window.focus(); } catch(_){} this.togglePanel(); this.openThread(group.id); n.close(); };
       }
     } catch(_){}
+  },
+
+  // Flash the document title until the tab regains focus, so users notice new messages
+  // even when the chat panel is closed.
+  _flashTitle(text) {
+    if (this._titleTimer) return;
+    if (!this._origTitle) this._origTitle = document.title;
+    let toggle = false;
+    this._titleTimer = setInterval(() => {
+      document.title = toggle ? this._origTitle : text;
+      toggle = !toggle;
+    }, 1200);
+    const restore = () => {
+      if (!document.hidden) {
+        clearInterval(this._titleTimer);
+        this._titleTimer = null;
+        document.title = this._origTitle;
+        document.removeEventListener('visibilitychange', restore);
+      }
+    };
+    document.addEventListener('visibilitychange', restore);
   },
 
   // ---------------------- SUBSCRIBE TO MY GROUPS ----------------------
@@ -727,8 +805,22 @@ const GroupChat = {
     const allUsers = all.docs.map(d => ({ uid: d.id, ...d.data() }));
     const existingMemberIds = new Set(g.memberUids || []);
     const users = allUsers.filter(u => u.role === 'Admin' || existingMemberIds.has(u.uid));
-    const states = Array.from(new Set(users.flatMap(u => Array.isArray(u.locations) ? u.locations : (u.state ? [u.state] : [])).filter(Boolean))).sort();
-    const cats = Array.from(new Set(users.map(u => u.adminRole || u.role || 'User').filter(Boolean))).sort();
+    // Location filter baseline: ALL Indian states + UTs (so the dropdown is always complete)
+    // PLUS any custom locations that promoted admins are already allocated to (e.g. branch names).
+    const INDIA_STATES = (window.INDIAN_STATES) || ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Andaman & Nicobar','Chandigarh','Dadra & Nagar Haveli','Daman & Diu','Delhi','Jammu & Kashmir','Ladakh','Lakshadweep','Puducherry'];
+    const stateSet = new Set(INDIA_STATES);
+    allUsers.forEach(u => {
+      if (u.role === 'Admin') {
+        const ulocs = Array.isArray(u.locations) ? u.locations : (u.state ? [u.state] : []);
+        ulocs.forEach(s => { if (s) stateSet.add(s); });
+      }
+    });
+    const states = Array.from(stateSet).sort();
+    // Category baseline: marketing, sales, account, team, management — plus any roles seen on the actual users
+    const STANDARD_CATEGORIES = ['Marketing Manager','Marketing Executive','Sales Manager','Sales Executive','Accountant','Account Manager','Team Leader','Team Member','Operations Manager','Branch Head','Recruiter','Support Executive','Admin'];
+    const catSet = new Set(STANDARD_CATEGORIES);
+    users.forEach(u => { const c = u.adminRole || u.role; if (c) catSet.add(c); });
+    const cats = Array.from(catSet).sort();
 
     const overlay = document.createElement('div');
     overlay.className = 'gc-readby-modal';
@@ -994,9 +1086,11 @@ const GroupChat = {
     const tempId = 'gc-tmp-' + Date.now() + '-' + Math.random().toString(36).slice(2,6);
     const box = document.getElementById('gc-messages');
     if (box) {
+      // Instant render: full opacity, no spinner — message looks "sent" the moment it's queued.
+      // The real cloud-backed message will replace this seamlessly when onSnapshot fires.
       const tempHtml = `<div class="gc-msg me" id="${tempId}">
-        <img src="${localUrl}" alt="uploading" style="max-width:240px;border-radius:10px;opacity:0.65"/>
-        <div class="gc-time"><span><i class="fas fa-spinner fa-spin"></i> uploading…</span></div>
+        <img src="${localUrl}" alt="image" style="max-width:240px;border-radius:10px"/>
+        <div class="gc-time"><i class="fas fa-check" style="opacity:0.6"></i></div>
       </div>`;
       box.insertAdjacentHTML('beforeend', tempHtml);
       box.scrollTop = box.scrollHeight;
@@ -1090,10 +1184,11 @@ const GroupChat = {
     const box = document.getElementById('gc-messages');
     if (box) {
       const capHtml = caption ? `<div style="margin-bottom:4px">${this.escape(caption)}</div>` : '';
+      // Instant attach — full opacity image, no spinner. Background upload swaps it silently.
       box.insertAdjacentHTML('beforeend', `<div class="gc-msg me" id="${tempId}">
         ${capHtml}
-        <img src="${localUrl}" alt="uploading" style="max-width:240px;border-radius:10px;opacity:0.65"/>
-        <div class="gc-time"><span><i class="fas fa-spinner fa-spin"></i> uploading…</span></div>
+        <img src="${localUrl}" alt="image" style="max-width:240px;border-radius:10px"/>
+        <div class="gc-time"><i class="fas fa-check" style="opacity:0.6"></i></div>
       </div>`);
       box.scrollTop = box.scrollHeight;
     }

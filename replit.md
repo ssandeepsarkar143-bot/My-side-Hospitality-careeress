@@ -316,3 +316,45 @@ Note: SSE streaming (`/api/chat-stream`) works in dev (Express). On Firebase Hos
 ### Still pending (not blocking)
 - Mirror Activity Records / Freeze / Location-Compare sections to admin-feed (currently owner-only by design).
 - Add Edit/Freeze action buttons on Op Manager / Branch Head rows (currently shown on Admin rows only).
+
+---
+
+## Phase 12 — Owner Dashboard polish + Sub-admin permissions + Chat UX (Apr 2026)
+
+### 1. Fixed "getAllKnownStates is not defined" in Edit Promoted User → Allocated Locations
+- `owner-feed.html` is two separate `<script type="module">` blocks; the function defined in block 1 was invisible to block 2.
+- Exposed the helper + state list on `window` (`window.getAllKnownStates`, `window.INDIAN_STATES`) and added a safe fallback in `openEditPromotedUser` that uses `INDIAN_STATES` if anything fails to load.
+- Also broadened the helper to merge in `u.locations` so admin-allocated branch names show up.
+
+### 2. New permissions on Promote-to-Admin checklist: User Control + Admin Working Dashboard
+- `ALL_AUTH_KEYS`, `ROLE_PRESETS`, `ALL_AUTHS`, and the promote-modal HTML now include `dashboard` (renamed label → "User Control") and a new `adminWorking` ("Admin Working Dashboard").
+- Operations Manager and Branch Head presets get `adminWorking` automatically.
+- All data shown to a sub-admin remains location-scoped (existing logic in `setupAuthority` honours `adminData.locations`).
+
+### 3. "My Dashboard blank after edit" — fixed `saveEditPromotedUser`
+- The owner's edit form was saving `authorities` as an **array** of keys. The admin-feed `setupAuthority()` reads it as **`auth_perms.dashboard`** (object). After an edit, the admin's dashboard had no permissions to render and went blank.
+- `saveEditPromotedUser` now writes `authorities` as `{key: bool}` (matching `confirmPromote`), and also persists `role: 'Admin'`, `tag: 'Admin'`, `adminRole: <selected role>` — so the live snapshot listener triggers a clean re-render.
+
+### 4. Sub-admin promote/demote permission (location-scoped)
+- `nav_managePromoted` was previously only shown to Operations Manager / Branch Head. Now it's also unlocked by the granular `auth_perms.promote` checkbox (Sub-admin management).
+- Underlying logic (`loadManagePromoted`) already enforces the **Promotion Delegation** config + the admin's allocated locations.
+
+### 5. New "Admin Working Dashboard" inside admin-feed
+- When `auth_perms.adminWorking` is set, the sidebar gets an "Admin Working" item and a section is injected lazily.
+- `loadAdminWorkingScoped()` lists every promoted admin whose `locations` overlap the current admin's `locations` (or both empty → all-India).
+
+### 6. MPIN screens — Logout button (both feeds)
+- `owner-feed.html` and `admin-feed.html` MPIN screens have a small "Logout instead" link beneath the unlock button. It calls `signOut(auth)` and routes to `index.html`.
+
+### 7. Auto-MPIN 0000 + professional warning + notification on promote
+- `finalizePromote` (`owner-feed.html`) now creates a default `mpins/<uid>` doc with `mpin: '0000'`, `mustChange: true`, `isDefault: true` on **first promotion only** (skips if a doc already exists).
+- It also writes a `notifications` doc (severity warning) telling the new admin to change their MPIN.
+- `admin-feed.html`:
+  - On the MPIN screen, an inline yellow banner shows "default MPIN is 0000 — change after unlock" if the doc has `mustChange/isDefault/mpin==='0000'`.
+  - After a successful unlock with the default code, an in-dashboard banner persists at the top of the page with a one-click "Change Now" button that jumps to Manage MPIN.
+
+### 8. Group Chat (Connect Hub) UX overhaul (`js/group-chat.js`)
+- **Instant attach**: image previews now render at full opacity with a check-mark — no more "uploading…" spinner. The cloud upload runs in the background and the message swaps in seamlessly via `onSnapshot`.
+- **Real Close vs Minimize**: minimize keeps the thread alive and morphs the FAB into a Messenger-style chat-head (`gc-chathead` class — bobs gently with a gold ring); close (`closePanel()`) tears down the thread but still asks for browser-notification permission so the user keeps getting alerts.
+- **Browser notifications**: `notifyNewMessage` now pulses the chat-head, fires a tagged Notification (clickable → re-opens that thread), and flashes the document title while the tab is hidden.
+- **Add Members filter (Marketing Team)**: `openManageMembers` now seeds the location dropdown from the full `INDIAN_STATES` list (plus any custom branch names admins are allocated to) and seeds the category dropdown from a standard set (Marketing Manager, Sales Manager, Accountant, Team Leader, Operations Manager, etc.).

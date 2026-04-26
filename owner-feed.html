@@ -34,6 +34,11 @@
         <i class="fas fa-unlock-alt"></i> <span id="mpinBtnText">Unlock</span>
       </button>
       <div id="mpinHint" style="font-size:11px;color:var(--gray);margin-top:16px;text-align:center"></div>
+      <div style="margin-top:14px;text-align:center">
+        <button type="button" id="mpinLogoutBtn" style="background:transparent;border:none;color:#ef4444;font-size:12px;cursor:pointer;text-decoration:underline">
+          <i class="fas fa-sign-out-alt"></i> Logout instead
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -1087,10 +1092,11 @@
             <input type="checkbox" class="auth-cat-toggle" data-cat="visibility" onchange="toggleAuthCategory('visibility', this.checked)"/>
             <span class="auth-cat-title">👁️ Dashboard &amp; Visibility</span>
           </label>
-          <span class="auth-cat-count" id="auth-cat-count-visibility">0/2</span>
+          <span class="auth-cat-count" id="auth-cat-count-visibility">0/3</span>
         </div>
         <div class="authority-grid">
-          <label class="authority-item"><input type="checkbox" id="auth_dashboard" data-cat="visibility" checked/><div class="authority-label"><strong>Small User Control Dashboard</strong>View basic user information</div></label>
+          <label class="authority-item"><input type="checkbox" id="auth_dashboard" data-cat="visibility" checked/><div class="authority-label"><strong>User Control</strong>View &amp; manage end-users in allocated locations</div></label>
+          <label class="authority-item"><input type="checkbox" id="auth_adminWorking" data-cat="visibility"/><div class="authority-label"><strong>Admin Working Dashboard</strong>See all sub-admins/teams active in your allocated locations</div></label>
           <label class="authority-item"><input type="checkbox" id="auth_revenueDashboard" data-cat="visibility"/><div class="authority-label"><strong>Revenue Dashboard (Location Filtered)</strong>View revenue stats &amp; charts for allocated states only</div></label>
         </div>
       </div>
@@ -1415,6 +1421,12 @@ mpinInputs.forEach((input, i) => {
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Backspace' && !input.value && i > 0) mpinInputs[i-1].focus();
   });
+});
+
+// Logout link on the MPIN screen — signs out and returns to login
+document.getElementById('mpinLogoutBtn')?.addEventListener('click', async () => {
+  try { await signOut(auth); } catch(_){}
+  window.location.href = 'index.html';
 });
 
 document.getElementById('mpinSubmitBtn').addEventListener('click', async () => {
@@ -2026,23 +2038,26 @@ async function getAllKnownStates() {
       getDocs(collection(db,'users'))
     ]);
     jobsSnap.forEach(d => { const j = d.data(); const loc = (j.location||j.state||'').trim(); if (loc) loc.split(/[,/]/).forEach(s => { const t=s.trim(); if (t && t.length<40) set.add(t); }); });
-    usersSnap.forEach(d => { const u = d.data(); if (u.state) set.add(u.state); });
+    usersSnap.forEach(d => { const u = d.data(); if (u.state) set.add(u.state); (u.locations||[]).forEach(s => { if (s) set.add(s); }); });
   } catch(_){}
   return Array.from(set).sort();
 }
+window.getAllKnownStates = getAllKnownStates;
+window.INDIAN_STATES = INDIAN_STATES;
 
 // Role-based authority presets
+// NOTE: 'dashboard' = User Control. 'adminWorking' = Admin Working Dashboard (sub-admin overview, scoped to allocated locations).
 const ROLE_PRESETS = {
   'Admin': ['dashboard'],
-  'Branch Head': ['dashboard','revenueDashboard','connectEmployer','resumeDownload','contact','membership','jobPost','jobList','candidates','walletTopups','walletWithdrawals','walletRecords','enquiries','feedback','resumeRecords'],
+  'Branch Head': ['dashboard','adminWorking','revenueDashboard','connectEmployer','resumeDownload','contact','membership','jobPost','jobList','candidates','walletTopups','walletWithdrawals','walletRecords','enquiries','feedback','resumeRecords'],
   'Team Leader': ['dashboard','candidates','jobList','jobPost','contact'],
   'Accountant': ['dashboard','revenueDashboard','walletTopups','walletWithdrawals','walletRecords','membership','enquiries'],
   'Recruiter': ['dashboard','candidates','contact','resumeDownload','jobPost','resumeRecords'],
   'Support Executive': ['dashboard','enquiries','feedback','contact'],
   'Marketing Manager': ['dashboard','coupons','discounts','referrals','engagement','content'],
-  'Operations Manager': ['dashboard','revenueDashboard','connectEmployer','resumeDownload','contact','membership','jobPost','jobList','candidates','walletTopups','walletWithdrawals','walletRecords','coupons','discounts','referrals','enquiries','feedback','resumeRecords','engagement','content','settings','promote']
+  'Operations Manager': ['dashboard','adminWorking','revenueDashboard','connectEmployer','resumeDownload','contact','membership','jobPost','jobList','candidates','walletTopups','walletWithdrawals','walletRecords','coupons','discounts','referrals','enquiries','feedback','resumeRecords','engagement','content','settings','promote']
 };
-const ALL_AUTH_KEYS = ['dashboard','revenueDashboard','connectEmployer','resumeDownload','contact','membership','jobPost','jobList','candidates','walletTopups','walletWithdrawals','walletRecords','coupons','discounts','referrals','enquiries','feedback','resumeRecords','engagement','content','settings','promote'];
+const ALL_AUTH_KEYS = ['dashboard','adminWorking','revenueDashboard','connectEmployer','resumeDownload','contact','membership','jobPost','jobList','candidates','walletTopups','walletWithdrawals','walletRecords','coupons','discounts','referrals','enquiries','feedback','resumeRecords','engagement','content','settings','promote'];
 
 window.applyRolePreset = function() {
   const role = document.getElementById('auth_role').value;
@@ -2208,12 +2223,43 @@ window.finalizePromote = async function() {
       authorities: p.authorities,
       promotedAt: serverTimestamp()
     });
+    // Phase 12 — auto-create MPIN doc with default "0000" + mustChange flag (only on first promote)
+    let createdDefaultMpin = false;
+    if (!p.wasAdmin) {
+      try {
+        const existing = await getDoc(doc(db, 'mpins', p.uid));
+        if (!existing.exists()) {
+          await setDoc(doc(db, 'mpins', p.uid), {
+            mpin: '0000',
+            mustChange: true,
+            isDefault: true,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+            setBy: currentUser.uid
+          });
+          createdDefaultMpin = true;
+        }
+      } catch(_){}
+      // In-app notification asking the new admin to change their default MPIN
+      try {
+        await addDoc(collection(db, 'notifications'), {
+          uid: p.uid,
+          targetUid: p.uid,
+          type: 'mpin_default',
+          title: '🔐 Action required: Set your secure MPIN',
+          message: `Welcome ${p.targetUser.displayName||p.targetUser.email}! Your dashboard MPIN is currently the default 0000. For your account safety, please open Manage MPINs and change it to a private 4-digit code right after your first login.`,
+          severity: 'warning',
+          read: false,
+          createdAt: serverTimestamp()
+        });
+      } catch(_){}
+    }
     await logAudit(p.wasAdmin ? 'Admin Updated' : 'User Promoted to Admin',
-      `${p.targetUser.displayName||p.targetUser.email} → ${p.roleLabel} (${p.states.length?p.states.join(', '):'All India'})`,
+      `${p.targetUser.displayName||p.targetUser.email} → ${p.roleLabel} (${p.states.length?p.states.join(', '):'All India'})${createdDefaultMpin?' [default MPIN 0000 issued]':''}`,
       { targetUid: p.uid, targetName: p.targetUser.displayName||p.targetUser.email, states: p.states, payload: { role: p.roleLabel, authorities: p.authorities } });
     closeModal('promoteVerifyModal');
     closeModal('promoteModal');
-    showToast(p.wasAdmin ? 'Admin updated successfully!' : 'User promoted to Admin successfully!');
+    showToast(p.wasAdmin ? 'Admin updated successfully!' : `Promoted! Default MPIN 0000 issued — admin will be prompted to change it.`);
     window.__pendingPromote = null;
     loadUsers();
     loadAdminMpinList && loadAdminMpinList();
@@ -4781,7 +4827,7 @@ window.loadFrozenUsers = async function() {
 
 // ===== EDIT PROMOTED USER (change role / authorities without demoting) =====
 const ALL_AUTHS = [
-  ['dashboard','Small Dashboard'],['revenueDashboard','Revenue Dashboard (Location Filtered)'],
+  ['dashboard','User Control'],['adminWorking','Admin Working Dashboard'],['revenueDashboard','Revenue Dashboard (Location Filtered)'],
   ['connectEmployer','Approve Connect Employer'],['resumeDownload','Approve Resume Download'],
   ['contact','Approve Contact Requests'],['membership','Approve Membership'],['jobPost','Approve Job Posts'],
   ['jobList','Manage Job List'],['candidates','Candidate List & Hiring'],
@@ -4818,7 +4864,8 @@ window.openEditPromotedUser = async function(uid) {
     if (stateBox) {
       stateBox.innerHTML = '<div style="color:var(--gray);grid-column:1/-1">Loading states…</div>';
       try {
-        const states = await getAllKnownStates();
+        const _getStates = window.getAllKnownStates || (async () => (window.INDIAN_STATES || []).slice());
+        const states = await _getStates();
         const preSel = new Set(Array.isArray(u.locations) ? u.locations : []);
         stateBox.innerHTML = states.map(s => {
           const safe = s.replace(/"/g,'&quot;');
@@ -4865,9 +4912,15 @@ window.saveEditPromotedUser = async function() {
   const msg = document.getElementById('editPuMsg');
   msg.className='alert alert-info show'; msg.textContent='⏳ Saving…';
   try {
+    // Build authorities as OBJECT {key: bool} so admin-feed setupAuthority() can read auths.dashboard etc.
+    // (Saving as a string-array breaks adminData.authorities[k] checks → blank dashboard.)
+    const authoritiesObj = {};
+    ALL_AUTHS.forEach(([k]) => { authoritiesObj[k] = checks.includes(k); });
     await updateDoc(doc(db,'users',uid), {
-      role: newRole,
-      authorities: checks,
+      role: 'Admin',
+      tag: 'Admin',
+      adminRole: newRole,
+      authorities: authoritiesObj,
       locations: locations,
       roleUpdatedAt: serverTimestamp(),
       roleUpdatedBy: currentUser.uid
