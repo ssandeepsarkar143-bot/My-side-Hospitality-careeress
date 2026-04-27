@@ -81,7 +81,7 @@
         </div>
         <div class="form-group">
           <label>State / Location <span style="color:#ef4444">*</span></label>
-          <select id="seekerState" class="form-control state-select" required></select>
+          <select id="seekerState" class="form-control state-select"></select>
         </div>
       </div>
 
@@ -110,7 +110,7 @@
         </div>
         <div class="form-group">
           <label>State / Location <span style="color:#ef4444">*</span></label>
-          <select id="empState" class="form-control state-select" required></select>
+          <select id="empState" class="form-control state-select"></select>
         </div>
       </div>
 
@@ -211,6 +211,10 @@ document.getElementById('profileForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const type = document.getElementById('userType').value;
   if (!type) { showAlert('Please select your role.'); return; }
+  if (!currentUser) {
+    showAlert('Still loading your account, please wait a moment and try again.');
+    return;
+  }
   const btn = document.getElementById('profileSubmitBtn');
   btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
   btn.disabled = true;
