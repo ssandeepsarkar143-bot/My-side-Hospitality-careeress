@@ -468,14 +468,17 @@ const GroupChat = {
       const raw = localStorage.getItem('hc_gc_fab_pos'); if (!raw) return;
       const p = JSON.parse(raw); const el = document.getElementById('gc-fab');
       if (!el || !p?.left || !p?.top) return;
-      // Validate: if a stale position has parked the bubble in the upper half of the
-      // viewport (above 55%), discard it and keep the default bottom-right position.
-      const topNum = parseFloat(p.top);
-      if (!isFinite(topNum) || topNum < window.innerHeight * 0.55) {
-        try { localStorage.removeItem('hc_gc_fab_pos'); } catch(_){}
-        return;
-      }
-      el.style.left = p.left; el.style.top = p.top; el.style.right = 'auto'; el.style.bottom = 'auto';
+      // Free-drag: keep whatever position the user parked the bubble at, anywhere in the
+      // viewport. The only sanity check is that the position is still on-screen — if the
+      // window has shrunk (e.g. mobile rotation), clamp into the visible area instead of
+      // discarding the saved spot.
+      const w = el.offsetWidth || 56, h = el.offsetHeight || 56, margin = 4;
+      let left = parseFloat(p.left), top = parseFloat(p.top);
+      if (!isFinite(left) || !isFinite(top)) return;
+      left = Math.max(margin, Math.min(window.innerWidth  - w - margin, left));
+      top  = Math.max(margin, Math.min(window.innerHeight - h - margin, top));
+      el.style.left = left + 'px'; el.style.top = top + 'px';
+      el.style.right = 'auto'; el.style.bottom = 'auto';
     } catch(_){}
   },
 

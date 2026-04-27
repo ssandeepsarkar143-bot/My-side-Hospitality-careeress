@@ -139,6 +139,7 @@
       <div class="sidebar-section hidden" id="nav_management_header">Management (Ops/Branch Head)</div>
       <div class="sidebar-item hidden" id="nav_resumeRecords" onclick="showSection('resumeRecords')"><i class="fas fa-file-alt"></i> AI Resume Records</div>
       <div class="sidebar-item hidden" id="nav_managePromoted" onclick="showSection('managePromoted')"><i class="fas fa-user-shield"></i> Promoted Admins</div>
+      <div class="sidebar-item hidden" id="nav_myPromotionRequests" onclick="showSection('myPromotionRequests')"><i class="fas fa-paper-plane"></i> My Promotion Requests <span id="myPromoReqBadge" style="display:none;background:#f59e0b;color:#000;font-size:10px;padding:2px 7px;border-radius:10px;margin-left:6px">0</span></div>
       <div class="sidebar-item hidden" id="nav_manageMpin" onclick="showSection('manageMpin')"><i class="fas fa-key"></i> Manage MPINs</div>
       <div class="sidebar-item hidden" id="nav_auditLog" onclick="showSection('auditLog')"><i class="fas fa-history"></i> Change Log</div>
       <div class="sidebar-section hidden" id="nav_operations_header">Operations (My States)</div>
@@ -327,6 +328,27 @@
           </table>
         </div>
         <p style="font-size:11px;color:var(--gray);margin-top:8px"><i class="fas fa-info-circle"></i> You can only manage admins inside your allocated state(s). Operations Manager / Branch Head roles cannot be assigned from here, and you cannot edit your own role.</p>
+      </div>
+
+      <!-- MY PROMOTION REQUESTS (any admin holding the 'promote' authority) -->
+      <div id="sec-myPromotionRequests" class="page-section">
+        <div class="section-title" style="color:#f59e0b"><i class="fas fa-paper-plane" style="-webkit-text-fill-color:#f59e0b"></i> My Promotion Requests</div>
+        <div style="background:rgba(245,158,11,0.10);border:1px solid rgba(245,158,11,0.35);border-radius:8px;padding:10px 12px;font-size:12px;color:rgba(255,255,255,0.92);margin-bottom:14px">
+          <i class="fas fa-info-circle" style="color:#f59e0b"></i> Promoting a user is now a two-step process: <strong>(1)</strong> submit a request from the user's row in <em>User Control</em>, then <strong>(2)</strong> after the Owner approves it, click <em>Execute Promotion</em> below to apply the role change. Rejected requests can be resubmitted with a new justification.
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+          <button class="btn btn-sm" id="mpr_filter_all"     onclick="filterMyPromotionRequests('')"         style="background:rgba(255,255,255,0.08)">All</button>
+          <button class="btn btn-sm" id="mpr_filter_pending" onclick="filterMyPromotionRequests('pending')"  style="background:rgba(245,158,11,0.15);color:#f59e0b">Pending</button>
+          <button class="btn btn-sm" id="mpr_filter_approved" onclick="filterMyPromotionRequests('approved')" style="background:rgba(34,197,94,0.15);color:#22c55e">Approved</button>
+          <button class="btn btn-sm" id="mpr_filter_rejected" onclick="filterMyPromotionRequests('rejected')" style="background:rgba(239,68,68,0.15);color:#ef4444">Rejected</button>
+          <button class="btn btn-sm" onclick="loadMyPromotionRequests()" style="background:rgba(255,255,255,0.08);margin-left:auto"><i class="fas fa-sync"></i> Refresh</button>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Submitted</th><th>Target User</th><th>Proposed Role</th><th>States</th><th>Status</th><th>Decision</th><th>Action</th></tr></thead>
+            <tbody id="myPromotionRequestsBody"><tr><td colspan="7" style="text-align:center;color:var(--gray);padding:20px">Loading…</td></tr></tbody>
+          </table>
+        </div>
       </div>
 
       <!-- MANAGE MPIN (Op Mgr / Branch Head) -->
@@ -599,8 +621,8 @@
           <button class="modal-close" onclick="document.getElementById('adminPromoteModal').classList.remove('active')">&times;</button>
         </div>
         <div id="apTargetName" style="font-size:14px;color:#22c55e;margin-bottom:14px;font-weight:600"></div>
-        <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.25);border-radius:8px;padding:10px 12px;font-size:12px;color:rgba(255,255,255,0.85);margin-bottom:14px">
-          <i class="fas fa-info-circle" style="color:#22c55e"></i> You can only assign roles allowed for your tier and states from your own allocations. A default MPIN <strong>0000</strong> will be issued — the new admin will be asked to change it on first login.
+        <div style="background:rgba(245,158,11,0.10);border:1px solid rgba(245,158,11,0.35);border-radius:8px;padding:10px 12px;font-size:12px;color:rgba(255,255,255,0.92);margin-bottom:14px">
+          <i class="fas fa-info-circle" style="color:#f59e0b"></i> <strong>This is a request, not a direct promotion.</strong> Your form will be sent to the Owner for approval. Once approved, you can execute the promotion from <strong>My Promotion Requests</strong>. A default MPIN <strong>0000</strong> will be issued — the new admin will be asked to change it on first login.
         </div>
         <div class="form-group"><label>Role / Designation</label>
           <select id="ap_role" class="form-control"></select>
@@ -611,7 +633,10 @@
         <div class="form-group"><label>Starter Authorities <span style="font-size:11px;color:var(--gray)">(only authorities the Owner has delegated to your tier are shown)</span></label>
           <div id="ap_authsBox" style="background:rgba(255,255,255,0.04);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;max-height:220px;overflow-y:auto"></div>
         </div>
-        <button class="btn btn-primary w-full" style="background:#22c55e" onclick="confirmAdminPromote()"><i class="fas fa-check"></i> Promote to Admin</button>
+        <div class="form-group"><label>Reason / Justification <span style="font-size:11px;color:var(--gray)">(visible to the Owner)</span></label>
+          <textarea id="ap_reason" class="form-control" rows="2" maxlength="500" placeholder="Why should this user be promoted? Brief context for the Owner."></textarea>
+        </div>
+        <button class="btn btn-primary w-full" style="background:#f59e0b;color:#000" onclick="confirmAdminPromote()"><i class="fas fa-paper-plane"></i> Submit Promotion Request</button>
       </div>
     </div>
 
@@ -881,6 +906,16 @@ function setupAuthority() {
     if (npm) npm.classList.remove('hidden');
     document.getElementById('nav_management_header').classList.remove('hidden');
   }
+  // Phase 13 — Promotion-Request workflow: every admin who can submit promotion requests
+  // (Op Mgr / Branch Head / any admin with the 'promote' authority) gets a "My Promotion
+  // Requests" section to track owner approval and execute approved promotions.
+  if (auth_perms.promote || isOpMgr || isBranchHead) {
+    const npr = document.getElementById('nav_myPromotionRequests');
+    if (npr) npr.classList.remove('hidden');
+    document.getElementById('nav_management_header').classList.remove('hidden');
+    // Subscribe to status changes so the badge updates live (approvals/rejections)
+    if (typeof subscribeMyPromotionRequestsBadge === 'function') subscribeMyPromotionRequestsBadge();
+  }
   // Phase 12 — Admin Working Dashboard permission: shows promoted admins active in this admin's allocated locations
   if (auth_perms.adminWorking) {
     ensureAdminWorkingNav();
@@ -937,8 +972,8 @@ function ensureAdminWorkingNav() {
         </div>
         <div class="table-wrapper">
           <table>
-            <thead><tr><th>Admin Name</th><th>Email</th><th>Role</th><th>Jobs</th><th>Contacts</th><th>Resumes</th><th>Memberships</th><th>Hired</th><th>Actions</th></tr></thead>
-            <tbody id="adminWorkingScopedBody"><tr><td colspan="9" style="text-align:center;color:var(--gray);padding:20px">Loading…</td></tr></tbody>
+            <thead><tr><th>Admin Name</th><th>Email</th><th>Role</th><th>Jobs</th><th>Contacts</th><th>Resumes</th><th>Memberships</th><th>Hired</th><th>7d Trend</th><th>Actions</th></tr></thead>
+            <tbody id="adminWorkingScopedBody"><tr><td colspan="10" style="text-align:center;color:var(--gray);padding:20px">Loading…</td></tr></tbody>
           </table>
         </div>
         <p style="font-size:11px;color:var(--gray);margin-top:8px"><i class="fas fa-info-circle"></i> Scope: only sub-admins inside your allocated state(s). You can Edit, Remove, or download a Report. Operations Manager / Branch Head rows are read-only.</p>
@@ -963,7 +998,7 @@ let __awScopedCache = [];
 async function loadAdminWorkingScoped() {
   const body = document.getElementById('adminWorkingScopedBody');
   if (!body) return;
-  body.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--gray);padding:20px"><i class="fas fa-spinner fa-spin"></i> Loading…</td></tr>';
+  body.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--gray);padding:20px"><i class="fas fa-spinner fa-spin"></i> Loading…</td></tr>';
   try {
     const allowed = (adminData?.locations || []).map(s => (s||'').toLowerCase());
     const snap = await getDocs(collection(db, 'users'));
@@ -980,9 +1015,34 @@ async function loadAdminWorkingScoped() {
     });
     if (!targets.length) {
       __awScopedCache = [];
-      body.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--gray);padding:20px">No sub-admins found in your allocated locations.</td></tr>';
+      body.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--gray);padding:20px">No sub-admins found in your allocated locations.</td></tr>';
       return;
     }
+    // ---- 7-day bucket helper ----------------------------------------
+    // Builds [d-6, d-5, ..., d-0] activity counts. Accepts Firestore
+    // Timestamp or millis or ISO string and silently skips anything outside
+    // the rolling 7-day window.
+    const DAY_MS = 86400000;
+    const today0 = new Date(); today0.setHours(0,0,0,0);
+    const weekFloor = today0.getTime() - 6 * DAY_MS;
+    const bucketize = (snap, ...fieldCandidates) => {
+      const buckets = [0,0,0,0,0,0,0];
+      snap.forEach(d => {
+        const data = d.data();
+        let ts = null;
+        for (const f of fieldCandidates) {
+          const v = data[f];
+          if (!v) continue;
+          if (v?.toMillis) { ts = v.toMillis(); break; }
+          if (typeof v === 'number') { ts = v; break; }
+          if (typeof v === 'string') { const t = Date.parse(v); if (!isNaN(t)) { ts = t; break; } }
+        }
+        if (ts == null || ts < weekFloor) return;
+        const idx = Math.floor((ts - weekFloor) / DAY_MS);
+        if (idx >= 0 && idx <= 6) buckets[idx]++;
+      });
+      return buckets;
+    };
     // Pull each admin's work counts in parallel — same shape as owner-feed's loadAdminWorking
     const enriched = await Promise.all(targets.map(async (t) => {
       try {
@@ -993,14 +1053,25 @@ async function loadAdminWorkingScoped() {
           getDocs(query(collection(db, 'requests'),    where('approvedBy','==',t.uid), where('type','==','membership'))),
           getDocs(query(collection(db, 'applications'), where('hiredBy','==',t.uid)))
         ]);
+        // Combine each source's day-buckets into one 7-element activity series
+        const series = [0,0,0,0,0,0,0];
+        const sources = [
+          bucketize(jobsApproved,        'approvedAt','updatedAt','createdAt'),
+          bucketize(contactApproved,     'approvedAt','updatedAt','createdAt'),
+          bucketize(resumeApproved,      'approvedAt','updatedAt','createdAt'),
+          bucketize(membershipApproved,  'approvedAt','updatedAt','createdAt'),
+          bucketize(hiredCandidates,     'hiredAt','updatedAt','createdAt')
+        ];
+        sources.forEach(arr => arr.forEach((n,i) => series[i] += n));
         return {
           ...t,
           jobs: jobsApproved.size, contacts: contactApproved.size,
           resumes: resumeApproved.size, memberships: membershipApproved.size,
-          hired: hiredCandidates.size
+          hired: hiredCandidates.size,
+          series7d: series
         };
       } catch(_) {
-        return { ...t, jobs:0, contacts:0, resumes:0, memberships:0, hired:0 };
+        return { ...t, jobs:0, contacts:0, resumes:0, memberships:0, hired:0, series7d:[0,0,0,0,0,0,0] };
       }
     }));
     __awScopedCache = enriched;
@@ -1016,6 +1087,37 @@ async function loadAdminWorkingScoped() {
         ? ''
         : `<button class="btn btn-sm btn-danger" style="margin:2px" onclick="adminRemovePromoted('${r.uid}')"><i class="fas fa-user-minus"></i> Remove</button>`;
       const reportBtn = `<button class="btn btn-sm" style="background:#a855f7;color:#fff;margin:2px" onclick="adminGenerateReport('${r.uid}','${nameSafe}')"><i class="fas fa-file-pdf"></i> Report</button>`;
+      // Inline 7-day sparkline (last 7 days; today is the rightmost bar)
+      const series = r.series7d || [0,0,0,0,0,0,0];
+      const peak = Math.max(1, ...series);
+      const total7 = series.reduce((a,b) => a+b, 0);
+      const lastNonZero = (() => { for (let i = series.length - 1; i >= 0; i--) if (series[i] > 0) return i; return -1; })();
+      // Trend = compare recent half vs older half — flag a drop if recent < 60% of older
+      const older = series.slice(0,3).reduce((a,b)=>a+b,0);
+      const recent = series.slice(4).reduce((a,b)=>a+b,0);
+      const dropping = older >= 3 && recent < older * 0.6;
+      const dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+      const labels = (() => {
+        const out = [];
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date(today0.getTime() - i * DAY_MS);
+          out.push(dayNames[(d.getDay()+6)%7] + ' ' + (d.getMonth()+1) + '/' + d.getDate());
+        }
+        return out;
+      })();
+      const W = 64, H = 22, BAR_W = 7, GAP = 2;
+      const bars = series.map((v,i) => {
+        const h = Math.max(1, Math.round((v / peak) * (H - 2)));
+        const x = i * (BAR_W + GAP);
+        const y = H - h;
+        const isToday = i === 6;
+        const fill = v === 0 ? 'rgba(255,255,255,0.10)' : (dropping ? '#ef4444' : (isToday ? '#22c55e' : '#3b82f6'));
+        return `<rect x="${x}" y="${y}" width="${BAR_W}" height="${h}" rx="1" fill="${fill}"><title>${labels[i]}: ${v}</title></rect>`;
+      }).join('');
+      const trendIcon = dropping
+        ? '<span title="Activity dropping vs earlier this week" style="color:#ef4444;font-size:10px;margin-left:4px">▼</span>'
+        : (total7 > 0 ? '<span title="Active" style="color:#22c55e;font-size:10px;margin-left:4px">●</span>' : '');
+      const sparkCell = `<div style="display:flex;align-items:center;gap:6px"><svg width="${W}" height="${H}" style="display:block">${bars}</svg><span style="font-size:11px;color:var(--gray)">${total7}${lastNonZero === 6 ? '' : (lastNonZero === -1 ? ' · idle 7d' : ' · last ' + (6 - lastNonZero) + 'd ago')}</span>${trendIcon}</div>`;
       return `<tr>
         <td><strong>${nameSafe}</strong></td>
         <td style="font-size:11px">${safe(r.email||'')}</td>
@@ -1025,11 +1127,12 @@ async function loadAdminWorkingScoped() {
         <td style="text-align:center">${r.resumes}</td>
         <td style="text-align:center">${r.memberships}</td>
         <td style="text-align:center">${r.hired}</td>
+        <td>${sparkCell}</td>
         <td style="white-space:nowrap">${editBtn}${reportBtn}${removeBtn}</td>
       </tr>`;
     }).join('');
   } catch(e) {
-    body.innerHTML = `<tr><td colspan="9" style="text-align:center;color:#ef4444;padding:20px">Failed: ${e.message}</td></tr>`;
+    body.innerHTML = `<tr><td colspan="10" style="text-align:center;color:#ef4444;padding:20px">Failed: ${e.message}</td></tr>`;
   }
 }
 window.loadAdminWorkingScoped = loadAdminWorkingScoped;
@@ -1158,6 +1261,7 @@ window.showSection = function(name) {
     case 'jobRequests': loadJobRequests(); break;
     case 'jobList': loadJobList(); break;
     case 'managePromoted': loadManagePromoted(); break;
+    case 'myPromotionRequests': loadMyPromotionRequests(); break;
     case 'manageMpin': loadOtherMpinList(); loadMpinRecordsAdmin(); break;
     case 'auditLog': loadAdminAuditLog(); break;
     case 'resumeRecords': loadAdResumeRecords(); break;
@@ -1918,8 +2022,12 @@ window.openAdminPromoteUser = async function(userId) {
   document.getElementById('adminPromoteModal').classList.add('active');
 };
 
+// Submit a promotion REQUEST (no longer a direct promotion). The request is saved to
+// `promotionRequests` with status='pending'. The Owner reviews and approves/rejects from
+// their dashboard. Once approved, the requester executes the promotion from the
+// "My Promotion Requests" section (executeApprovedPromotion).
 window.confirmAdminPromote = async function() {
-  if (!adminData?.authorities?.promote) { showToast('You do not have permission to promote users.', 'error'); return; }
+  if (!adminData?.authorities?.promote) { showToast('You do not have permission to submit promotion requests.', 'error'); return; }
   const uid = window.__adPendingPromoteUid; if (!uid) return;
   const target = (__cachedUsers || []).find(u => u.id === uid);
   if (!target) { showToast('User not found.', 'error'); return; }
@@ -1927,33 +2035,122 @@ window.confirmAdminPromote = async function() {
   const newRole = document.getElementById('ap_role').value;
   const newStates = Array.from(document.querySelectorAll('.ap_state_cb:checked')).map(c => c.value);
   if (!newStates.length) { showToast('Pick at least one state from your allocated locations.', 'error'); return; }
-  // Defensive role-tier checks
   const myRole = adminData?.adminRole || '';
   if (newRole === 'Operations Manager' || newRole === 'Branch Head' || newRole === myRole) {
-    showToast('Not allowed to assign that role.', 'error'); return;
+    showToast('Not allowed to request that role.', 'error'); return;
   }
-  // Defensive state check — every selected state must be inside admin's allocated states
   const myStates = (adminAllocatedStates() || []).map(s => s.toLowerCase());
   const bad = newStates.find(s => !myStates.includes(s.toLowerCase()));
   if (bad) { showToast(`State "${bad}" is outside your allocated locations.`, 'error'); return; }
+  const reason = (document.getElementById('ap_reason')?.value || '').trim();
+  if (!reason) { showToast('Please add a short reason for the Owner.', 'error'); return; }
 
-  // Read dynamic authority checkboxes — only authorities allowed by delegation can be granted
   const allowedSet = new Set(window.__adAllowedAuths || []);
   const authorities = {};
   document.querySelectorAll('#ap_authsBox .ap_auth_cb').forEach(cb => {
     const k = cb.dataset.auth;
     if (allowedSet.has(k)) authorities[k] = !!cb.checked;
   });
+
+  // Block duplicate pending requests for the same target by the same requester.
   try {
-    await updateDoc(doc(db, 'users', uid), {
+    const dupSnap = await getDocs(query(
+      collection(db, 'promotionRequests'),
+      where('requesterUid','==',currentUser.uid),
+      where('targetUid','==',uid),
+      where('status','==','pending')
+    ));
+    if (!dupSnap.empty) {
+      showToast('You already have a pending request for this user. Wait for the Owner to decide.', 'error');
+      return;
+    }
+  } catch(_){}
+
+  try {
+    await addDoc(collection(db, 'promotionRequests'), {
+      requesterUid: currentUser.uid,
+      requesterName: adminData?.displayName || currentUser.email || '',
+      requesterEmail: currentUser.email || '',
+      requesterRole: myRole || 'Admin',
+      requesterStates: adminAllocatedStates(),
+      targetUid: uid,
+      targetName: target.displayName || '',
+      targetEmail: target.email || '',
+      targetState: target.state || '',
+      proposedRole: newRole,
+      proposedStates: newStates,
+      proposedAuths: authorities,
+      reason,
+      status: 'pending',
+      executed: false,
+      createdAt: serverTimestamp()
+    });
+    // Notify the Owner via the existing notifications collection (broadcast type='admin')
+    try {
+      await addDoc(collection(db, 'notifications'), {
+        audience: 'admins',
+        type: 'promotionRequest',
+        title: '📨 New promotion request awaiting your approval',
+        message: `${adminData?.displayName||currentUser.email} (${myRole||'Admin'}) requests to promote ${target.displayName||target.email} to ${newRole} in ${newStates.join(', ')}.`,
+        severity: 'info', read: false, createdAt: serverTimestamp()
+      });
+    } catch(_){}
+    await logAdminAudit('Promotion Request Submitted',
+      `Requested promotion of ${target.displayName||target.email} → ${newRole} (${newStates.join(', ')||'no states'})`,
+      { targetUid: uid, targetName: target.displayName||target.email, states: newStates });
+    showToast('✓ Request submitted. The Owner will review it shortly.');
+    document.getElementById('adminPromoteModal').classList.remove('active');
+    // Reset modal fields for a clean next-use
+    const r = document.getElementById('ap_reason'); if (r) r.value = '';
+    // Refresh badges + section if currently viewed
+    loadMyPromotionRequests();
+  } catch(e) {
+    showToast('Failed to submit request: ' + (e?.message || e), 'error');
+  }
+};
+
+// Execute the actual promotion using the values approved by the Owner. This is the
+// second step of the two-step workflow — only callable when the request is `approved`
+// and not yet `executed`. Re-validates state/role guards defensively.
+window.executeApprovedPromotion = async function(requestId) {
+  if (!adminData?.authorities?.promote) { showToast('You no longer have permission to promote.', 'error'); return; }
+  const req = (window.__myPromoReqAll || []).find(r => r.id === requestId);
+  if (!req) { showToast('Request not found.', 'error'); return; }
+  if (req.requesterUid !== currentUser.uid) { showToast('This is not your request.', 'error'); return; }
+  if (req.status !== 'approved') { showToast('This request is not yet approved.', 'error'); return; }
+  if (req.executed) { showToast('This request has already been executed.', 'error'); return; }
+
+  // Re-fetch target user to confirm they're still a regular user
+  let target;
+  try {
+    const ts = await getDoc(doc(db, 'users', req.targetUid));
+    if (!ts.exists()) { showToast('Target user no longer exists.', 'error'); return; }
+    target = { id: ts.id, ...ts.data() };
+  } catch(e) { showToast('Failed to load target user: ' + e.message, 'error'); return; }
+  if ((target.role||'').toLowerCase() !== 'user') {
+    showToast('Target is no longer a regular user — the request is now stale.', 'error');
+    try { await updateDoc(doc(db, 'promotionRequests', requestId), { executed: true, executedAt: serverTimestamp(), executedNote: 'auto-cancelled: target no longer a regular user' }); } catch(_){}
+    loadMyPromotionRequests();
+    return;
+  }
+
+  if (!confirm(`Execute the approved promotion?\n\nUser: ${target.displayName||target.email}\nRole: ${req.proposedRole}\nStates: ${(req.proposedStates||[]).join(', ')}\n\nA default MPIN 0000 will be issued.`)) return;
+
+  try {
+    await updateDoc(doc(db, 'users', req.targetUid), {
       role: 'Admin', tag: 'Admin',
-      adminRole: newRole,
-      locations: newStates,
-      authorities,
+      adminRole: req.proposedRole,
+      locations: req.proposedStates || [],
+      authorities: req.proposedAuths || {},
       promotedAt: serverTimestamp(),
       promotedBy: currentUser.uid,
       promotedByName: adminData?.displayName || currentUser.email || ''
     });
+    // Reuse the original after-promotion bootstrap (default MPIN + notification + audit)
+    const uid = req.targetUid;
+    const newRole = req.proposedRole;
+    const newStates = req.proposedStates || [];
+    const authorities = req.proposedAuths || {};
     // Auto-issue default MPIN 0000 (must change on first login) if none exists yet
     let createdDefaultMpin = false;
     try {
@@ -1979,14 +2176,144 @@ window.confirmAdminPromote = async function() {
     await logAdminAudit('User Promoted to Admin',
       `${target.displayName||target.email} → ${newRole} (${newStates.join(', ')})${createdDefaultMpin?' [default MPIN 0000 issued]':''}`,
       { targetUid: uid, targetName: target.displayName||target.email, states: newStates, payload: { role: newRole, authorities } });
-    showToast(`Promoted ${target.displayName||target.email} to ${newRole}!`);
-    document.getElementById('adminPromoteModal').classList.remove('active');
+    // Mark the original request as executed so it shows ✓ Executed and the button disappears
+    try {
+      await updateDoc(doc(db, 'promotionRequests', requestId), {
+        executed: true, executedAt: serverTimestamp(), executedBy: currentUser.uid
+      });
+    } catch(_){}
+    showToast(`✓ Promoted ${target.displayName||target.email} to ${newRole}!`);
     window.__adPendingPromoteUid = null;
-    loadAdminUsers();
+    loadMyPromotionRequests();
+    if (typeof loadAdminUsers === 'function') loadAdminUsers();
     if (typeof loadManagePromoted === 'function') loadManagePromoted();
   } catch(e) {
     showToast('Promotion failed: ' + e.message, 'error');
   }
+};
+
+// ===================== MY PROMOTION REQUESTS =====================
+// Cache + filter so the per-row Execute button has the full record handy and the badge
+// in the sidebar can update without re-querying.
+window.__myPromoReqAll = [];
+window.__myPromoReqFilter = '';
+
+window.filterMyPromotionRequests = function(status) {
+  window.__myPromoReqFilter = status || '';
+  // Re-style the active pill
+  ['all','pending','approved','rejected'].forEach(k => {
+    const b = document.getElementById('mpr_filter_'+k); if (!b) return;
+    b.style.outline = ((status||'') === (k==='all'?'':k)) ? '2px solid #f59e0b' : 'none';
+  });
+  renderMyPromotionRequests();
+};
+
+window.loadMyPromotionRequests = async function() {
+  const tbody = document.getElementById('myPromotionRequestsBody'); if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--gray);padding:20px"><i class="fas fa-spinner fa-spin"></i> Loading…</td></tr>';
+  try {
+    const snap = await getDocs(query(
+      collection(db, 'promotionRequests'),
+      where('requesterUid','==',currentUser.uid)
+    ));
+    window.__myPromoReqAll = snap.docs.map(d => ({ id:d.id, ...d.data() }))
+      .sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0));
+    renderMyPromotionRequests();
+    refreshMyPromotionRequestBadge();
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#ef4444;padding:20px">Error: ${e.message}</td></tr>`;
+  }
+};
+
+window.renderMyPromotionRequests = function() {
+  const tbody = document.getElementById('myPromotionRequestsBody'); if (!tbody) return;
+  const filt = window.__myPromoReqFilter || '';
+  const list = filt ? window.__myPromoReqAll.filter(r => (r.status||'') === filt) : window.__myPromoReqAll;
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--gray);padding:20px">No ${filt||''} promotion requests.</td></tr>`;
+    return;
+  }
+  const esc = (s) => String(s||'').replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
+  tbody.innerHTML = list.map(r => {
+    const when = r.createdAt?.toDate?.()?.toLocaleString() || '—';
+    const statusBadge = r.status === 'pending'
+      ? `<span style="background:rgba(245,158,11,0.18);color:#f59e0b;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600">⏳ Pending</span>`
+      : r.status === 'approved' && !r.executed
+        ? `<span style="background:rgba(34,197,94,0.18);color:#22c55e;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600">✓ Approved</span>`
+        : r.status === 'approved' && r.executed
+          ? `<span style="background:rgba(59,130,246,0.18);color:#3b82f6;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600">✓ Executed</span>`
+          : `<span style="background:rgba(239,68,68,0.18);color:#ef4444;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600">✗ Rejected</span>`;
+    let decision = '—';
+    if (r.status === 'approved') {
+      decision = `<div style="font-size:11px;color:#22c55e">Approved by ${esc(r.decidedByName||'Owner')}</div>`
+        + (r.decidedAt?.toDate ? `<div style="font-size:10px;color:var(--gray)">${r.decidedAt.toDate().toLocaleString()}</div>` : '')
+        + (r.executed && r.executedAt?.toDate ? `<div style="font-size:10px;color:#3b82f6">Executed: ${r.executedAt.toDate().toLocaleString()}</div>` : '');
+    } else if (r.status === 'rejected') {
+      decision = `<div style="font-size:11px;color:#ef4444">Rejected by ${esc(r.decidedByName||'Owner')}</div>`
+        + (r.decisionNote ? `<div style="font-size:11px;color:var(--gray);margin-top:3px"><i class="fas fa-comment"></i> ${esc(r.decisionNote)}</div>` : '');
+    }
+    let action = '—';
+    if (r.status === 'approved' && !r.executed) {
+      action = `<button class="btn btn-sm" style="background:#22c55e;color:#fff" onclick="executeApprovedPromotion('${r.id}')"><i class="fas fa-bolt"></i> Execute Promotion</button>`;
+    } else if (r.status === 'pending') {
+      action = `<button class="btn btn-sm" style="background:rgba(239,68,68,0.15);color:#ef4444" onclick="cancelMyPromotionRequest('${r.id}')"><i class="fas fa-times"></i> Cancel</button>`;
+    } else if (r.status === 'rejected') {
+      action = `<span style="font-size:11px;color:var(--gray)">You may resubmit a new request from User Control.</span>`;
+    } else if (r.executed) {
+      action = `<span style="font-size:11px;color:#3b82f6">Promotion completed</span>`;
+    }
+    return `<tr>
+      <td style="font-size:11px;color:var(--gray)">${when}</td>
+      <td><strong>${esc(r.targetName||r.targetEmail||'—')}</strong><div style="font-size:11px;color:var(--gray)">${esc(r.targetEmail||'')}</div></td>
+      <td><span style="background:rgba(168,85,247,0.15);color:#c084fc;padding:3px 8px;border-radius:10px;font-size:11px">${esc(r.proposedRole||'Admin')}</span><div style="font-size:11px;color:var(--gray);margin-top:4px"><i class="fas fa-comment"></i> ${esc((r.reason||'').slice(0,80))}</div></td>
+      <td style="font-size:11px">${(r.proposedStates||[]).map(s=>`<span style="background:rgba(233,69,96,0.15);padding:1px 5px;border-radius:3px;margin:1px;display:inline-block">📍 ${esc(s)}</span>`).join('') || '—'}</td>
+      <td>${statusBadge}</td>
+      <td>${decision}</td>
+      <td>${action}</td>
+    </tr>`;
+  }).join('');
+};
+
+window.cancelMyPromotionRequest = async function(requestId) {
+  const r = (window.__myPromoReqAll || []).find(x => x.id === requestId);
+  if (!r || r.requesterUid !== currentUser.uid || r.status !== 'pending') return;
+  if (!confirm('Cancel this pending promotion request? You can resubmit later.')) return;
+  try {
+    await updateDoc(doc(db, 'promotionRequests', requestId), {
+      status: 'cancelled', decidedAt: serverTimestamp(),
+      decidedBy: currentUser.uid, decidedByName: adminData?.displayName || currentUser.email || ''
+    });
+    showToast('Request cancelled.');
+    loadMyPromotionRequests();
+  } catch(e) { showToast('Cancel failed: ' + e.message, 'error'); }
+};
+
+// Sidebar badge: counts approved-but-not-yet-executed requests (i.e. action needed).
+function refreshMyPromotionRequestBadge() {
+  const badge = document.getElementById('myPromoReqBadge'); if (!badge) return;
+  const need = (window.__myPromoReqAll || []).filter(r => r.status === 'approved' && !r.executed).length;
+  if (need > 0) { badge.textContent = String(need); badge.style.display = 'inline-block'; }
+  else { badge.style.display = 'none'; }
+}
+
+// Live subscription so the sidebar badge updates the instant the Owner approves/rejects.
+let __myPromoReqUnsub = null;
+window.subscribeMyPromotionRequestsBadge = function() {
+  if (__myPromoReqUnsub || !currentUser?.uid) return;
+  try {
+    __myPromoReqUnsub = onSnapshot(
+      query(collection(db, 'promotionRequests'), where('requesterUid','==',currentUser.uid)),
+      (snap) => {
+        window.__myPromoReqAll = snap.docs.map(d => ({ id:d.id, ...d.data() }))
+          .sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0));
+        refreshMyPromotionRequestBadge();
+        // If the section is open, re-render it live
+        const sec = document.getElementById('sec-myPromotionRequests');
+        if (sec && sec.classList.contains('active')) renderMyPromotionRequests();
+      },
+      (e) => console.warn('[promoReq watch]', e?.message)
+    );
+  } catch(e) { console.warn('[promoReq subscribe]', e?.message); }
 };
 
 // DEMOTE ADMIN → USER (admin with the 'promote' authority can demote admins in their states,

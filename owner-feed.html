@@ -106,6 +106,7 @@
       <div class="sidebar-section">User Management</div>
       <div class="sidebar-item" onclick="showSection('users')"><i class="fas fa-users"></i> User Control</div>
       <div class="sidebar-item" onclick="showSection('adminWorking')"><i class="fas fa-user-shield"></i> Admin Working</div>
+      <div class="sidebar-item" onclick="showSection('promotionRequests')"><i class="fas fa-paper-plane"></i> Promotion Requests <span id="ownerPromoReqBadge" style="display:none;background:#f59e0b;color:#000;font-size:10px;padding:2px 7px;border-radius:10px;margin-left:6px">0</span></div>
       <div class="sidebar-section">Job Management</div>
       <div class="sidebar-item" onclick="showSection('jobRequests')"><i class="fas fa-inbox"></i> Job Post Requests</div>
       <div class="sidebar-item" onclick="showSection('joblist')"><i class="fas fa-list"></i> Manage Job List</div>
@@ -241,6 +242,27 @@
           <table>
             <thead><tr><th>Admin Name</th><th>Email</th><th>Jobs</th><th>Contacts</th><th>Resumes</th><th>Memberships</th><th>Hired</th><th>Actions</th></tr></thead>
             <tbody id="adminWorkingBody"><tr><td colspan="8" style="text-align:center;color:var(--gray);padding:20px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- PROMOTION REQUESTS (from sub-admins / Op Mgr / Branch Head awaiting Owner approval) -->
+      <div id="sec-promotionRequests" class="page-section">
+        <div class="section-title"><i class="fas fa-paper-plane"></i> Admin Promotion Requests</div>
+        <div style="background:rgba(245,158,11,0.10);border:1px solid rgba(245,158,11,0.35);border-radius:8px;padding:10px 12px;font-size:12px;color:rgba(255,255,255,0.92);margin-bottom:14px">
+          <i class="fas fa-info-circle" style="color:#f59e0b"></i> Sub-admins, Operations Managers and Branch Heads can <strong>request</strong> promotions but no longer apply them directly. Approve or reject each request below — the requester will then execute the approved promotion themselves.
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+          <button class="btn btn-sm" id="opr_filter_pending"  onclick="filterPromotionRequests('pending')"  style="background:rgba(245,158,11,0.15);color:#f59e0b">⏳ Pending</button>
+          <button class="btn btn-sm" id="opr_filter_approved" onclick="filterPromotionRequests('approved')" style="background:rgba(34,197,94,0.15);color:#22c55e">✓ Approved</button>
+          <button class="btn btn-sm" id="opr_filter_rejected" onclick="filterPromotionRequests('rejected')" style="background:rgba(239,68,68,0.15);color:#ef4444">✗ Rejected</button>
+          <button class="btn btn-sm" id="opr_filter_all"      onclick="filterPromotionRequests('')"         style="background:rgba(255,255,255,0.08)">All</button>
+          <button class="btn btn-sm" onclick="loadPromotionRequests()" style="background:rgba(255,255,255,0.08);margin-left:auto"><i class="fas fa-sync"></i> Refresh</button>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Submitted</th><th>Requester</th><th>Target User</th><th>Proposed Role / States</th><th>Reason</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="promotionRequestsBody"><tr><td colspan="7" style="text-align:center;color:var(--gray);padding:20px">Loading…</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -1334,7 +1356,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, doc, getDoc, getDocs, collection, query, where, updateDoc, deleteDoc, addDoc, serverTimestamp, setDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, getDoc, getDocs, collection, query, where, updateDoc, deleteDoc, addDoc, serverTimestamp, setDoc, increment, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCuAuc9qhA7D_-Lqt-69pbG81KTIiDFVpg",
@@ -1387,6 +1409,7 @@ function loadSectionData(name) {
     case 'revenue': loadRevenue(); break;
     case 'users': loadUsers(); break;
     case 'adminWorking': loadAdminWorking(); break;
+    case 'promotionRequests': loadPromotionRequests(); break;
     case 'jobRequests': loadJobRequests(); break;
     case 'joblist': loadJobList(); break;
     case 'candidates': loadCandidates(); break;
@@ -2355,6 +2378,151 @@ async function loadAdminWorking() {
 }
 
 // JOB REQUESTS
+// ===================== ADMIN PROMOTION REQUESTS (Owner approval queue) =====================
+window.__ownerPromoReqAll = [];
+window.__ownerPromoReqFilter = 'pending'; // default to the action queue
+
+window.filterPromotionRequests = function(status) {
+  window.__ownerPromoReqFilter = status || '';
+  ['all','pending','approved','rejected'].forEach(k => {
+    const b = document.getElementById('opr_filter_'+k); if (!b) return;
+    b.style.outline = ((status||'') === (k==='all'?'':k)) ? '2px solid #f59e0b' : 'none';
+  });
+  renderPromotionRequests();
+};
+
+async function loadPromotionRequests() {
+  const tbody = document.getElementById('promotionRequestsBody'); if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--gray);padding:20px"><i class="fas fa-spinner fa-spin"></i> Loading…</td></tr>';
+  try {
+    const snap = await getDocs(collection(db, 'promotionRequests'));
+    window.__ownerPromoReqAll = snap.docs.map(d => ({ id:d.id, ...d.data() }))
+      .sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0));
+    // Set the Pending filter visually as the default on first load
+    if (!document.getElementById('opr_filter_pending')?.style.outline) filterPromotionRequests(window.__ownerPromoReqFilter);
+    else renderPromotionRequests();
+    refreshOwnerPromoBadge();
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#ef4444;padding:20px">Error: ${e.message}</td></tr>`;
+  }
+}
+
+function renderPromotionRequests() {
+  const tbody = document.getElementById('promotionRequestsBody'); if (!tbody) return;
+  const filt = window.__ownerPromoReqFilter || '';
+  const list = filt ? window.__ownerPromoReqAll.filter(r => (r.status||'') === filt) : window.__ownerPromoReqAll;
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--gray);padding:20px">No ${filt||''} promotion requests.</td></tr>`;
+    return;
+  }
+  const esc = (s) => String(s||'').replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
+  tbody.innerHTML = list.map(r => {
+    const when = r.createdAt?.toDate?.()?.toLocaleString() || '—';
+    const statusBadge = r.status === 'pending'
+      ? `<span style="background:rgba(245,158,11,0.18);color:#f59e0b;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600">⏳ Pending</span>`
+      : r.status === 'approved'
+        ? `<span style="background:rgba(34,197,94,0.18);color:#22c55e;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600">✓ Approved${r.executed?' • Executed':''}</span>`
+        : r.status === 'cancelled'
+          ? `<span style="background:rgba(148,163,184,0.18);color:#94a3b8;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600">⊘ Cancelled</span>`
+          : `<span style="background:rgba(239,68,68,0.18);color:#ef4444;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600">✗ Rejected</span>`;
+    const authsList = Object.entries(r.proposedAuths||{}).filter(([_,v])=>v).map(([k])=>k).join(', ') || '—';
+    let actions = '—';
+    if (r.status === 'pending') {
+      actions = `<button class="btn btn-sm" style="background:#22c55e;color:#fff;margin-right:5px" onclick="decideAdminPromotion('${r.id}','approve')"><i class="fas fa-check"></i> Approve</button>`
+        + `<button class="btn btn-sm" style="background:#ef4444;color:#fff" onclick="decideAdminPromotion('${r.id}','reject')"><i class="fas fa-times"></i> Reject</button>`;
+    } else {
+      const decisionBy = r.decidedByName ? `by ${esc(r.decidedByName)}` : '';
+      const when2 = r.decidedAt?.toDate?.()?.toLocaleString() || '';
+      actions = `<div style="font-size:11px;color:var(--gray)">${decisionBy}<br>${when2}</div>`
+        + (r.decisionNote ? `<div style="font-size:11px;color:#ef4444;margin-top:4px"><i class="fas fa-comment"></i> ${esc(r.decisionNote)}</div>` : '');
+    }
+    return `<tr>
+      <td style="font-size:11px;color:var(--gray)">${when}</td>
+      <td><strong>${esc(r.requesterName||r.requesterEmail||'—')}</strong><div style="font-size:11px;color:var(--gray)">${esc(r.requesterRole||'Admin')} · ${esc(r.requesterEmail||'')}</div><div style="font-size:10px;color:var(--gray);margin-top:2px">📍 ${esc((r.requesterStates||[]).join(', ')||'—')}</div></td>
+      <td><strong>${esc(r.targetName||r.targetEmail||'—')}</strong><div style="font-size:11px;color:var(--gray)">${esc(r.targetEmail||'')}</div><div style="font-size:10px;color:var(--gray);margin-top:2px">📍 ${esc(r.targetState||'—')}</div></td>
+      <td><span style="background:rgba(168,85,247,0.15);color:#c084fc;padding:3px 8px;border-radius:10px;font-size:11px">${esc(r.proposedRole||'Admin')}</span><div style="font-size:11px;margin-top:4px">${(r.proposedStates||[]).map(s=>`<span style="background:rgba(233,69,96,0.15);padding:1px 5px;border-radius:3px;margin:1px;display:inline-block">📍 ${esc(s)}</span>`).join('')}</div><div style="font-size:10px;color:var(--gray);margin-top:4px"><strong>Auths:</strong> ${esc(authsList)}</div></td>
+      <td style="font-size:12px;max-width:240px;white-space:normal">${esc(r.reason||'—')}</td>
+      <td>${statusBadge}</td>
+      <td>${actions}</td>
+    </tr>`;
+  }).join('');
+}
+
+window.decideAdminPromotion = async function(requestId, action) {
+  const r = (window.__ownerPromoReqAll || []).find(x => x.id === requestId);
+  if (!r || r.status !== 'pending') { alert('This request is no longer pending.'); return; }
+  let note = '';
+  if (action === 'reject') {
+    note = prompt('Reason for rejection (shown to the requester):', '');
+    if (note === null) return;
+    note = note.trim();
+    if (!note) { alert('Please provide a brief reason so the requester understands.'); return; }
+  } else {
+    if (!confirm(`Approve ${r.requesterName||r.requesterEmail}'s request to promote ${r.targetName||r.targetEmail} to ${r.proposedRole}?\n\nThe requester will then click "Execute Promotion" to apply it.`)) return;
+  }
+  try {
+    await updateDoc(doc(db, 'promotionRequests', requestId), {
+      status: action === 'approve' ? 'approved' : 'rejected',
+      decidedAt: serverTimestamp(),
+      decidedBy: currentUser.uid,
+      decidedByName: 'Owner',
+      decisionNote: note || ''
+    });
+    // Notify the requester so they see the result immediately
+    try {
+      await addDoc(collection(db, 'notifications'), {
+        userId: r.requesterUid,
+        type: 'promotionRequestDecision',
+        title: action === 'approve'
+          ? '✓ Your promotion request was approved'
+          : '✗ Your promotion request was rejected',
+        message: action === 'approve'
+          ? `Your request to promote ${r.targetName||r.targetEmail} to ${r.proposedRole} has been approved. Open "My Promotion Requests" and click Execute Promotion to apply it.`
+          : `Your request to promote ${r.targetName||r.targetEmail} to ${r.proposedRole} was rejected. Reason: ${note}`,
+        severity: action === 'approve' ? 'info' : 'warning',
+        read: false,
+        createdAt: serverTimestamp()
+      });
+    } catch(_){}
+    // Audit log entry
+    try {
+      await addDoc(collection(db, 'auditLog'), {
+        action: action === 'approve' ? 'Promotion Request Approved' : 'Promotion Request Rejected',
+        details: `${r.requesterName||r.requesterEmail} → ${r.targetName||r.targetEmail} as ${r.proposedRole}${note?` (note: ${note})`:''}`,
+        actor: 'Owner', actorUid: currentUser.uid, at: serverTimestamp(),
+        targetUid: r.targetUid, requestId
+      });
+    } catch(_){}
+    loadPromotionRequests();
+  } catch(e) {
+    alert('Failed to record decision: ' + e.message);
+  }
+};
+
+// Live badge in the Owner sidebar — counts pending requests
+let __ownerPromoUnsub = null;
+function refreshOwnerPromoBadge() {
+  const badge = document.getElementById('ownerPromoReqBadge'); if (!badge) return;
+  const pend = (window.__ownerPromoReqAll || []).filter(r => r.status === 'pending').length;
+  if (pend > 0) { badge.textContent = String(pend); badge.style.display = 'inline-block'; }
+  else { badge.style.display = 'none'; }
+}
+function subscribeOwnerPromoBadge() {
+  if (__ownerPromoUnsub) return;
+  try {
+    __ownerPromoUnsub = onSnapshot(collection(db, 'promotionRequests'), (snap) => {
+      window.__ownerPromoReqAll = snap.docs.map(d => ({ id:d.id, ...d.data() }))
+        .sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0));
+      refreshOwnerPromoBadge();
+      const sec = document.getElementById('sec-promotionRequests');
+      if (sec && sec.classList.contains('active')) renderPromotionRequests();
+    }, (e) => console.warn('[ownerPromoReq watch]', e?.message));
+  } catch(e) { console.warn('[ownerPromoReq subscribe]', e?.message); }
+}
+// Auto-subscribe once auth is ready (currentUser is set inside the existing auth init)
+setTimeout(() => { try { if (window.currentUser) subscribeOwnerPromoBadge(); } catch(_){} }, 1500);
+setTimeout(() => { try { if (window.currentUser) subscribeOwnerPromoBadge(); } catch(_){} }, 4000);
+
 async function loadJobRequests() {
   try {
     const snap = await getDocs(query(collection(db, 'jobPosts'), where('status','==','pending')));
