@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "AbNnksrjmgjjjXO_ZIEbx"
+uri = "file://FREE_DEPLOY_GUIDE.md"
+type = "text"
+title = "Hospitality Careers — Free Deployment Guide (Hybrid, no card needed)"
