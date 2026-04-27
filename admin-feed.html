@@ -52,7 +52,7 @@
       <div class="navbar-title">Hospitality Careers</div>
     </div>
     <div class="navbar-right">
-      <span class="user-tag tag-admin">Admin</span>
+      <span class="user-tag tag-admin" id="adminTagEl">Admin</span>
       <span class="tag-user-name" id="adminNameEl"></span>
       <button class="btn btn-sm" style="position:relative;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#fff" onclick="document.getElementById('adminNotifModal').classList.add('active');loadAdminNotifications()">
         <i class="fas fa-bell"></i>
@@ -92,6 +92,19 @@
         <script src="js/toggle-pw.js"></script>
         <div id="cp_msg" style="font-size:12px;text-align:center;min-height:16px"></div>
         <button class="btn btn-primary" id="cp_btn" onclick="submitChangePassword()"><i class="fas fa-check"></i> Update Password</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN REVENUE DETAIL MODAL (drill-down for the My Dashboard stat cards) -->
+  <div class="modal-overlay" id="adminRevenueDetailModal">
+    <div class="modal-box" style="max-width:760px;max-height:85vh;overflow-y:auto">
+      <div class="modal-header">
+        <div class="modal-title" id="adminRevenueDetailTitle" style="color:#e94560"><i class="fas fa-chart-bar"></i> Details</div>
+        <button class="modal-close" onclick="document.getElementById('adminRevenueDetailModal').classList.remove('active')">&times;</button>
+      </div>
+      <div id="adminRevenueDetailContent" style="margin-top:16px">
+        <div style="text-align:center;color:var(--gray);padding:30px"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
       </div>
     </div>
   </div>
@@ -1208,14 +1221,21 @@ function adPassRevFilter(d) {
   return states.some(s => lc.some(t => s.toLowerCase().includes(t) || t.includes(s.toLowerCase())));
 }
 
-function adStatCard(icon, label, value, sub, color) {
+function adStatCard(icon, label, value, sub, color, key) {
   const c = color || '#e94560';
-  return `<div class="stat-card" style="border-left:3px solid ${c}">
+  const clickable = key ? `style="border-left:3px solid ${c};cursor:pointer" onclick="showAdminRevenueDetail('${key}')"` : `style="border-left:3px solid ${c}"`;
+  const hint = key ? `<div style="font-size:11px;color:#a78bfa;margin-top:2px">Click for details →</div>` : '';
+  return `<div class="stat-card" ${clickable}>
     <div style="display:flex;align-items:center;gap:10px"><i class="fas ${icon}" style="color:${c};font-size:20px"></i><div style="font-size:11px;color:var(--gray);text-transform:uppercase">${label}</div></div>
     <div style="font-size:24px;font-weight:700;margin-top:6px">${value}</div>
     <div style="font-size:11px;color:var(--gray);margin-top:2px">${sub||''}</div>
+    ${hint}
   </div>`;
 }
+
+// Cached raw data (already filtered by date range + allocated states)
+// Used by the showAdminRevenueDetail() drill-down modal.
+let __adRevRawData = {};
 
 function adRenderMembershipChart(primeUsers) {
   const fallback = document.getElementById('adminRevenueChartFallback');
@@ -1303,17 +1323,20 @@ window.loadAdminRevenue = async function() {
     const totalResumes = resumes.length;
     const totalRevenue = primeUsers * 499;
 
-    // Permission-gated stat cards
+    // Cache filtered raw data for the drill-down detail modal
+    __adRevRawData = { users, apps, jobs, reqs, resumes };
+
+    // Permission-gated stat cards (clickable → showAdminRevenueDetail)
     const cards = [];
-    if (perms.dashboard) cards.push(adStatCard('fa-users','Users (My States)', totalUsers, `${normalUsers} normal · ${primeUsers} prime`));
-    if (perms.membership) cards.push(adStatCard('fa-crown','Prime Members', primeUsers, 'In allocated states'));
-    if (perms.membership) cards.push(adStatCard('fa-rupee-sign','Revenue', '₹'+totalRevenue.toLocaleString(), 'From memberships', '#22c55e'));
-    if (perms.jobList || perms.jobPost) cards.push(adStatCard('fa-briefcase','Live Jobs', liveJobs, `${jobs.length} total in range`));
-    if (perms.dashboard) cards.push(adStatCard('fa-paper-plane','Applications', totalApps, `${hiredCount} hired · ${pendingCount} pending`));
-    if (perms.connectEmployer) cards.push(adStatCard('fa-link','Connect Approved', connectApproved, 'Employer connects'));
-    if (perms.resumeDownload) cards.push(adStatCard('fa-file-download','Resume Approved', resumeApproved, 'Resume downloads'));
-    if (perms.contact) cards.push(adStatCard('fa-phone','Contact Approved', contactApproved, 'Contact reveals'));
-    if (perms.resumeRecords) cards.push(adStatCard('fa-file-alt','AI Resumes Built', totalResumes, 'Resume Studio'));
+    if (perms.dashboard) cards.push(adStatCard('fa-users','Users (My States)', totalUsers, `${normalUsers} normal · ${primeUsers} prime`, null, 'totalUsers'));
+    if (perms.membership) cards.push(adStatCard('fa-crown','Prime Members', primeUsers, 'In allocated states', null, 'primeUsers'));
+    if (perms.membership) cards.push(adStatCard('fa-rupee-sign','Revenue', '₹'+totalRevenue.toLocaleString(), 'From memberships', '#22c55e', 'revenue'));
+    if (perms.jobList || perms.jobPost) cards.push(adStatCard('fa-briefcase','Live Jobs', liveJobs, `${jobs.length} total in range`, null, 'liveJobs'));
+    if (perms.dashboard) cards.push(adStatCard('fa-paper-plane','Applications', totalApps, `${hiredCount} hired · ${pendingCount} pending`, null, 'totalApps'));
+    if (perms.connectEmployer) cards.push(adStatCard('fa-link','Connect Approved', connectApproved, 'Employer connects', null, 'approvedConnect'));
+    if (perms.resumeDownload) cards.push(adStatCard('fa-file-download','Resume Approved', resumeApproved, 'Resume downloads', null, 'approvedResume'));
+    if (perms.contact) cards.push(adStatCard('fa-phone','Contact Approved', contactApproved, 'Contact reveals', null, 'approvedContact'));
+    if (perms.resumeRecords) cards.push(adStatCard('fa-file-alt','AI Resumes Built', totalResumes, 'Resume Studio', null, 'resumesBuilt'));
 
     document.getElementById('adminRevenueStats').innerHTML = cards.join('') ||
       '<div style="color:var(--gray);padding:20px">No permissions enabled. Ask your Owner/OpsMgr to grant authorities.</div>';
@@ -1331,6 +1354,143 @@ window.loadAdminRevenue = async function() {
     console.error('loadAdminRevenue', e);
     document.getElementById('adminRevenueStats').innerHTML = '<div style="color:var(--danger)">Error loading: '+(e.message||'')+'</div>';
   }
+};
+
+// ===== MY DASHBOARD STAT-CARD DRILL-DOWN =====
+// Mirrors owner-feed's showRevenueDetail() but scoped to this admin's
+// allocated states + selected date range (data is already pre-filtered
+// in __adRevRawData by loadAdminRevenue → adPassRevFilter).
+window.showAdminRevenueDetail = async function(key) {
+  const modal = document.getElementById('adminRevenueDetailModal');
+  const titleEl = document.getElementById('adminRevenueDetailTitle');
+  const contentEl = document.getElementById('adminRevenueDetailContent');
+  if (!modal || !contentEl) return;
+  modal.classList.add('active');
+  contentEl.innerHTML = '<div style="text-align:center;color:var(--gray);padding:30px"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+
+  const titles = {
+    totalUsers:'Users in Your Allocated States',
+    primeUsers:'Prime Members in Your Allocated States',
+    revenue:'Revenue Breakdown (Your States)',
+    liveJobs:'Live Job Posts in Your States',
+    totalApps:'Applications in Your States',
+    approvedConnect:'Approved Employer Connections',
+    approvedResume:'Approved Resume Downloads',
+    approvedContact:'Approved Contacts',
+    resumesBuilt:'AI Resumes Built (Your States)'
+  };
+  titleEl.innerHTML = `<i class="fas fa-chart-bar"></i> ${titles[key] || key}`;
+
+  const esc = (s) => String(s == null ? '' : s).replace(/[<>]/g, c => c === '<' ? '&lt;' : '&gt;');
+  const d = __adRevRawData || {};
+  const showStates = (arr) => Array.isArray(arr) && arr.length ? arr.join(', ') : '—';
+  let html = '';
+
+  try {
+    if (key === 'totalUsers' || key === 'primeUsers') {
+      let list = (d.users || []).slice();
+      if (key === 'primeUsers') list = list.filter(u => u.role === 'Prime');
+      list.sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0));
+      html = `<div style="font-size:12px;color:var(--gray);margin-bottom:10px">${list.length} record(s) · scoped to your allocated states</div>
+        <div class="table-wrapper" style="margin:0"><table>
+          <thead><tr><th>Name</th><th>Email</th><th>Role / Tag</th><th>State</th><th>Joined</th></tr></thead>
+          <tbody>${list.map(u => `<tr>
+            <td>${esc(u.displayName||'N/A')}</td>
+            <td>${esc(u.email||'')}</td>
+            <td><span class="badge badge-${u.role==='Prime'?'approved':u.role==='Admin'?'rejected':'pending'}">${esc(u.tag||u.role||'User')}</span></td>
+            <td>${esc(u.state || (Array.isArray(u.locations)?u.locations.join(', '):'') || '—')}</td>
+            <td>${u.createdAt?.toDate?.()?.toLocaleDateString?.() || 'N/A'}</td>
+          </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--gray)">No records in your states</td></tr>'}</tbody>
+        </table></div>`;
+    }
+    else if (key === 'revenue') {
+      const prime = (d.users || []).filter(u => u.role === 'Prime');
+      html = `<div style="margin-bottom:16px"><div style="font-size:20px;font-weight:800;color:#22c55e">Total Revenue: ₹${(prime.length*499).toLocaleString()}</div>
+        <div style="font-size:13px;color:var(--gray)">${prime.length} Prime memberships × ₹499 · in your allocated states</div></div>
+        <div class="table-wrapper" style="margin:0"><table>
+          <thead><tr><th>Member</th><th>Email</th><th>Tag</th><th>State</th><th>Joined</th></tr></thead>
+          <tbody>${prime.map(u => `<tr>
+            <td>${esc(u.displayName||'N/A')}</td>
+            <td>${esc(u.email||'')}</td>
+            <td><span class="badge badge-approved">${esc(u.tag||'Prime')}</span></td>
+            <td>${esc(u.state || (Array.isArray(u.locations)?u.locations.join(', '):'') || '—')}</td>
+            <td>${u.createdAt?.toDate?.()?.toLocaleDateString?.() || 'N/A'}</td>
+          </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--gray)">No Prime members yet</td></tr>'}</tbody>
+        </table></div>`;
+    }
+    else if (key === 'liveJobs') {
+      const list = (d.jobs || []).filter(j => j.status === 'live');
+      html = `<div style="font-size:12px;color:var(--gray);margin-bottom:10px">${list.length} live job(s) · scoped to your allocated states</div>
+        <div class="table-wrapper" style="margin:0"><table>
+          <thead><tr><th>Position</th><th>Company</th><th>Location</th><th>Salary</th><th>Vacancy</th></tr></thead>
+          <tbody>${list.map(j => `<tr>
+            <td>${esc(j.position||j.title||'N/A')}</td>
+            <td>${esc(j.companyName||'N/A')}</td>
+            <td>${esc((j.location||'') + (j.state?', '+j.state:''))}</td>
+            <td>${esc(j.salaryText||j.salary||'N/A')}</td>
+            <td>${esc(String(j.vacancy||'N/A'))}</td>
+          </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--gray)">No live jobs</td></tr>'}</tbody>
+        </table></div>`;
+    }
+    else if (key === 'totalApps') {
+      const list = (d.apps || []).slice().sort((a,b) => (b.appliedAt?.toMillis?.()||0) - (a.appliedAt?.toMillis?.()||0));
+      const hired = list.filter(a => a.status === 'Hired').length;
+      const pending = list.filter(a => a.status === 'Pending').length;
+      html = `<div style="font-size:12px;color:var(--gray);margin-bottom:10px">${list.length} application(s) · ${hired} hired · ${pending} pending · scoped to your states</div>
+        <div class="table-wrapper" style="margin:0"><table>
+          <thead><tr><th>Candidate</th><th>Email</th><th>Job</th><th>Applied</th><th>Status</th></tr></thead>
+          <tbody>${list.map(a => `<tr>
+            <td>${esc(a.userName||'N/A')}</td>
+            <td>${esc(a.userEmail||'')}</td>
+            <td>${esc(a.jobTitle||'N/A')}</td>
+            <td>${a.appliedAt?.toDate?.()?.toLocaleDateString?.() || 'N/A'}</td>
+            <td><span class="badge badge-${a.status==='Hired'?'hired':a.status==='Rejected'?'rejected':'pending'}">${esc(a.status||'Pending')}</span></td>
+          </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--gray)">No applications</td></tr>'}</tbody>
+        </table></div>`;
+    }
+    else if (key === 'approvedConnect' || key === 'approvedResume' || key === 'approvedContact') {
+      const typeMap = { approvedConnect:'employerConnect', approvedResume:'resumeDownload', approvedContact:'contact' };
+      const list = (d.reqs || []).filter(r => r.type === typeMap[key] && r.status === 'approved')
+        .sort((a,b) => (b.approvedAt?.toMillis?.()||0) - (a.approvedAt?.toMillis?.()||0));
+      html = `<div style="font-size:12px;color:var(--gray);margin-bottom:10px">${list.length} approved · scoped to your allocated states</div>
+        <div class="table-wrapper" style="margin:0"><table>
+          <thead><tr><th>Requester</th><th>Target</th><th>State</th><th>Approved On</th></tr></thead>
+          <tbody>${list.map(r => `<tr>
+            <td>${esc(r.requesterEmail||r.userEmail||'N/A')}</td>
+            <td>${esc(r.candidateName||r.jobTitle||r.targetName||'N/A')}</td>
+            <td>${esc(r.state || (Array.isArray(r.locations)?r.locations.join(', '):'') || '—')}</td>
+            <td>${r.approvedAt?.toDate?.()?.toLocaleDateString?.() || 'N/A'}</td>
+          </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--gray)">No approved requests</td></tr>'}</tbody>
+        </table></div>`;
+    }
+    else if (key === 'resumesBuilt') {
+      const list = (d.resumes || []).slice().sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0));
+      const withPhoto = list.filter(r => r.photo && r.photo.length > 50).length;
+      html = `<div style="margin-bottom:14px;display:flex;gap:12px;flex-wrap:wrap">
+          <div style="background:rgba(233,69,96,0.1);border:1px solid rgba(233,69,96,0.3);padding:10px 14px;border-radius:10px"><div style="font-size:11px;color:var(--gray)">Total</div><div style="font-size:20px;font-weight:800;color:#e94560">${list.length}</div></div>
+          <div style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);padding:10px 14px;border-radius:10px"><div style="font-size:11px;color:var(--gray)">With Photo</div><div style="font-size:20px;font-weight:800;color:#22c55e">${withPhoto}</div></div>
+          <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);padding:10px 14px;border-radius:10px"><div style="font-size:11px;color:var(--gray)">Without Photo</div><div style="font-size:20px;font-weight:800">${list.length - withPhoto}</div></div>
+        </div>
+        <div class="table-wrapper" style="margin:0"><table>
+          <thead><tr><th>Photo</th><th>Name</th><th>Job Title</th><th>Email / Phone</th><th>Location</th><th>Date</th></tr></thead>
+          <tbody>${list.map(r => `<tr>
+            <td>${r.photo ? `<img src="${r.photo}" style="width:36px;height:36px;border-radius:6px;object-fit:cover">` : '<i class="fas fa-user-circle" style="color:var(--gray);font-size:32px"></i>'}</td>
+            <td>${esc(r.name||'N/A')}</td>
+            <td>${esc(r.jobTitle||'N/A')}</td>
+            <td>${esc(r.email||'')}<br/><span style="font-size:11px;color:var(--gray)">${esc(r.phone||'')}</span></td>
+            <td>${esc(r.location||'N/A')}</td>
+            <td>${r.createdAt?.toDate?.()?.toLocaleDateString?.() || 'N/A'}</td>
+          </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--gray)">No resumes built yet</td></tr>'}</tbody>
+        </table></div>`;
+    }
+    else {
+      html = '<div style="text-align:center;color:var(--gray);padding:30px">No detailed data available.</div>';
+    }
+  } catch(e) {
+    console.error('[showAdminRevenueDetail]', e);
+    html = `<div style="color:var(--danger);padding:20px">Error loading details: ${esc(e?.message||'')}</div>`;
+  }
+  contentEl.innerHTML = html;
 };
 
 // MY MPIN
@@ -2065,6 +2225,12 @@ onAuthStateChanged(auth, async (user) => {
     adminData = snap.data();
     if (adminData.role !== 'Admin') { window.location.href = 'index.html'; return; }
     document.getElementById('adminNameEl').textContent = user.displayName || user.email;
+    // Show the admin's role next to the "Admin" tag (e.g. "Admin · Branch Head")
+    try {
+      const roleLbl = (adminData?.adminRole || '').trim();
+      const tagEl = document.getElementById('adminTagEl');
+      if (tagEl) tagEl.textContent = roleLbl ? `Admin · ${roleLbl}` : 'Admin';
+    } catch(_){}
     document.getElementById('loader').style.display = 'none';
     // Note: Force re-login for owner-edited admins is handled globally by
     // js/role-reauth-guard.js (loaded at the bottom of the page).
