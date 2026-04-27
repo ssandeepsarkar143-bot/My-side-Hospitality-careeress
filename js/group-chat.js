@@ -712,9 +712,16 @@ const GroupChat = {
       const nameByUid = {};
       userDocs.forEach((d, i) => {
         const uid = memberUids[i];
-        const isOwn = uid === g?.ownerUid;
-        if (d?.exists?.()) nameByUid[uid] = d.data().displayName || (isOwn ? 'Owner' : 'Member');
-        else nameByUid[uid] = isOwn ? 'Owner' : 'Member';
+        const isGroupCreator = uid === g?.ownerUid;
+        const email = (d?.exists?.() ? (d.data().email || '') : '').toLowerCase();
+        const isSystemOwner = email === OWNER_EMAIL;
+        if (isSystemOwner) {
+          nameByUid[uid] = '👑 CEO';
+        } else if (d?.exists?.()) {
+          nameByUid[uid] = d.data().displayName || (isGroupCreator ? 'Group Admin' : 'Member');
+        } else {
+          nameByUid[uid] = isGroupCreator ? 'Group Admin' : 'Member';
+        }
       });
       const overlay = document.createElement('div');
       overlay.className = 'gc-readby-modal';
