@@ -54,14 +54,24 @@ body { background: linear-gradient(135deg, #0d0d2b, #1a1a4e); }
     </div>
     <div style="display:grid;gap:12px;margin-top:14px">
       <div class="form-group"><label>Current Password</label>
-        <input type="password" id="cp_old" class="form-control" placeholder="Enter current password" autocomplete="current-password"/>
+        <div style="position:relative">
+          <input type="password" id="cp_old" class="form-control" placeholder="Enter current password" autocomplete="current-password" style="padding-right:42px"/>
+          <button type="button" onclick="togglePw('cp_old',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--gray);cursor:pointer;font-size:16px;padding:6px" title="Show password"><i class="fas fa-eye"></i></button>
+        </div>
       </div>
       <div class="form-group"><label>New Password <span style="font-size:11px;color:var(--gray)">(min 6 chars)</span></label>
-        <input type="password" id="cp_new" class="form-control" placeholder="Enter new password" autocomplete="new-password"/>
+        <div style="position:relative">
+          <input type="password" id="cp_new" class="form-control" placeholder="Enter new password" autocomplete="new-password" style="padding-right:42px"/>
+          <button type="button" onclick="togglePw('cp_new',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--gray);cursor:pointer;font-size:16px;padding:6px" title="Show password"><i class="fas fa-eye"></i></button>
+        </div>
       </div>
       <div class="form-group"><label>Confirm New Password</label>
-        <input type="password" id="cp_new2" class="form-control" placeholder="Re-enter new password" autocomplete="new-password"/>
+        <div style="position:relative">
+          <input type="password" id="cp_new2" class="form-control" placeholder="Re-enter new password" autocomplete="new-password" style="padding-right:42px"/>
+          <button type="button" onclick="togglePw('cp_new2',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--gray);cursor:pointer;font-size:16px;padding:6px" title="Show password"><i class="fas fa-eye"></i></button>
+        </div>
       </div>
+      <script src="js/toggle-pw.js"></script>
       <div id="cp_msg" style="font-size:12px;text-align:center;min-height:16px"></div>
       <button class="btn btn-primary" id="cp_btn" onclick="submitChangePassword()"><i class="fas fa-check"></i> Update Password</button>
     </div>
@@ -316,7 +326,7 @@ body { background: linear-gradient(135deg, #0d0d2b, #1a1a4e); }
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { getFirestore, doc, getDoc, collection, getDocs, addDoc, query, where, serverTimestamp, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, collection, getDocs, addDoc, query, where, serverTimestamp, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
 const firebaseConfig = {
@@ -833,20 +843,42 @@ window.loadPrimeNotifications = async function() {
       document.getElementById('primeNotifList').innerHTML = '<div style="text-align:center;color:var(--gray);padding:30px"><i class="fas fa-bell-slash" style="font-size:32px;margin-bottom:12px;display:block"></i>No notifications yet</div>';
       return;
     }
-    document.getElementById('primeNotifList').innerHTML = notifs.map(n => `
+    document.getElementById('primeNotifList').innerHTML = notifs.map(n => {
+      const isEnableChat = n.type === 'enableChatBubble';
+      const iconColor = n.type==='success'?'#22c55e':n.type==='danger'?'#ef4444':isEnableChat?'#06b6d4':'#a78bfa';
+      const iconBg = n.type==='success'?'34,197,94':n.type==='danger'?'239,68,68':isEnableChat?'6,182,212':'167,139,250';
+      const iconCls = n.type==='success'?'check-circle':n.type==='danger'?'times-circle':isEnableChat?'comments':'info-circle';
+      return `
       <div style="display:flex;gap:12px;align-items:flex-start;padding:14px;border-bottom:1px solid rgba(255,255,255,0.06);${!n.read?'background:rgba(167,139,250,0.04)':''}">
-        <div style="width:36px;height:36px;border-radius:50%;background:rgba(${n.type==='success'?'34,197,94':n.type==='danger'?'239,68,68':'167,139,250'},0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-          <i class="fas fa-${n.type==='success'?'check-circle':n.type==='danger'?'times-circle':'info-circle'}" style="color:${n.type==='success'?'#22c55e':n.type==='danger'?'#ef4444':'#a78bfa'}"></i>
+        <div style="width:36px;height:36px;border-radius:50%;background:rgba(${iconBg},0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <i class="fas fa-${iconCls}" style="color:${iconColor}"></i>
         </div>
         <div style="flex:1">
-          <div style="font-size:13px;color:${!n.read?'#fff':'rgba(255,255,255,0.7)'};">${n.message}</div>
+          ${n.title?`<div style="font-size:13px;font-weight:700;color:${!n.read?'#fff':'rgba(255,255,255,0.85)'};margin-bottom:4px">${n.title}</div>`:''}
+          <div style="font-size:13px;color:${!n.read?'#fff':'rgba(255,255,255,0.7)'};">${n.message||''}</div>
           <div style="font-size:11px;color:var(--gray);margin-top:4px">${n.createdAt?.toDate?.()?.toLocaleString()||'Just now'}</div>
+          ${isEnableChat ? `<button onclick="enableChatBubble('${n.id}')" style="margin-top:10px;background:linear-gradient(135deg,#06b6d4,#0891b2);color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer"><i class="fas fa-comments"></i> Enable Chat</button>` : ''}
         </div>
         ${!n.read?`<span style="width:8px;height:8px;border-radius:50%;background:#a78bfa;flex-shrink:0;margin-top:6px;display:block"></span>`:''}
-      </div>`).join('');
-    await Promise.all(snap.docs.filter(d => !d.data().read).map(d => updateDoc(doc(db, 'notifications', d.id), { read: true })));
-    badge.style.display = 'none';
+      </div>`;
+    }).join('');
+    await Promise.all(snap.docs.filter(d => !d.data().read && d.data().type !== 'enableChatBubble').map(d => updateDoc(doc(db, 'notifications', d.id), { read: true })));
+    const remainingUnread = snap.docs.filter(d => d.data().type === 'enableChatBubble' && !d.data().read).length;
+    if (remainingUnread > 0) { badge.textContent = remainingUnread; badge.style.display = 'flex'; }
+    else badge.style.display = 'none';
   } catch(e) {}
+};
+
+window.enableChatBubble = async function(notifId) {
+  if (!currentUser) return;
+  try {
+    await setDoc(doc(db, 'users', currentUser.uid), { chatBubbleEnabled: true }, { merge: true });
+    if (notifId) { try { await updateDoc(doc(db, 'notifications', notifId), { read: true, enabled: true }); } catch(_){} }
+    if (typeof showToast === 'function') showToast('✓ Group chat enabled! The floating bubble will appear shortly.');
+    document.getElementById('primeNotifModal')?.classList.remove('active');
+  } catch(e) {
+    alert('Could not enable chat: ' + (e.message || 'unknown error'));
+  }
 };
 
 async function checkPrimeNotifBadge() {

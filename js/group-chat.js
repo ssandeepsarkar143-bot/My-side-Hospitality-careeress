@@ -38,7 +38,32 @@ const GroupChat = {
     if (!user) return;
     if (this.currentUser && this.currentUser.uid === user.uid) return; // already initialised
     this.currentUser = user;
-    this.loadUserMeta();
+    // Load user data first, then decide whether to mount the floating bubble.
+    // Owner always sees bubble. Everyone else (regular users + promoted admins)
+    // must explicitly enable it via the "You've been added to a Group Chat" notification.
+    this.loadUserMeta().then(() => {
+      if (this._shouldShowBubble()) {
+        this._mountUI();
+      } else {
+        // Watch for the enable flag so the bubble appears live (no reload needed)
+        // the moment the user clicks "Enable Chat" in their notification panel.
+        this._watchEnableFlag();
+      }
+    }).catch(_ => {
+      // On any error, default to showing bubble for owner only
+      if (this.isOwner()) this._mountUI();
+    });
+  },
+
+  _shouldShowBubble() {
+    if (this.isOwner()) return true;
+    const u = this.currentUserData || {};
+    return u.chatBubbleEnabled === true;
+  },
+
+  _mountUI() {
+    if (this._uiMounted) return;
+    this._uiMounted = true;
     this.injectStyles();
     this.injectPanel();
     this.subscribeMyGroups();
@@ -46,6 +71,20 @@ const GroupChat = {
     this.requestNotifPermission();
     // restore last-seen from localStorage
     try { this.lastSeenByGroup = JSON.parse(localStorage.getItem('hc_gc_lastSeen') || '{}'); } catch(_){}
+  },
+
+  _watchEnableFlag() {
+    if (this._enableUnsub || !this.currentUser) return;
+    try {
+      this._enableUnsub = onSnapshot(doc(db, 'users', this.currentUser.uid), s => {
+        if (s.exists() && s.data().chatBubbleEnabled === true) {
+          try { this._enableUnsub(); } catch(_){}
+          this._enableUnsub = null;
+          this.currentUserData = s.data();
+          this._mountUI();
+        }
+      });
+    } catch(_){}
   },
 
   async loadUserMeta() {
@@ -919,7 +958,13 @@ const GroupChat = {
       // ensure owner stays
       const g = this.groups.find(x => x.id === groupId);
       if (g && !newMembers.includes(g.ownerUid)) newMembers.push(g.ownerUid);
+      const oldMembers = g?.memberUids || [];
+      const addedUids = newMembers.filter(uid => !oldMembers.includes(uid) && uid !== this.currentUser?.uid);
       await updateDoc(doc(db, 'connectGroups', groupId), { memberUids: newMembers });
+      // Notify newly-added members so they can enable the chat bubble
+      if (addedUids.length) {
+        try { await this._notifyNewMembers(addedUids, g?.name || 'Group Chat', groupId); } catch(_){}
+      }
       await addDoc(collection(db, 'connectGroups', groupId, 'messages'), {
         system: true,
         text: `Member list updated — group now has ${newMembers.length} members.`,
@@ -1438,7 +1483,31 @@ const GroupChat = {
       text: `Group "${name}" created by ${myData.displayName || u.email}. ${allMembers.length} members.`,
       at: serverTimestamp()
     });
+    // Send "enable chat bubble" notification to each new non-creator member
+    // who hasn't already enabled their chat bubble.
+    try { await this._notifyNewMembers(memberUids.filter(uid => uid !== u.uid), name, docRef.id); } catch(_){}
     return docRef.id;
+  },
+
+  // Send an "enableChatBubble" notification to each member that doesn't already
+  // have the floating chat bubble enabled. Triggered by createGroup + saveMemberChanges.
+  async _notifyNewMembers(uids, groupName, groupId) {
+    if (!uids?.length) return;
+    for (const uid of uids) {
+      try {
+        const s = await getDoc(doc(db, 'users', uid));
+        if (s.exists() && s.data().chatBubbleEnabled === true) continue; // already enabled
+        await addDoc(collection(db, 'notifications'), {
+          userId: uid,
+          type: 'enableChatBubble',
+          title: '💬 You have been added to a Group Chat',
+          message: `You have been added to the group "${groupName}". Tap the "Enable Chat" button below to start receiving messages and unlock the floating chat bubble.`,
+          groupId, groupName,
+          read: false,
+          createdAt: serverTimestamp()
+        });
+      } catch(_){}
+    }
   },
 
   async dismissGroup(groupId) {
