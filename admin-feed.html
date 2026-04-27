@@ -931,15 +931,17 @@ function ensureAdminWorkingNav() {
     sec.className = 'page-section';
     sec.innerHTML = `
       <div class="card">
-        <div class="card-title"><span><i class="fas fa-user-shield"></i> Admin Working Dashboard</span>
+        <div class="card-title" style="color:#e94560;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+          <span><i class="fas fa-user-shield" style="-webkit-text-fill-color:#e94560"></i> Admin Working Dashboard</span>
           <span style="font-size:12px;color:var(--gray);font-weight:normal">Sub-admins active in your allocated locations</span>
         </div>
-        <div style="overflow-x:auto">
-          <table class="data-table" style="width:100%">
-            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Locations</th><th>Promoted At</th></tr></thead>
-            <tbody id="adminWorkingScopedBody"><tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">Loading…</td></tr></tbody>
+        <div class="table-wrapper">
+          <table>
+            <thead><tr><th>Admin Name</th><th>Email</th><th>Role</th><th>Jobs</th><th>Contacts</th><th>Resumes</th><th>Memberships</th><th>Hired</th><th>Actions</th></tr></thead>
+            <tbody id="adminWorkingScopedBody"><tr><td colspan="9" style="text-align:center;color:var(--gray);padding:20px">Loading…</td></tr></tbody>
           </table>
         </div>
+        <p style="font-size:11px;color:var(--gray);margin-top:8px"><i class="fas fa-info-circle"></i> Scope: only sub-admins inside your allocated state(s). You can Edit, Remove, or download a Report. Operations Manager / Branch Head rows are read-only.</p>
       </div>`;
     main.appendChild(sec);
   }
@@ -954,42 +956,194 @@ function ensureAdminWorkingNav() {
   }
 }
 
+// Cache so action buttons (Edit / Remove / Report) can look up the admin
+// without re-querying.
+let __awScopedCache = [];
+
 async function loadAdminWorkingScoped() {
   const body = document.getElementById('adminWorkingScopedBody');
   if (!body) return;
-  body.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">Loading…</td></tr>';
+  body.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--gray);padding:20px"><i class="fas fa-spinner fa-spin"></i> Loading…</td></tr>';
   try {
     const allowed = (adminData?.locations || []).map(s => (s||'').toLowerCase());
     const snap = await getDocs(collection(db, 'users'));
-    const rows = [];
+    const targets = [];
     snap.forEach(d => {
       const u = d.data();
       if (u.role !== 'Admin' || d.id === currentUser.uid) return;
       const locs = Array.isArray(u.locations) ? u.locations : [];
-      // If this admin has no allocations, treat as "All India" → show only when current user also has all-India.
       const hasOverlap = allowed.length === 0
         ? locs.length === 0
         : locs.some(l => allowed.includes((l||'').toLowerCase()));
       if (!hasOverlap) return;
-      rows.push({ uid: d.id, ...u });
+      targets.push({ uid: d.id, ...u });
     });
-    if (!rows.length) {
-      body.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">No sub-admins found in your allocated locations.</td></tr>';
+    if (!targets.length) {
+      __awScopedCache = [];
+      body.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--gray);padding:20px">No sub-admins found in your allocated locations.</td></tr>';
       return;
     }
-    body.innerHTML = rows.map(r => `
-      <tr>
-        <td>${r.displayName || '—'}</td>
-        <td>${r.email || '—'}</td>
-        <td><span style="background:rgba(168,85,247,0.15);color:#c084fc;padding:3px 8px;border-radius:10px;font-size:11px">${r.adminRole || 'Admin'}</span></td>
-        <td>${(r.locations||[]).slice(0,3).join(', ') || 'All India'}${(r.locations||[]).length>3?` +${r.locations.length-3}`:''}</td>
-        <td style="font-size:11px;color:var(--gray)">${r.promotedAt?.toDate ? r.promotedAt.toDate().toLocaleDateString() : '—'}</td>
-      </tr>`).join('');
+    // Pull each admin's work counts in parallel — same shape as owner-feed's loadAdminWorking
+    const enriched = await Promise.all(targets.map(async (t) => {
+      try {
+        const [jobsApproved, contactApproved, resumeApproved, membershipApproved, hiredCandidates] = await Promise.all([
+          getDocs(query(collection(db, 'jobPosts'),    where('approvedBy','==',t.uid))),
+          getDocs(query(collection(db, 'requests'),    where('approvedBy','==',t.uid), where('type','==','contact'))),
+          getDocs(query(collection(db, 'requests'),    where('approvedBy','==',t.uid), where('type','==','resumeDownload'))),
+          getDocs(query(collection(db, 'requests'),    where('approvedBy','==',t.uid), where('type','==','membership'))),
+          getDocs(query(collection(db, 'applications'), where('hiredBy','==',t.uid)))
+        ]);
+        return {
+          ...t,
+          jobs: jobsApproved.size, contacts: contactApproved.size,
+          resumes: resumeApproved.size, memberships: membershipApproved.size,
+          hired: hiredCandidates.size
+        };
+      } catch(_) {
+        return { ...t, jobs:0, contacts:0, resumes:0, memberships:0, hired:0 };
+      }
+    }));
+    __awScopedCache = enriched;
+    const safe = (s) => String(s||'').replace(/'/g,'&#39;').replace(/[<>]/g, c => c==='<'?'&lt;':'&gt;');
+    body.innerHTML = enriched.map(r => {
+      // Operations Manager / Branch Head are higher rank → read-only for everyone except the Owner.
+      const isOpsOrBranch = r.adminRole === 'Operations Manager' || r.adminRole === 'Branch Head';
+      const nameSafe = safe(r.displayName || r.email || '');
+      const editBtn   = isOpsOrBranch
+        ? '<span style="color:var(--gray);font-size:11px;margin:2px;display:inline-block">Locked (higher role)</span>'
+        : `<button class="btn btn-sm" style="background:#f59e0b;color:#fff;margin:2px" onclick="openAdminEditRole('${r.uid}')"><i class="fas fa-pen"></i> Edit</button>`;
+      const removeBtn = isOpsOrBranch
+        ? ''
+        : `<button class="btn btn-sm btn-danger" style="margin:2px" onclick="adminRemovePromoted('${r.uid}')"><i class="fas fa-user-minus"></i> Remove</button>`;
+      const reportBtn = `<button class="btn btn-sm" style="background:#a855f7;color:#fff;margin:2px" onclick="adminGenerateReport('${r.uid}','${nameSafe}')"><i class="fas fa-file-pdf"></i> Report</button>`;
+      return `<tr>
+        <td><strong>${nameSafe}</strong></td>
+        <td style="font-size:11px">${safe(r.email||'')}</td>
+        <td><span style="background:rgba(168,85,247,0.15);color:#c084fc;padding:3px 8px;border-radius:10px;font-size:11px">${safe(r.adminRole || 'Admin')}</span></td>
+        <td style="text-align:center">${r.jobs}</td>
+        <td style="text-align:center">${r.contacts}</td>
+        <td style="text-align:center">${r.resumes}</td>
+        <td style="text-align:center">${r.memberships}</td>
+        <td style="text-align:center">${r.hired}</td>
+        <td style="white-space:nowrap">${editBtn}${reportBtn}${removeBtn}</td>
+      </tr>`;
+    }).join('');
   } catch(e) {
-    body.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#ef4444;padding:20px">Failed: ${e.message}</td></tr>`;
+    body.innerHTML = `<tr><td colspan="9" style="text-align:center;color:#ef4444;padding:20px">Failed: ${e.message}</td></tr>`;
   }
 }
 window.loadAdminWorkingScoped = loadAdminWorkingScoped;
+
+// Remove (demote) a sub-admin from this admin's allocated states.
+// Same outcome as owner's demoteAdmin: resets role/tag/auths/locations and clears MPIN.
+window.adminRemovePromoted = async function(uid) {
+  const target = (__awScopedCache || []).find(x => x.uid === uid);
+  if (!target) { showToast('Admin not found in your scope.', 'error'); return; }
+  if (target.adminRole === 'Operations Manager' || target.adminRole === 'Branch Head') {
+    showToast('You cannot remove Operations Manager / Branch Head.', 'error'); return;
+  }
+  if (!isAdminInMyStates(target)) { showToast('Out of your allocated states.', 'error'); return; }
+  const name = target.displayName || target.email || 'this admin';
+  if (!confirm(`Remove ${name} (${target.adminRole||'Admin'}) and reset to a regular User?\n\nTheir MPIN will be cleared. Their historical data is preserved.`)) return;
+  try {
+    await updateDoc(doc(db, 'users', uid), {
+      role: 'User', tag: 'User', adminRole: '', authorities: {}, locations: [],
+      updatedAt: serverTimestamp()
+    });
+    try { await deleteDoc(doc(db, 'mpins', uid)); } catch(_){}
+    // Trigger force-reauth on the demoted user so any open session is logged out cleanly
+    try {
+      await updateDoc(doc(db, 'users', uid), {
+        forceReauth: {
+          at: serverTimestamp(),
+          byUid: currentUser.uid,
+          byName: 'Management',
+          prev: { role: 'Admin', adminRole: target.adminRole || 'Admin' },
+          next: { role: 'User', adminRole: '' },
+          changes: { roleChanged: true, revokedAuths: Object.keys(target.authorities || {}), removedLocations: target.locations || [] }
+        }
+      });
+    } catch(_){}
+    await logAdminAudit('Admin Removed (Demoted)', `${name} (${target.adminRole||'Admin'}) → User · MPIN cleared`,
+      { targetUid: uid, targetName: name, states: target.locations || [] });
+    showToast(`✓ ${name} demoted to User. MPIN cleared.`);
+    loadAdminWorkingScoped();
+    if (typeof loadManagePromoted === 'function') loadManagePromoted();
+  } catch(e) {
+    showToast('Remove failed: ' + (e.message || e), 'error');
+  }
+};
+
+// One-click PDF report for a sub-admin (downloaded locally; no Storage upload needed).
+// Mirrors owner's generateAdminReport but skips the chatReports/Storage write so it
+// works under the more restrictive admin permissions.
+window.adminGenerateReport = async function(adminUid, adminName) {
+  const t = window.showToast || alert;
+  const target = (__awScopedCache || []).find(x => x.uid === adminUid);
+  if (!target) { t('Admin not found in your scope.', 'error'); return; }
+  if (!isAdminInMyStates(target)) { t('Out of your allocated states.', 'error'); return; }
+  t(`Generating report for ${adminName}…`);
+  try {
+    const [userSnap, jobsApproved, contactApproved, resumeApproved, membershipApproved, hired,
+           mpinSnap, presenceSnap] = await Promise.all([
+      getDoc(doc(db, 'users', adminUid)),
+      getDocs(query(collection(db, 'jobPosts'), where('approvedBy','==',adminUid))),
+      getDocs(query(collection(db, 'requests'), where('approvedBy','==',adminUid), where('type','==','contact'))),
+      getDocs(query(collection(db, 'requests'), where('approvedBy','==',adminUid), where('type','==','resumeDownload'))),
+      getDocs(query(collection(db, 'requests'), where('approvedBy','==',adminUid), where('type','==','membership'))),
+      getDocs(query(collection(db, 'applications'), where('hiredBy','==',adminUid))),
+      getDoc(doc(db, 'mpins', adminUid)).catch(() => null),
+      getDoc(doc(db, 'presence', adminUid)).catch(() => null)
+    ]);
+    const u = userSnap.exists() ? userSnap.data() : {};
+
+    // Lazy-load jsPDF
+    if (!window.jspdf) {
+      await new Promise((res, rej) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+        s.onload = res; s.onerror = rej; document.head.appendChild(s);
+      });
+    }
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF();
+    let y = 18;
+    pdf.setFontSize(18); pdf.text('Hospitality Careers — Sub-Admin Report', 14, y); y += 8;
+    pdf.setFontSize(10); pdf.text(`Generated: ${new Date().toLocaleString()}`, 14, y); y += 5;
+    pdf.text(`Generated by: ${adminData?.adminRole || 'Admin'} · ${currentUser.email || ''}`, 14, y); y += 10;
+
+    pdf.setFontSize(13); pdf.text('Profile', 14, y); y += 6;
+    pdf.setFontSize(10);
+    pdf.text(`Name: ${u.displayName || adminName}`, 14, y); y+=5;
+    pdf.text(`Email: ${u.email || '—'}`, 14, y); y+=5;
+    pdf.text(`Role: ${u.adminRole || u.role || 'Admin'}`, 14, y); y+=5;
+    pdf.text(`Allocated state(s): ${(u.locations || []).join(', ') || 'All India'}`, 14, y); y+=5;
+    pdf.text(`MPIN status: ${mpinSnap?.exists?.() && mpinSnap.data().mpin ? 'Set' : 'NOT SET'}`, 14, y); y+=5;
+    const lastSeen = presenceSnap?.exists?.() ? presenceSnap.data().lastSeen?.toDate?.()?.toLocaleString() : '—';
+    pdf.text(`Last seen: ${lastSeen}`, 14, y); y+=5;
+    pdf.text(`Promoted at: ${u.promotedAt?.toDate?.()?.toLocaleString() || '—'}`, 14, y); y+=8;
+
+    pdf.setFontSize(13); pdf.text('Operational Activity', 14, y); y += 6;
+    pdf.setFontSize(10);
+    pdf.text(`Job posts approved: ${jobsApproved.size}`, 14, y); y+=5;
+    pdf.text(`Contact requests approved: ${contactApproved.size}`, 14, y); y+=5;
+    pdf.text(`Resume requests approved: ${resumeApproved.size}`, 14, y); y+=5;
+    pdf.text(`Memberships approved: ${membershipApproved.size}`, 14, y); y+=5;
+    pdf.text(`Candidates hired: ${hired.size}`, 14, y); y+=8;
+
+    pdf.setFontSize(11); pdf.setTextColor(120);
+    pdf.text('Scope: data scoped to this sub-admin\'s own activity.', 14, y); y+=5;
+    pdf.text('Confidential — for internal management use only.', 14, y);
+
+    pdf.save(`admin-report-${(u.displayName||adminName||adminUid).replace(/[^a-z0-9]/gi,'_')}.pdf`);
+    await logAdminAudit('Sub-Admin Report Generated', `${u.displayName||adminName} · ${u.adminRole||'Admin'}`,
+      { targetUid: adminUid, targetName: u.displayName||adminName, states: u.locations || [] });
+    t(`✓ Report ready for ${adminName}`);
+  } catch(e) {
+    console.error('[adminGenerateReport]', e);
+    t('Report failed: ' + (e?.message || e), 'error');
+  }
+};
 
 window.showSection = function(name) {
   document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
@@ -1622,7 +1776,10 @@ async function loadManagePromoted() {
   tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px"><i class="fas fa-spinner fa-spin"></i></td></tr>';
   try {
     const snap = await getDocs(query(collection(db, 'users'), where('role','==','Admin')));
-    __mpAll = snap.docs.map(d => ({ id:d.id, ...d.data() })).filter(a => isAdminInMyStates(a));
+    // Exclude self — an admin should never see / try to manage their own row here.
+    __mpAll = snap.docs
+      .map(d => ({ id:d.id, ...d.data() }))
+      .filter(a => a.id !== currentUser.uid && isAdminInMyStates(a));
     const states = adminAllocatedStates();
     const filterWrap = document.getElementById('mp_stateFilterWrap');
     if (states.length > 1) {

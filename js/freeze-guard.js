@@ -40,7 +40,7 @@ function showFrozenOverlay(data) {
         <div style="margin:4px 0"><strong>Time left:</strong> <span id="frzGuardLeft" style="color:#0ea5e9;font-weight:700">—</span></div>
       </div>
       <p style="font-size:12px;color:rgba(255,255,255,0.6);margin:14px 0 0">
-        For urgent help, contact the Owner. Logout is disabled while frozen.
+        For urgent help, please reach out to Management through your usual support channel. Sign-out is disabled while the hold is active.
       </p>
     </div>`;
   document.body.appendChild(overlay);
