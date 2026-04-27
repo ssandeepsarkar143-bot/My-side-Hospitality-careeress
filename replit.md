@@ -87,6 +87,14 @@ A full-featured hospitality job portal with role-based authentication (Owner, Ad
 ## Logo
 Place your logo file as `logo.png` in the project root (also stored in `public/logo.png`).
 
+## Recent Fixes (2026-04-27, Latest)
+- **Change Password (all 4 feeds)**: Added a navbar-mounted Change Password button + modal to user-feed, prime-feed, admin-feed, owner-feed. Uses Firebase EmailAuthProvider re-authentication; writes a security notification + audit log on success. Min 6-char enforcement, friendly errors for `wrong-password`, `weak-password`, `requires-recent-login`.
+- **Show/Hide password eye toggle**: All Change Password modal fields (current/new/confirm) on every feed now have the same eye-icon toggle as the login page. Implemented via a shared `js/toggle-pw.js` helper.
+- **Default-MPIN warning auto-clear**: Saving a new (non-0000) MPIN now writes `{isDefault:false, mustChange:false}` with merge:true and removes the dashboard banner instantly. The lock-screen banner also disappears on subsequent logins. Saving `0000` as a new MPIN is rejected.
+- **Group Chat "Read by" privacy**: Owner row now shows only "👑 CEO" (no email, no name leak). Other members render with display name + role fallback only.
+- **profile.html signup fix**: `Submit Profile` button silently failed because hidden state-select fields had `required`. Removed `required` (state is optional, validated in JS). Added `currentUser` null guard.
+- **Group chat bubble gating**: Floating chat bubble (`#gc-fab`) no longer auto-mounts for non-owners. Each user must explicitly enable it via a notification (`type: enableChatBubble`) that fires automatically when they are added to any group (in `createGroup` and `saveMemberChanges`). The notification's "Enable Chat" button writes `chatBubbleEnabled:true` to the user doc; `js/group-chat.js` watches this flag via `onSnapshot` and live-mounts the UI without requiring a page reload.
+
 ## Recent Fixes
 - Logo fixed: `jogo.png` reference in `profile.html` corrected to `/logo.png`; `logo.png` copied to root
 - CV upload made optional in job apply form – users can submit without uploading a resume
