@@ -5092,11 +5092,28 @@ window.saveEditPromotedUser = async function() {
   const msg = document.getElementById('editPuMsg');
   msg.className='alert alert-info show'; msg.textContent='⏳ Saving…';
   try {
+    // ----- Snapshot previous values to compute a clean diff -----
+    const prevSnap = await getDoc(doc(db,'users',uid));
+    const prev = prevSnap.exists() ? prevSnap.data() : {};
+    const prevRole = prev.adminRole || prev.role || '';
+    let prevAuthsArr = [];
+    if (Array.isArray(prev.authorities)) prevAuthsArr = prev.authorities.slice();
+    else if (prev.authorities && typeof prev.authorities === 'object') prevAuthsArr = Object.keys(prev.authorities).filter(k => prev.authorities[k]);
+    const prevLocs = Array.isArray(prev.locations) ? prev.locations.slice() : [];
+    const AUTH_LABEL = Object.fromEntries(ALL_AUTHS);
+    const grantedAuths = checks.filter(k => !prevAuthsArr.includes(k));
+    const revokedAuths = prevAuthsArr.filter(k => !checks.includes(k));
+    const addedLocations = locations.filter(s => !prevLocs.includes(s));
+    const removedLocations = prevLocs.filter(s => !locations.includes(s));
+    const roleChanged = prevRole && prevRole !== newRole;
+
     // Build authorities as OBJECT {key: bool} so admin-feed setupAuthority() can read auths.dashboard etc.
     // (Saving as a string-array breaks adminData.authorities[k] checks → blank dashboard.)
     const authoritiesObj = {};
     ALL_AUTHS.forEach(([k]) => { authoritiesObj[k] = checks.includes(k); });
-    await updateDoc(doc(db,'users',uid), {
+
+    const editorName = (currentUser?.displayName || currentUser?.email || 'Owner');
+    const updatePayload = {
       role: 'Admin',
       tag: 'Admin',
       adminRole: newRole,
@@ -5104,11 +5121,56 @@ window.saveEditPromotedUser = async function() {
       locations: locations,
       roleUpdatedAt: serverTimestamp(),
       roleUpdatedBy: currentUser.uid
-    });
+    };
+    // Only require re-login when something the admin can SEE actually changed
+    const anythingChanged = roleChanged || grantedAuths.length || revokedAuths.length || addedLocations.length || removedLocations.length;
+    if (anythingChanged) {
+      updatePayload.forceReauth = {
+        at: serverTimestamp(),
+        by: currentUser.uid,
+        byName: editorName,
+        prev: { role: prevRole, authorities: prevAuthsArr, locations: prevLocs },
+        next: { role: newRole, authorities: checks, locations: locations },
+        changes: {
+          roleChanged: !!roleChanged,
+          grantedAuths, revokedAuths,
+          addedLocations, removedLocations
+        }
+      };
+    }
+    await updateDoc(doc(db,'users',uid), updatePayload);
+
+    // In-app notification so the admin sees a permanent record in their bell tray
+    if (anythingChanged) {
+      try {
+        const parts = [];
+        if (roleChanged) parts.push(`role changed from "${prevRole}" to "${newRole}"`);
+        if (grantedAuths.length) parts.push(`${grantedAuths.length} new permission${grantedAuths.length===1?'':'s'} granted`);
+        if (revokedAuths.length) parts.push(`${revokedAuths.length} permission${revokedAuths.length===1?'':'s'} removed`);
+        if (addedLocations.length) parts.push(`${addedLocations.length} new location${addedLocations.length===1?'':'s'} added`);
+        if (removedLocations.length) parts.push(`${removedLocations.length} location${removedLocations.length===1?'':'s'} removed`);
+        await addDoc(collection(db,'notifications'), {
+          userId: uid,
+          type: 'roleUpdated',
+          title: '🔐 Your access has been updated',
+          message: `Your Admin role/permissions were updated by ${editorName}: ${parts.join(', ')}. Please re-login for the new access to take effect.`,
+          read: false,
+          createdAt: serverTimestamp(),
+          meta: {
+            roleChanged: !!roleChanged,
+            prevRole, newRole,
+            grantedAuths: grantedAuths.map(k => AUTH_LABEL[k] || k),
+            revokedAuths: revokedAuths.map(k => AUTH_LABEL[k] || k),
+            addedLocations, removedLocations
+          }
+        });
+      } catch(_){}
+    }
     const locTxt = locations.length ? `${locations.length} state(s)` : 'All India';
-    msg.className='alert alert-success show'; msg.textContent=`✅ Saved. Role: ${newRole} • ${checks.length} authorit${checks.length===1?'y':'ies'} • Locations: ${locTxt}.`;
-    showToast('Promoted user updated','success');
-    await logActivity({ status:'success', category:'Promotion', action:'Edit promoted user', details:`uid=${uid} newRole=${newRole} auths=${checks.length} locs=${locations.length}` });
+    const reauthTxt = anythingChanged ? ' • Admin will be asked to re-login.' : '';
+    msg.className='alert alert-success show'; msg.textContent=`✅ Saved. Role: ${newRole} • ${checks.length} authorit${checks.length===1?'y':'ies'} • Locations: ${locTxt}.${reauthTxt}`;
+    showToast(anythingChanged ? 'Saved — admin will be re-logged out' : 'Promoted user updated','success');
+    await logActivity({ status:'success', category:'Promotion', action:'Edit promoted user', details:`uid=${uid} newRole=${newRole} auths=${checks.length} locs=${locations.length} reauth=${anythingChanged?'yes':'no'}` });
     setTimeout(() => { closeModal('editPromotedUserModal'); loadAdminWorking(); }, 900);
   } catch(e) {
     msg.className='alert alert-danger show'; msg.textContent='Failed: '+e.message;
