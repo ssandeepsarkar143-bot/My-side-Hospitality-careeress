@@ -84,7 +84,10 @@ function showOverlay(fr) {
   if (_shown) return;
   _shown = true;
   const ch = fr.changes || {};
-  const editor = fr.byName || 'the Owner';
+  // Privacy: never expose the editor's personal name to the admin — show a
+  // generic, professional label instead. The actual editor (uid + name) is
+  // already saved in audit logs and the roleUpdated notification's metadata.
+  const editor = 'Management';
   const when = fr.at?.toDate?.()?.toLocaleString?.() || 'just now';
   const grantedTxt = (ch.grantedAuths || []).map(k => AUTH_LABELS[k] || k);
   const revokedTxt = (ch.revokedAuths || []).map(k => AUTH_LABELS[k] || k);
