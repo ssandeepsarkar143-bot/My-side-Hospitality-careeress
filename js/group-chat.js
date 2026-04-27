@@ -40,13 +40,16 @@ const GroupChat = {
     this.currentUser = user;
     // Load user data first, then decide whether to mount the floating bubble.
     // Owner always sees bubble. Everyone else (regular users + promoted admins)
-    // must explicitly enable it via the "You've been added to a Group Chat" notification.
-    this.loadUserMeta().then(() => {
-      if (this._shouldShowBubble()) {
+    // must (a) be added to at least one group by the owner AND (b) explicitly enable
+    // it via the "You've been added to a Group Chat" notification.
+    this.loadUserMeta().then(async () => {
+      const show = await this._shouldShowBubble();
+      if (show) {
         this._mountUI();
       } else {
         // Watch for the enable flag so the bubble appears live (no reload needed)
         // the moment the user clicks "Enable Chat" in their notification panel.
+        try { console.info('[GroupChat] Bubble hidden — owner must add you to a group and you must click Enable Chat in your notifications.'); } catch(_){}
         this._watchEnableFlag();
       }
     }).catch(_ => {
@@ -55,10 +58,25 @@ const GroupChat = {
     });
   },
 
-  _shouldShowBubble() {
+  // Bubble shows only when ALL three conditions are true (defense in depth):
+  //   1. user is the platform owner, OR
+  //   2. user has chatBubbleEnabled === true (clicked Enable Chat), AND
+  //   3. user is a member of at least one connectGroups doc.
+  // This guarantees a normal/prime user with no group never sees the bubble,
+  // and a stale chatBubbleEnabled flag alone is not enough.
+  async _shouldShowBubble() {
     if (this.isOwner()) return true;
     const u = this.currentUserData || {};
-    return u.chatBubbleEnabled === true;
+    if (u.chatBubbleEnabled !== true) return false;
+    try {
+      const q = query(
+        collection(db, 'connectGroups'),
+        where('memberUids', 'array-contains', this.currentUser.uid),
+        limit(1)
+      );
+      const snap = await getDocs(q);
+      return !snap.empty;
+    } catch(_) { return false; }
   },
 
   _mountUI() {
@@ -76,12 +94,16 @@ const GroupChat = {
   _watchEnableFlag() {
     if (this._enableUnsub || !this.currentUser) return;
     try {
-      this._enableUnsub = onSnapshot(doc(db, 'users', this.currentUser.uid), s => {
+      this._enableUnsub = onSnapshot(doc(db, 'users', this.currentUser.uid), async s => {
         if (s.exists() && s.data().chatBubbleEnabled === true) {
-          try { this._enableUnsub(); } catch(_){}
-          this._enableUnsub = null;
           this.currentUserData = s.data();
-          this._mountUI();
+          // Re-verify membership before mounting (defense in depth)
+          const show = await this._shouldShowBubble();
+          if (show) {
+            try { this._enableUnsub(); } catch(_){}
+            this._enableUnsub = null;
+            this._mountUI();
+          }
         }
       });
     } catch(_){}

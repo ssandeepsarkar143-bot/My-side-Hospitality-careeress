@@ -1508,7 +1508,7 @@ function unlockDashboard() {
   document.getElementById('mainDashboard').style.display = 'block';
   loadRevenue();
   // Init group chat (Phase 4)
-  import('./js/group-chat.js').then(m => {
+  import('./js/group-chat.js?v=3').then(m => {
     m.default.init({ user: currentUser });
     window.__OWNER_GROUP_CHAT_READY__ = true;
   }).catch(e => console.warn('GroupChat init failed:', e));
@@ -3322,6 +3322,7 @@ async function sendNotification(userId, message, type='info', broadcast=false, t
 }
 
 // NOTIFICATIONS SECTION
+window._allNotifsCache = {}; // id -> {data, userInfo}
 async function loadNotifications() {
   try {
     const snap = await getDocs(query(collection(db, 'notifications')));
@@ -3330,8 +3331,10 @@ async function loadNotifications() {
     const rows = snap.docs.sort((a,b) => (b.data().createdAt?.toDate?.()?.getTime()||0) - (a.data().createdAt?.toDate?.()?.getTime()||0));
     tbody.innerHTML = rows.map(d => {
       const n = d.data();
-      return `<tr>
-        <td style="max-width:320px;font-size:12px">${n.message}</td>
+      window._allNotifsCache[d.id] = { data: n };
+      const safeMsg = (n.message||'').replace(/[<>]/g, c=>({ '<':'&lt;','>':'&gt;' }[c]));
+      return `<tr style="cursor:pointer" onclick="showNotifDetails('${d.id}')" title="Click to see who/when/why">
+        <td style="max-width:320px;font-size:12px">${safeMsg}</td>
         <td>${n.broadcast ? (n.targetRole ? n.targetRole.charAt(0).toUpperCase()+n.targetRole.slice(1) : 'All Users') : 'User Specific'}</td>
         <td><span class="badge badge-${n.type==='success'?'approved':n.type==='danger'?'rejected':'pending'}">${n.type}</span></td>
         <td style="font-size:11px">${n.createdAt?.toDate?.()?.toLocaleString()||'N/A'}</td>
@@ -3340,6 +3343,89 @@ async function loadNotifications() {
     }).join('');
   } catch(e) {}
 }
+
+// Click a notification row → show full detail modal: who it was sent to (target user
+// resolved by uid), who created it, type, message, timestamp, read status, broadcast info,
+// plus any related metadata (groupId/jobId/etc).
+window.showNotifDetails = async function(notifId) {
+  const cached = window._allNotifsCache[notifId];
+  if (!cached) { alert('Notification not found.'); return; }
+  const n = cached.data;
+  // Resolve target user (if user-specific)
+  let userBlock = '<i style="color:var(--gray)">Broadcast — sent to all matching users</i>';
+  if (!n.broadcast && n.userId && n.userId !== 'broadcast') {
+    if (cached.userInfo) {
+      userBlock = renderUserBlock(cached.userInfo, n.userId);
+    } else {
+      try {
+        const us = await getDoc(doc(db, 'users', n.userId));
+        const ud = us.exists() ? us.data() : null;
+        cached.userInfo = ud;
+        userBlock = ud ? renderUserBlock(ud, n.userId) : `<span style="color:var(--gray)">User not found (uid: <code>${n.userId}</code>)</span>`;
+      } catch(_) { userBlock = `<span style="color:var(--gray)">Could not load user (uid: <code>${n.userId}</code>)</span>`; }
+    }
+  } else if (n.broadcast) {
+    const tr = (n.targetRole||'').toLowerCase();
+    const audienceMap = { '': 'All Users (everyone)', 'all': 'All Users (everyone)', 'prime':'Prime members only', 'user':'Regular Users only', 'admin':'Admins only', 'jobseeker':'Job Seekers only', 'employer':'Employers only' };
+    userBlock = `<b style="color:#22c55e"><i class="fas fa-broadcast-tower"></i> Broadcast</b><br><span style="color:var(--gray);font-size:13px">Audience: ${audienceMap[tr] || (n.targetRole || 'All')}</span>`;
+  }
+  function renderUserBlock(u, uid) {
+    const init = ((u.displayName||u.email||'?')[0]||'?').toUpperCase();
+    const role = u.role || 'User';
+    const adminRole = u.adminRole ? ` · ${u.adminRole}` : '';
+    return `<div style="display:flex;align-items:center;gap:12px">
+      <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#d4af37,#b8941f);color:#0a0a14;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700">${init}</div>
+      <div style="flex:1;min-width:0">
+        <div style="color:#fff;font-weight:700">${u.displayName||'(no name)'}</div>
+        <div style="color:var(--gray);font-size:12px">${u.email||''} · ${role}${adminRole}</div>
+        <div style="color:#888;font-size:11px;margin-top:2px">UID: <code style="font-size:10px">${uid}</code></div>
+      </div>
+    </div>`;
+  }
+  const created = n.createdAt?.toDate?.();
+  const createdStr = created ? created.toLocaleString() + ` (${timeAgo(created)})` : 'Unknown';
+  function timeAgo(d) {
+    const s = Math.floor((Date.now() - d.getTime())/1000);
+    if (s < 60) return s+'s ago';
+    if (s < 3600) return Math.floor(s/60)+'m ago';
+    if (s < 86400) return Math.floor(s/3600)+'h ago';
+    return Math.floor(s/86400)+'d ago';
+  }
+  // Pull any extra metadata fields (groupId, groupName, jobId etc.)
+  const extras = Object.keys(n).filter(k => !['userId','message','type','read','broadcast','targetRole','createdAt','createdBy'].includes(k));
+  const extrasHtml = extras.length ? `<div style="margin-top:12px;padding:10px;background:#0f0f1a;border:1px solid rgba(255,255,255,0.08);border-radius:8px"><div style="font-size:11px;color:var(--gold);margin-bottom:6px"><i class="fas fa-info-circle"></i> Additional Data</div>${extras.map(k=>`<div style="font-size:12px;color:#ddd;margin-bottom:3px"><b style="color:#888">${k}:</b> <code style="font-size:11px;color:#d4af37">${typeof n[k]==='object'?JSON.stringify(n[k]):n[k]}</code></div>`).join('')}</div>` : '';
+  const safeMsg = (n.message||'').replace(/[<>]/g, c=>({ '<':'&lt;','>':'&gt;' }[c]));
+  document.querySelectorAll('.notif-detail-modal').forEach(x=>x.remove());
+  const modal = document.createElement('div');
+  modal.className = 'notif-detail-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px';
+  modal.innerHTML = `<div style="background:#13131f;border:1px solid rgba(212,175,55,0.35);border-radius:14px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;color:#fff">
+    <div style="padding:14px 18px;border-bottom:1px solid rgba(212,175,55,0.25);display:flex;justify-content:space-between;align-items:center">
+      <div style="font-weight:700;color:#d4af37"><i class="fas fa-bell"></i> Notification Details</div>
+      <button onclick="this.closest('.notif-detail-modal').remove()" style="background:transparent;border:none;color:#fff;font-size:22px;cursor:pointer;padding:0 6px">&times;</button>
+    </div>
+    <div style="padding:18px;display:grid;gap:14px">
+      <div><div style="font-size:11px;color:var(--gold);margin-bottom:6px"><i class="fas fa-user"></i> Sent To</div>${userBlock}</div>
+      <div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:12px">
+        <div style="font-size:11px;color:var(--gold);margin-bottom:6px"><i class="fas fa-comment"></i> Message</div>
+        <div style="background:#0f0f1a;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);color:#fff;font-size:13px;line-height:1.5">${safeMsg}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><div style="font-size:11px;color:var(--gold);margin-bottom:4px">Type</div><span class="badge badge-${n.type==='success'?'approved':n.type==='danger'?'rejected':'pending'}" style="font-size:11px">${n.type||'info'}</span></div>
+        <div><div style="font-size:11px;color:var(--gold);margin-bottom:4px">Read Status</div><span class="badge badge-${n.read?'approved':'pending'}" style="font-size:11px">${n.read?'Read by recipient':'Unread'}</span></div>
+        <div><div style="font-size:11px;color:var(--gold);margin-bottom:4px">When</div><div style="color:#fff;font-size:12px">${createdStr}</div></div>
+        <div><div style="font-size:11px;color:var(--gold);margin-bottom:4px">Created By</div><div style="color:#fff;font-size:12px">${n.createdBy||'system'}</div></div>
+      </div>
+      ${extrasHtml}
+      <div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:10px;display:flex;justify-content:space-between;align-items:center;font-size:10px;color:#666">
+        <span>Notification ID: <code style="font-size:10px">${notifId}</code></span>
+        <button onclick="this.closest('.notif-detail-modal').remove()" style="background:rgba(212,175,55,0.18);border:1px solid rgba(212,175,55,0.4);color:#d4af37;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px">Close</button>
+      </div>
+    </div>
+  </div>`;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+};
 
 window.broadcastNotification = async function() {
   const target = document.getElementById('notifTarget').value;
@@ -3985,7 +4071,7 @@ window.createConnectHubGroup = async function() {
   const roles = [...new Set(Array.from(document.querySelectorAll('.ch_member_cb:checked')).map(c => c.dataset.role))];
   try {
     if (!window.GroupChat) {
-      const m = await import('./js/group-chat.js');
+      const m = await import('./js/group-chat.js?v=3');
       m.default.init({ user: currentUser });
     }
     await window.GroupChat.createGroup({ name, states, roles, memberUids });
@@ -4039,7 +4125,7 @@ function startConnectGroupsListener() {
 }
 
 window.ch_openGroup = async function(id) {
-  if (!window.GroupChat) { const m = await import('./js/group-chat.js'); m.default.init({ user: currentUser }); }
+  if (!window.GroupChat) { const m = await import('./js/group-chat.js?v=3'); m.default.init({ user: currentUser }); }
   if (typeof window.GroupChat.openThread === 'function') {
     if (typeof window.GroupChat.togglePanel === 'function') {
       const panel = document.getElementById('gc-panel');
@@ -4050,12 +4136,12 @@ window.ch_openGroup = async function(id) {
 };
 window.ch_dismissGroup = async function(id) {
   if (!confirm('Close this group? Members will see "closed by Owner" and cannot send messages.')) return;
-  if (!window.GroupChat) { const m = await import('./js/group-chat.js'); m.default.init({ user: currentUser }); }
+  if (!window.GroupChat) { const m = await import('./js/group-chat.js?v=3'); m.default.init({ user: currentUser }); }
   await window.GroupChat.dismissGroup(id);
   showToast('Group closed');
 };
 window.ch_restoreGroup = async function(id) {
-  if (!window.GroupChat) { const m = await import('./js/group-chat.js'); m.default.init({ user: currentUser }); }
+  if (!window.GroupChat) { const m = await import('./js/group-chat.js?v=3'); m.default.init({ user: currentUser }); }
   await window.GroupChat.restoreGroup(id);
   showToast('Group restored');
 };
@@ -4550,7 +4636,7 @@ window.generateAllReports = async function(period) {
   const el = document.getElementById('reportsMsg');
   el.textContent = `Generating ${period} reports for all groups…`; el.className='alert alert-success show';
   try {
-    if (!window.GroupChat) { const m = await import('./js/group-chat.js'); m.default.init({ user: auth.currentUser }); }
+    if (!window.GroupChat) { const m = await import('./js/group-chat.js?v=3'); m.default.init({ user: auth.currentUser }); }
     // Wait a moment for groups subscription
     await new Promise(r => setTimeout(r, 800));
     const groups = window.GroupChat.groups || [];

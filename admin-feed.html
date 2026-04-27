@@ -741,7 +741,7 @@ function unlockDashboard() {
   checkAdminNotifBadge();
   loadAdminAppButtons();
   // Init group chat (Phase 4)
-  import('./js/group-chat.js').then(m => {
+  import('./js/group-chat.js?v=3').then(m => {
     m.default.init({ user: currentUser });
   }).catch(e => console.warn('GroupChat init failed:', e));
   // Live-sync own user doc so promoted authority changes reflect instantly
@@ -2219,7 +2219,7 @@ window.refreshChatboxInbox = async function() {
   // Ensure GroupChat is initialised
   if (!window.GroupChat || !window.GroupChat.currentUser) {
     try {
-      const m = await import('./js/group-chat.js');
+      const m = await import('./js/group-chat.js?v=3');
       m.default.init({ user: currentUser });
       // wait briefly for first snapshot
       await new Promise(r => setTimeout(r, 800));
@@ -2286,7 +2286,7 @@ function updateChatboxBadge(n) {
 
 window.openChatFromInbox = async function(groupId) {
   if (!window.GroupChat) {
-    const m = await import('./js/group-chat.js');
+    const m = await import('./js/group-chat.js?v=3');
     m.default.init({ user: currentUser });
   }
   const panel = document.getElementById('gc-panel');
