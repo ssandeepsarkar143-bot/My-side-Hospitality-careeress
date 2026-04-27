@@ -5139,6 +5139,7 @@ window.saveEditPromotedUser = async function() {
       };
     }
     await updateDoc(doc(db,'users',uid), updatePayload);
+    console.info('[EditPromoted] saved users/' + uid + ' · forceReauth set:', anythingChanged, 'changes:', updatePayload.forceReauth?.changes);
 
     // In-app notification so the admin sees a permanent record in their bell tray
     if (anythingChanged) {
@@ -5448,5 +5449,6 @@ window.exportLocationCompare = async function() {
 <script src="js/chatbot.js"></script>
 <script src="js/pwa-install.js"></script>
 <script type="module" src="js/freeze-guard.js"></script>
+<script type="module" src="js/role-reauth-guard.js?v=1"></script>
 </body>
 </html>
