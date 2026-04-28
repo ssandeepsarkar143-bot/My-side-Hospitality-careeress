@@ -9,6 +9,7 @@
  *   /api/chat          → { reply }
  *   /api/chat-stream   → text/event-stream (SSE)
  *   /api/resume        → { profile, resume, fallback?, notice? }
+ *   /api/job-match     → { matches:[{id,score,reason}], fallback? }
  *   /api/translate     → { translations }
  *   /api/preview-end   → 204 (no-op beacon)
  *
@@ -350,6 +351,129 @@ Rules: keep bullets action-oriented & quantified where possible; reflect hospita
   return jsonResponse(req, env, { profile: { ...data, photo }, resume: parsed, fallback: usedFallback });
 }
 
+// ---------- /api/job-match ----------
+// Score a candidate's profile/resume against a list of open jobs and return
+// the top picks with a 0-100 score and a one-line reason.
+//
+// POST body:
+//   { profile: { jobTitle, skills, experience, city, state, languages, ... },
+//     jobs:    [ { id, title, position, department, location, state, salary,
+//                  experience, accommodation, description } ... ] }   (max 30)
+//   topK?:    number (default 5)
+//
+// Returns: { matches: [ { id, score, reason } ] } sorted by score desc.
+function trimJob(j) {
+  return {
+    id: String(j.id || ''),
+    title: String(j.title || j.position || '').slice(0, 80),
+    department: String(j.department || '').slice(0, 40),
+    location: String(j.location || '').slice(0, 60),
+    state: String(j.state || '').slice(0, 40),
+    salary: Number(j.salary || 0) || 0,
+    experience: String(j.experience || '').slice(0, 40),
+    accommodation: String(j.accommodation || '').slice(0, 10),
+    description: String(j.description || '').slice(0, 220)
+  };
+}
+function trimProfile(p) {
+  return {
+    jobTitle: String(p.jobTitle || p.position || '').slice(0, 80),
+    skills: String(p.skills || '').slice(0, 400),
+    experience: String(p.experience || p.yearsExperience || '').slice(0, 400),
+    city: String(p.city || '').slice(0, 60),
+    state: String(p.state || '').slice(0, 40),
+    languages: String(p.languages || '').slice(0, 120),
+    education: String(p.education || '').slice(0, 200),
+    department: String(p.department || '').slice(0, 40),
+    preferredSalary: Number(p.preferredSalary || p.salary || 0) || 0
+  };
+}
+function fallbackScoreJobs(profile, jobs, topK) {
+  // Lightweight keyword/score fallback when Gemini is unavailable or returns garbage.
+  const tokens = (s) => String(s || '').toLowerCase().split(/[^a-z0-9+]+/i).filter(t => t.length > 2);
+  const profTokens = new Set([
+    ...tokens(profile.jobTitle),
+    ...tokens(profile.skills),
+    ...tokens(profile.experience),
+    ...tokens(profile.department)
+  ]);
+  const profCity = (profile.city || '').toLowerCase();
+  const profState = (profile.state || '').toLowerCase();
+  const scored = jobs.map(j => {
+    const jt = new Set([
+      ...tokens(j.title), ...tokens(j.department), ...tokens(j.description), ...tokens(j.experience)
+    ]);
+    let overlap = 0;
+    profTokens.forEach(t => { if (jt.has(t)) overlap++; });
+    let score = Math.min(95, 35 + overlap * 12);
+    if (profCity && (j.location || '').toLowerCase().includes(profCity)) score += 8;
+    if (profState && (j.state || '').toLowerCase().includes(profState)) score += 4;
+    if (profile.preferredSalary && j.salary && j.salary >= profile.preferredSalary) score += 4;
+    score = Math.max(35, Math.min(98, score));
+    const reason = overlap > 0
+      ? `${overlap} skill keyword${overlap > 1 ? 's' : ''} overlap with ${j.title || 'this role'}.`
+      : `Open ${j.title || 'role'} in ${j.location || 'India'} matching your hospitality profile.`;
+    return { id: j.id, score, reason };
+  }).sort((a, b) => b.score - a.score);
+  return scored.slice(0, topK);
+}
+async function handleJobMatch(req, env) {
+  const body = await req.json().catch(() => ({}));
+  const rawJobs = Array.isArray(body?.jobs) ? body.jobs : [];
+  const topK = Math.max(1, Math.min(10, parseInt(body?.topK, 10) || 5));
+  if (!rawJobs.length) {
+    return jsonResponse(req, env, { error: 'jobs[] required' }, 400);
+  }
+  const profile = trimProfile(body?.profile || {});
+  const jobs = rawJobs.slice(0, 30).map(trimJob).filter(j => j.id && j.title);
+  if (!jobs.length) {
+    return jsonResponse(req, env, { error: 'no usable jobs' }, 400);
+  }
+  const prompt = `You are an AI job-matching engine for an Indian hospitality job portal.
+Score each job (0-100) against the candidate based on skills overlap, role/department fit, location proximity, experience level, and salary fit.
+Return ONLY raw JSON of the shape:
+{"matches":[{"id":"<jobId>","score":<0-100 integer>,"reason":"<one short sentence, max 18 words>"} ...]}
+Include EVERY job from the input list (same id strings). Do NOT reorder — the client will sort. Reason must be specific to that job (mention skill, location, or experience match).
+
+Candidate profile:
+${JSON.stringify(profile)}
+
+Open jobs:
+${JSON.stringify(jobs)}`;
+  let parsed = null;
+  try {
+    const text = await callGemini(env,
+      [{ role: 'user', parts: [{ text: prompt }] }],
+      'You are a precise JSON-only job-matching engine. Output ONLY raw JSON. No markdown, no commentary.',
+      { temperature: 0.4, maxOutputTokens: 2048, responseMimeType: 'application/json' }
+    );
+    let cleaned = String(text || '').replace(/^[\s\S]*?(\{)/, '$1').replace(/```/g, '').trim();
+    const lastBrace = cleaned.lastIndexOf('}');
+    if (lastBrace > 0) cleaned = cleaned.slice(0, lastBrace + 1);
+    const obj = JSON.parse(cleaned);
+    if (obj && Array.isArray(obj.matches)) parsed = obj.matches;
+  } catch (_e) { /* fall through to fallback */ }
+  let matches;
+  let fallback = false;
+  if (parsed && parsed.length) {
+    const byId = new Map(jobs.map(j => [j.id, j]));
+    matches = parsed
+      .filter(m => m && byId.has(String(m.id)))
+      .map(m => ({
+        id: String(m.id),
+        score: Math.max(0, Math.min(100, parseInt(m.score, 10) || 0)),
+        reason: String(m.reason || '').slice(0, 200)
+      }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, topK);
+    if (!matches.length) { matches = fallbackScoreJobs(profile, jobs, topK); fallback = true; }
+  } else {
+    matches = fallbackScoreJobs(profile, jobs, topK);
+    fallback = true;
+  }
+  return jsonResponse(req, env, { matches, fallback });
+}
+
 // ---------- /api/translate ----------
 // In-memory cache (per-isolate). Cloudflare may run multiple isolates so this
 // is best-effort; the client also caches locally in localStorage.
@@ -443,6 +567,7 @@ export default {
         case '/api/chat':        return await handleChat(req, env);
         case '/api/chat-stream': return await handleChatStream(req, env);
         case '/api/resume':      return await handleResume(req, env);
+        case '/api/job-match':   return await handleJobMatch(req, env);
         case '/api/translate':   return await handleTranslate(req, env);
         default:                 return jsonResponse(req, env, { error: 'Not found' }, 404);
       }

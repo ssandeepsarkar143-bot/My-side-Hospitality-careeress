@@ -342,6 +342,113 @@ Rules: keep bullets action-oriented & quantified where possible; reflect hospita
   }
 });
 
+// ===== AI JOB MATCH (Gemini-powered) =====
+// POST { profile:{...}, jobs:[...], topK?:number } → { matches:[{id,score,reason}], fallback? }
+function __jmTrimJob(j) {
+  return {
+    id: String(j.id || ''),
+    title: String(j.title || j.position || '').slice(0, 80),
+    department: String(j.department || '').slice(0, 40),
+    location: String(j.location || '').slice(0, 60),
+    state: String(j.state || '').slice(0, 40),
+    salary: Number(j.salary || 0) || 0,
+    experience: String(j.experience || '').slice(0, 40),
+    accommodation: String(j.accommodation || '').slice(0, 10),
+    description: String(j.description || '').slice(0, 220)
+  };
+}
+function __jmTrimProfile(p) {
+  return {
+    jobTitle: String(p.jobTitle || p.position || '').slice(0, 80),
+    skills: String(p.skills || '').slice(0, 400),
+    experience: String(p.experience || p.yearsExperience || '').slice(0, 400),
+    city: String(p.city || '').slice(0, 60),
+    state: String(p.state || '').slice(0, 40),
+    languages: String(p.languages || '').slice(0, 120),
+    education: String(p.education || '').slice(0, 200),
+    department: String(p.department || '').slice(0, 40),
+    preferredSalary: Number(p.preferredSalary || p.salary || 0) || 0
+  };
+}
+function __jmFallback(profile, jobs, topK) {
+  const tokens = (s) => String(s || '').toLowerCase().split(/[^a-z0-9+]+/i).filter(t => t.length > 2);
+  const profTokens = new Set([...tokens(profile.jobTitle), ...tokens(profile.skills), ...tokens(profile.experience), ...tokens(profile.department)]);
+  const profCity = (profile.city || '').toLowerCase();
+  const profState = (profile.state || '').toLowerCase();
+  return jobs.map(j => {
+    const jt = new Set([...tokens(j.title), ...tokens(j.department), ...tokens(j.description), ...tokens(j.experience)]);
+    let overlap = 0;
+    profTokens.forEach(t => { if (jt.has(t)) overlap++; });
+    let score = Math.min(95, 35 + overlap * 12);
+    if (profCity && (j.location || '').toLowerCase().includes(profCity)) score += 8;
+    if (profState && (j.state || '').toLowerCase().includes(profState)) score += 4;
+    if (profile.preferredSalary && j.salary && j.salary >= profile.preferredSalary) score += 4;
+    score = Math.max(35, Math.min(98, score));
+    const reason = overlap > 0
+      ? `${overlap} skill keyword${overlap > 1 ? 's' : ''} overlap with ${j.title || 'this role'}.`
+      : `Open ${j.title || 'role'} in ${j.location || 'India'} matching your hospitality profile.`;
+    return { id: j.id, score, reason };
+  }).sort((a, b) => b.score - a.score).slice(0, topK);
+}
+app.post('/api/job-match', async (req, res) => {
+  try {
+    const rawJobs = Array.isArray(req.body?.jobs) ? req.body.jobs : [];
+    const topK = Math.max(1, Math.min(10, parseInt(req.body?.topK, 10) || 5));
+    if (!rawJobs.length) return res.status(400).json({ error: 'jobs[] required' });
+    const profile = __jmTrimProfile(req.body?.profile || {});
+    const jobs = rawJobs.slice(0, 30).map(__jmTrimJob).filter(j => j.id && j.title);
+    if (!jobs.length) return res.status(400).json({ error: 'no usable jobs' });
+    if (!GEMINI_API_KEY) {
+      return res.json({ matches: __jmFallback(profile, jobs, topK), fallback: true });
+    }
+    const prompt = `You are an AI job-matching engine for an Indian hospitality job portal.
+Score each job (0-100) against the candidate based on skills overlap, role/department fit, location proximity, experience level, and salary fit.
+Return ONLY raw JSON of the shape:
+{"matches":[{"id":"<jobId>","score":<0-100 integer>,"reason":"<one short sentence, max 18 words>"} ...]}
+Include EVERY job from the input list (same id strings). Do NOT reorder — the client will sort. Reason must be specific to that job (mention skill, location, or experience match).
+
+Candidate profile:
+${JSON.stringify(profile)}
+
+Open jobs:
+${JSON.stringify(jobs)}`;
+    let parsed = null;
+    try {
+      const text = await callGemini(
+        [{ role: 'user', parts: [{ text: prompt }] }],
+        'You are a precise JSON-only job-matching engine. Output ONLY raw JSON. No markdown, no commentary.',
+        { temperature: 0.4, maxOutputTokens: 2048, responseMimeType: 'application/json' }
+      );
+      let cleaned = String(text || '').replace(/^[\s\S]*?(\{)/, '$1').replace(/```/g, '').trim();
+      const lastBrace = cleaned.lastIndexOf('}');
+      if (lastBrace > 0) cleaned = cleaned.slice(0, lastBrace + 1);
+      const obj = JSON.parse(cleaned);
+      if (obj && Array.isArray(obj.matches)) parsed = obj.matches;
+    } catch (err) { console.warn('job-match Gemini fail:', err.message); }
+    let matches; let fallback = false;
+    if (parsed && parsed.length) {
+      const byId = new Map(jobs.map(j => [j.id, j]));
+      matches = parsed
+        .filter(m => m && byId.has(String(m.id)))
+        .map(m => ({
+          id: String(m.id),
+          score: Math.max(0, Math.min(100, parseInt(m.score, 10) || 0)),
+          reason: String(m.reason || '').slice(0, 200)
+        }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, topK);
+      if (!matches.length) { matches = __jmFallback(profile, jobs, topK); fallback = true; }
+    } else {
+      matches = __jmFallback(profile, jobs, topK);
+      fallback = true;
+    }
+    res.json({ matches, fallback });
+  } catch (e) {
+    console.error('job-match err:', e.message);
+    res.status(500).json({ error: 'Job match failed', detail: e.message });
+  }
+});
+
 // ===== TRANSLATION (Gemini-powered, batch, cached server-side in-memory) =====
 const __TR_CACHE = new Map(); // key: lang|hashedText -> string
 const __TR_KEY = (lang, txt) => lang + '|' + (txt.length > 80 ? txt.slice(0,80)+'#'+txt.length : txt);

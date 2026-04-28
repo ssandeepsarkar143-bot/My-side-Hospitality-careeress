@@ -15,6 +15,7 @@ holds the Gemini API key as an encrypted secret so the browser never sees it.
 | `/api/chat` | POST | Non-streaming HC Assistant chat |
 | `/api/chat-stream` | POST | Streaming (SSE) HC Assistant chat |
 | `/api/resume` | POST | AI resume generator (with local fallback) |
+| `/api/job-match` | POST | Score candidate profile against open jobs (top-K) |
 | `/api/translate` | POST | Batch UI translation (en → hi/bn) |
 | `/api/preview-end` | POST | No-op beacon (returns 204) |
 
