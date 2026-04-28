@@ -18,7 +18,7 @@
 
   // ── EDIT ME after `wrangler deploy` ────────────────────────────────────────
   // Example: 'https://hospitality-gemini.your-subdomain.workers.dev'
-  var HC_AI_BASE_PROD = '';
+  var HC_AI_BASE_PROD = 'https://hospitality-gemini.ssandeepsarkar143.workers.dev';
   // ───────────────────────────────────────────────────────────────────────────
 
   function resolveBase() {
