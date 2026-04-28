@@ -27,7 +27,7 @@
       if (override) return override.replace(/\/+$/, '');
     } catch (_) {}
     var h = (typeof location !== 'undefined' && location.hostname) || '';
-    var isLocal = !h
+    var isReplitLocal = !h
       || h === 'localhost'
       || h === '127.0.0.1'
       || h === '0.0.0.0'
@@ -36,7 +36,8 @@
       || h.endsWith('.replit.app')
       || h.endsWith('.spock.replit.dev')
       || h.endsWith('.picard.replit.dev');
-    if (isLocal) return ''; // relative — same origin (Replit Express server)
+    if (isReplitLocal && h !== 'localhost' && h !== '127.0.0.1' && h !== '0.0.0.0') return (HC_AI_BASE_PROD || '').replace(/\/+$/, '');
+    if (isReplitLocal) return ''; // keep local Express for localhost, but use Worker in Replit preview
     return (HC_AI_BASE_PROD || '').replace(/\/+$/, '');
   }
 
