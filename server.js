@@ -90,8 +90,30 @@ function callGeminiModel(model, contents, systemInstruction, opts = {}) {
   });
 }
 
+// Lighter / less-loaded models first so an overloaded primary model auto-
+// retries on a model statistically more likely to be available right now.
+const GEMINI_MODEL_FALLBACKS = [
+  'gemini-2.5-flash-lite',
+  'gemini-2.5-flash',
+  'gemini-2.0-flash-lite',
+  'gemini-2.0-flash',
+  'gemini-flash-latest'
+];
+
+function isRetryableGeminiError(e) {
+  const msg = String(e?.message || '');
+  const code = e?.code;
+  const isQuota = code === 429 || /quota|rate.?limit|exceeded/i.test(msg);
+  const isNotFound = code === 404 || /not.?found|unsupported|invalid argument/i.test(msg);
+  // 503 (UNAVAILABLE / "high demand" / "overloaded"), 502, 500 transient,
+  // 504 timeouts — all worth trying the next model on.
+  const isOverloaded = code === 503 || code === 502 || code === 500 || code === 504
+    || /overload|unavailable|high.?demand|busy|try.?again|temporar|service is currently/i.test(msg);
+  return isQuota || isNotFound || isOverloaded;
+}
+
 async function callGemini(contents, systemInstruction, opts = {}) {
-  const fallbacks = [GEMINI_MODEL, 'gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.0-flash'];
+  const fallbacks = [GEMINI_MODEL, ...GEMINI_MODEL_FALLBACKS];
   const tried = new Set();
   let lastErr = null;
   for (const m of fallbacks) {
@@ -101,11 +123,8 @@ async function callGemini(contents, systemInstruction, opts = {}) {
       return await callGeminiModel(m, contents, systemInstruction, opts);
     } catch (e) {
       lastErr = e;
-      const msg = String(e.message || '');
-      const isQuota = e.code === 429 || /quota|rate.?limit|exceeded/i.test(msg);
-      const isNotFound = e.code === 404 || /not.?found|unsupported|invalid/i.test(msg);
-      if (!isQuota && !isNotFound) throw e;
-      console.warn(`Model ${m} failed (${isQuota ? 'quota' : 'unavailable'}), trying next…`);
+      if (!isRetryableGeminiError(e)) throw e;
+      console.warn(`Model ${m} failed (${e.code || '?'}: ${String(e.message || '').slice(0, 80)}), trying next…`);
     }
   }
   throw lastErr || new Error('All Gemini models unavailable');
@@ -198,8 +217,25 @@ function streamGeminiSSE(res, model, contents, systemInstruction) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) }
     }, (r) => {
+      // Non-2xx (e.g. 503 "high demand", 429 quota, 404 unknown model) — read
+      // the JSON error body and reject so the caller can fall back to the next
+      // model in the chain. Do NOT write `event: done` to the client yet.
+      if (r.statusCode && r.statusCode >= 400) {
+        let errBuf = '';
+        r.on('data', (c) => { errBuf += c; });
+        r.on('end', () => {
+          let detail = errBuf;
+          try { const j = JSON.parse(errBuf); if (j.error?.message) detail = j.error.message; } catch (_) {}
+          const err = new Error(detail || ('upstream ' + r.statusCode));
+          err.code = r.statusCode;
+          reject(err);
+        });
+        return;
+      }
       let buf = '';
       let total = '';
+      let gotData = false;
+      let inlineErr = null;
       r.on('data', (chunk) => {
         buf += chunk.toString('utf8');
         const lines = buf.split('\n');
@@ -210,16 +246,32 @@ function streamGeminiSSE(res, model, contents, systemInstruction) {
           if (!payload || payload === '[DONE]') continue;
           try {
             const j = JSON.parse(payload);
-            if (j.error) { res.write(`event: error\ndata: ${JSON.stringify({ message: j.error.message })}\n\n`); continue; }
+            if (j.error) {
+              if (!gotData) {
+                // Capture for reject so the caller can try the next model.
+                const e = new Error(j.error.message || 'Gemini error');
+                e.code = j.error.code || 0;
+                inlineErr = e;
+              } else {
+                // We already streamed text — surface as a soft error event.
+                res.write(`event: error\ndata: ${JSON.stringify({ message: j.error.message })}\n\n`);
+              }
+              continue;
+            }
             const text = j.candidates?.[0]?.content?.parts?.[0]?.text || '';
             if (text) {
               total += text;
+              gotData = true;
               res.write(`data: ${JSON.stringify({ delta: text })}\n\n`);
             }
           } catch (_) {}
         }
       });
-      r.on('end', () => { res.write(`event: done\ndata: ${JSON.stringify({ full: total })}\n\n`); resolve(total); });
+      r.on('end', () => {
+        if (!gotData && inlineErr) return reject(inlineErr);
+        res.write(`event: done\ndata: ${JSON.stringify({ full: total })}\n\n`);
+        resolve(total);
+      });
     });
     req2.on('error', reject);
     req2.write(body); req2.end();
@@ -250,9 +302,10 @@ app.post('/api/chat-stream', async (req, res) => {
     const sys = `${ASSISTANT_SYSTEM}\nUser preferred language: ${langMap[lang] || 'English'}.`;
     const contents = [...trimmedHistory, { role: 'user', parts: [{ text: message.slice(0, 1000) }] }];
     // Try streaming with first available model from fallbacks
-    const fallbacks = [GEMINI_MODEL, 'gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.0-flash'];
+    const fallbacks = [GEMINI_MODEL, ...GEMINI_MODEL_FALLBACKS];
     const tried = new Set();
     let success = false;
+    let lastErr = null;
     for (const m of fallbacks) {
       if (!m || tried.has(m)) continue;
       tried.add(m);
@@ -260,10 +313,12 @@ app.post('/api/chat-stream', async (req, res) => {
         await streamGeminiSSE(res, m, contents, sys);
         success = true; break;
       } catch (e) {
-        if (m === fallbacks[fallbacks.length - 1]) {
-          res.write(`event: error\ndata: ${JSON.stringify({ message: e.message })}\n\n`);
-        }
+        lastErr = e;
+        if (!isRetryableGeminiError(e)) break;
       }
+    }
+    if (!success && lastErr) {
+      res.write(`event: error\ndata: ${JSON.stringify({ message: lastErr.message })}\n\n`);
     }
     res.end();
   } catch (e) {

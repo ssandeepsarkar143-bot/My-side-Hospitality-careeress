@@ -22,7 +22,16 @@
  */
 
 const DEFAULT_MODEL = 'gemini-flash-latest';
-const MODEL_FALLBACKS = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.0-flash'];
+// Ordered fallback chain: lighter / less-loaded models first so a single
+// overloaded ("high demand") response on the primary model auto-retries on a
+// model that is statistically more likely to be available right now.
+const MODEL_FALLBACKS = [
+  'gemini-2.5-flash-lite',
+  'gemini-2.5-flash',
+  'gemini-2.0-flash-lite',
+  'gemini-2.0-flash',
+  'gemini-flash-latest'
+];
 
 const ASSISTANT_SYSTEM = `You are "HC Assistant", the official AI helper for Hospitality Careers — an Indian hospitality job portal (hotels, resorts, restaurants, F&B, kitchen, front office, housekeeping, spa).
 Be friendly, concise (max 6 short bullet points or 120 words), use emojis sparingly, and format with **bold** for key points.
@@ -88,6 +97,18 @@ async function callGeminiModel(env, model, contents, systemInstruction, opts = {
   }
   return j.candidates?.[0]?.content?.parts?.[0]?.text || '';
 }
+function isRetryableGeminiError(e) {
+  const msg = String(e?.message || '');
+  const code = e?.code;
+  const isQuota = code === 429 || /quota|rate.?limit|exceeded/i.test(msg);
+  const isNotFound = code === 404 || /not.?found|unsupported|invalid argument/i.test(msg);
+  // 503 ("UNAVAILABLE" / "high demand" / "overloaded"), 502, 500 transient,
+  // 504 timeouts — all worth trying the next model on.
+  const isOverloaded = code === 503 || code === 502 || code === 500 || code === 504
+    || /overload|unavailable|high.?demand|busy|try.?again|temporar|service is currently/i.test(msg);
+  return isQuota || isNotFound || isOverloaded;
+}
+
 async function callGemini(env, contents, systemInstruction, opts = {}) {
   const primary = env.GEMINI_MODEL || DEFAULT_MODEL;
   const order = [primary, ...MODEL_FALLBACKS];
@@ -100,10 +121,8 @@ async function callGemini(env, contents, systemInstruction, opts = {}) {
       return await callGeminiModel(env, m, contents, systemInstruction, opts);
     } catch (e) {
       lastErr = e;
-      const msg = String(e.message || '');
-      const isQuota = e.code === 429 || /quota|rate.?limit|exceeded/i.test(msg);
-      const isNotFound = e.code === 404 || /not.?found|unsupported|invalid/i.test(msg);
-      if (!isQuota && !isNotFound) throw e;
+      if (!isRetryableGeminiError(e)) throw e;
+      // Otherwise loop to the next fallback model.
     }
   }
   throw lastErr || new Error('All Gemini models unavailable');
@@ -228,7 +247,13 @@ async function handleChatStream(req, env) {
         );
         if (!upstream.ok || !upstream.body) {
           const errTxt = await upstream.text().catch(() => '');
-          lastErr = new Error(errTxt || ('upstream ' + upstream.status));
+          const err = new Error(errTxt || ('upstream ' + upstream.status));
+          err.code = upstream.status;
+          lastErr = err;
+          // Only retry the next model when the failure is something a
+          // different model could plausibly recover from (overloaded /
+          // not-found / quota). Hard 4xx like 400/403 — fail fast.
+          if (!isRetryableGeminiError(err)) break;
           continue;
         }
         const reader = upstream.body.getReader();
