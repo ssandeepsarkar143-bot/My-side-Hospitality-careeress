@@ -185,6 +185,9 @@
   <!-- HC WALLET + REFER & EARN -->
   <div id="hcWalletMount"></div>
 
+  <!-- AI JOB MATCH (Top 5 personalised picks) -->
+  <div id="aiMatchMount"></div>
+
   <!-- Job Search & Filter -->
   <div class="filter-section">
     <div style="font-size:14px;font-weight:700;color:var(--gold);margin-bottom:16px"><i class="fas fa-filter"></i> Search & Filter Jobs</div>
@@ -851,11 +854,16 @@ onAuthStateChanged(auth, async (user) => {
   // Group Chat (Phase 4) — show groups owner adds this user to
   import('./js/group-chat.js?v=4').then(m => { m.default.init({ user }); }).catch(e => console.warn('GroupChat init failed:', e));
   // HC Wallet + Refer & Earn
+  const userSnapData = snap.exists() ? snap.data() : {};
   try {
     const { attachWallet } = await import('./js/wallet-ui.js');
-    const userSnap = snap.exists() ? snap.data() : {};
-    attachWallet({ db, auth, user, userData: userSnap, mountId: 'hcWalletMount', accent: '#d4af37' });
+    attachWallet({ db, auth, user, userData: userSnapData, mountId: 'hcWalletMount', accent: '#d4af37' });
   } catch(e) { console.warn('Wallet UI failed:', e.message); }
+  // AI Job Match — top 5 personalised picks (uses Cloudflare Worker / local Express)
+  try {
+    const { attachJobMatch } = await import('./js/job-match.js');
+    attachJobMatch({ db, user, userData: userSnapData, mountId: 'aiMatchMount', accent: '#d4af37', extraJobs: predefinedJobs });
+  } catch(e) { console.warn('AI Job Match failed:', e.message); }
   // My Resumes — show only if user has any
   window.__FIREBASE_CFG__ = firebaseConfig;
   if (window.loadMyResumes) {
