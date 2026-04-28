@@ -28,6 +28,10 @@
   <div class="navbar-right">
     <span class="user-tag tag-user" id="userTagEl">User</span>
     <span class="tag-user-name" id="userNameEl"></span>
+    <button class="btn btn-sm navbar-chat-btn hidden" id="navChatBtn" title="Group Chats">
+      <i class="fas fa-comments"></i>
+      <span id="navChatBtnBadge" class="nav-chat-badge">0</span>
+    </button>
     <button class="btn btn-sm notif-bell-btn" style="position:relative;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#fff" onclick="document.getElementById('notifModal').classList.add('active');loadUserNotifications()">
       <i class="fas fa-bell"></i>
       <span id="userNotifBadge" class="notif-badge" style="display:none">0</span>
@@ -845,7 +849,7 @@ onAuthStateChanged(auth, async (user) => {
   checkNotifBadge();
   loadAppDownloadButtons();
   // Group Chat (Phase 4) — show groups owner adds this user to
-  import('./js/group-chat.js?v=3').then(m => { m.default.init({ user }); }).catch(e => console.warn('GroupChat init failed:', e));
+  import('./js/group-chat.js?v=4').then(m => { m.default.init({ user }); }).catch(e => console.warn('GroupChat init failed:', e));
   // HC Wallet + Refer & Earn
   try {
     const { attachWallet } = await import('./js/wallet-ui.js');

@@ -84,11 +84,27 @@ const GroupChat = {
     this._uiMounted = true;
     this.injectStyles();
     this.injectPanel();
+    this._mountNavbarButton();
     this.subscribeMyGroups();
     this.startPresence();
     this.requestNotifPermission();
     // restore last-seen from localStorage
     try { this.lastSeenByGroup = JSON.parse(localStorage.getItem('hc_gc_lastSeen') || '{}'); } catch(_){}
+  },
+
+  // Navbar trigger — primary access point. Each feed embeds a hidden <button id="navChatBtn">
+  // inside .navbar-right; we reveal it once eligibility is confirmed and forward clicks to
+  // togglePanel. The unread badge mirrors the FAB badge automatically (same dispatch
+  // pathway in updateBadge), so the navbar icon shows the same red count.
+  _mountNavbarButton() {
+    let btn = document.getElementById('navChatBtn');
+    if (!btn) {
+      // No button slot in the navbar — fallback: silently skip; the floating bubble still works
+      return;
+    }
+    btn.classList.remove('hidden');
+    btn.style.display = '';
+    btn.onclick = () => this.togglePanel();
   },
 
   _watchEnableFlag() {
@@ -122,7 +138,12 @@ const GroupChat = {
     const css = document.createElement('style');
     css.id = 'gc-styles';
     css.textContent = `
-      .gc-fab { position:fixed; right:90px; bottom:24px; width:56px; height:56px; border-radius:50%;
+      /* Floating bubble (kept as a draggable secondary access point + chat-head minimize target).
+         Default mount position is top-right, just under the navbar — matches the new in-navbar
+         chat icon so the bubble appears "anchored" near the user/role tag instead of
+         hiding in the bottom corner. Users can still drag it anywhere; saved positions are
+         clamped to stay on-screen. */
+      .gc-fab { position:fixed; right:24px; top:74px; width:48px; height:48px; border-radius:50%;
         background:linear-gradient(135deg,#d4af37,#b8941f); color:#0a0a14; border:none; cursor:pointer;
         box-shadow:0 6px 20px rgba(212,175,55,0.45); z-index:9998; display:flex;
         align-items:center; justify-content:center; font-size:22px; transition:transform .2s; }
@@ -183,6 +204,10 @@ const GroupChat = {
       /* Facebook-Messenger-style chat-head: a slightly bigger, rounder, jiggle-y bubble */
       .gc-fab.gc-chathead { width:60px; height:60px; box-shadow:0 6px 22px rgba(0,0,0,0.45),0 0 0 3px rgba(212,175,55,0.35); animation:gcBob 2.2s ease-in-out infinite; }
       .gc-fab.gc-chathead .gc-badge { width:22px; height:22px; line-height:22px; font-size:11px; }
+      /* In-navbar chat button (same look as the bell) — primary trigger to open the panel */
+      .navbar-chat-btn { position:relative; background:rgba(212,175,55,0.18) !important; border:1px solid rgba(212,175,55,0.45) !important; color:#d4af37 !important; }
+      .navbar-chat-btn:hover { background:rgba(212,175,55,0.30) !important; }
+      .navbar-chat-btn .nav-chat-badge { position:absolute; top:-5px; right:-5px; background:#ef4444; color:#fff; border-radius:10px; min-width:18px; height:18px; line-height:18px; font-size:10px; font-weight:700; padding:0 5px; display:none; align-items:center; justify-content:center; }
       @keyframes gcBob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
       .gc-head button { background:transparent; border:none; color:#fff; cursor:pointer; font-size:18px;
         width:32px; height:32px; border-radius:8px; }
@@ -643,9 +668,16 @@ const GroupChat = {
       return t > 0 && t > lastSeen && g.lastMessageBy !== this.currentUser?.uid;
     }).length;
     const badge = document.getElementById('gc-fab-badge');
-    if (!badge) return;
-    if (recent > 0) { badge.style.display = 'flex'; badge.textContent = recent; }
-    else badge.style.display = 'none';
+    if (badge) {
+      if (recent > 0) { badge.style.display = 'flex'; badge.textContent = recent; }
+      else badge.style.display = 'none';
+    }
+    // Mirror the unread count onto the in-navbar chat button (if mounted)
+    const navBadge = document.getElementById('navChatBtnBadge');
+    if (navBadge) {
+      if (recent > 0) { navBadge.style.display = 'flex'; navBadge.textContent = recent; }
+      else navBadge.style.display = 'none';
+    }
   },
 
   // ---------------------- THREAD ----------------------

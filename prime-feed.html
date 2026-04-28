@@ -35,6 +35,10 @@ body { background: linear-gradient(135deg, #0d0d2b, #1a1a4e); }
   <div class="navbar-right">
     <span class="user-tag tag-prime" id="primeTagEl">Prime</span>
     <span class="tag-user-name" id="primeNameEl"></span>
+    <button class="btn btn-sm navbar-chat-btn hidden" id="navChatBtn" title="Group Chats">
+      <i class="fas fa-comments"></i>
+      <span id="navChatBtnBadge" class="nav-chat-badge">0</span>
+    </button>
     <button class="btn btn-sm" style="position:relative;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#fff" onclick="document.getElementById('primeNotifModal').classList.add('active');loadPrimeNotifications()">
       <i class="fas fa-bell"></i>
       <span id="primeNotifBadge" class="notif-badge" style="display:none">0</span>
@@ -812,7 +816,7 @@ onAuthStateChanged(auth, async (user) => {
   checkPrimeNotifBadge();
   loadPrimeAppButtons();
   // Group Chat (Phase 4)
-  import('./js/group-chat.js?v=3').then(m => { m.default.init({ user }); }).catch(e => console.warn('GroupChat init failed:', e));
+  import('./js/group-chat.js?v=4').then(m => { m.default.init({ user }); }).catch(e => console.warn('GroupChat init failed:', e));
   // HC Wallet + Refer & Earn
   try {
     const { attachWallet } = await import('./js/wallet-ui.js');

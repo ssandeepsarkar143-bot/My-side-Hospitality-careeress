@@ -54,6 +54,10 @@
     <div class="navbar-right">
       <span class="user-tag tag-admin" id="adminTagEl">Admin</span>
       <span class="tag-user-name" id="adminNameEl"></span>
+      <button class="btn btn-sm navbar-chat-btn hidden" id="navChatBtn" title="Group Chats">
+        <i class="fas fa-comments"></i>
+        <span id="navChatBtnBadge" class="nav-chat-badge">0</span>
+      </button>
       <button class="btn btn-sm" style="position:relative;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#fff" onclick="document.getElementById('adminNotifModal').classList.add('active');loadAdminNotifications()">
         <i class="fas fa-bell"></i>
         <span id="adminNotifBadge" class="notif-badge" style="display:none">0</span>
@@ -779,7 +783,7 @@ function unlockDashboard() {
   checkAdminNotifBadge();
   loadAdminAppButtons();
   // Init group chat (Phase 4)
-  import('./js/group-chat.js?v=3').then(m => {
+  import('./js/group-chat.js?v=4').then(m => {
     m.default.init({ user: currentUser });
   }).catch(e => console.warn('GroupChat init failed:', e));
   // Live-sync own user doc so promoted authority changes reflect instantly
@@ -958,6 +962,68 @@ function ensureAdminWorkingNav() {
   // Insert right after Management header
   header.parentNode.insertBefore(item, header.nextSibling);
 
+  // Sibling nav item: Location Comparison Dashboard (pie chart of state-wise activity)
+  if (!document.getElementById('nav_locCompare')) {
+    const lc = document.createElement('div');
+    lc.id = 'nav_locCompare';
+    lc.className = 'nav-item';
+    lc.style.cursor = 'pointer';
+    lc.innerHTML = '<i class="fas fa-chart-pie"></i> Location Comparison';
+    lc.onclick = () => showSection('locCompare');
+    item.parentNode.insertBefore(lc, item.nextSibling);
+  }
+  // Section for Location Comparison Dashboard
+  if (!document.getElementById('sec-locCompare')) {
+    const main = document.querySelector('.main-content') || document.body;
+    const sec = document.createElement('div');
+    sec.id = 'sec-locCompare';
+    sec.className = 'page-section';
+    sec.innerHTML = `
+      <div class="card">
+        <div class="card-title" style="color:#a855f7;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+          <span><i class="fas fa-chart-pie" style="-webkit-text-fill-color:#a855f7"></i> Location Comparison Dashboard</span>
+          <span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button class="btn btn-sm" onclick="exportLocCompareCsv()" title="Download per-state totals as CSV" style="background:#22c55e;color:#fff;font-weight:600"><i class="fas fa-file-csv"></i> Export CSV</button>
+            <button class="btn btn-sm" onclick="loadLocationComparison()" title="Refresh" style="background:rgba(255,255,255,0.08);color:#fff"><i class="fas fa-sync"></i></button>
+            <span style="font-size:12px;color:var(--gray);font-weight:normal">Aggregated work performance across your states</span>
+          </span>
+        </div>
+        <div style="background:rgba(168,85,247,0.10);border:1px solid rgba(168,85,247,0.35);border-radius:8px;padding:10px 12px;font-size:12px;color:rgba(255,255,255,0.92);margin:10px 0 14px">
+          <i class="fas fa-info-circle" style="color:#a855f7"></i> The pie chart aggregates Jobs + Contacts + Resumes + Memberships + Hires across every sub-admin operating in each state under your remit. <strong>Click any slice (or row) to drill down</strong> into per-admin work details for that state.
+        </div>
+        <div class="grid-2" style="gap:14px;align-items:start">
+          <div style="background:rgba(0,0,0,0.25);border-radius:10px;padding:18px;min-height:340px;position:relative">
+            <canvas id="locCompareChart" style="max-height:340px;width:100%"></canvas>
+            <div id="locCompareEmpty" style="display:none;text-align:center;color:var(--gray);padding:40px 10px">
+              <i class="fas fa-chart-pie" style="font-size:36px;opacity:0.3"></i>
+              <div style="margin-top:10px;font-size:13px">No state-level activity yet — once your sub-admins start approving jobs, contacts, or hires, this chart will populate.</div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:13px;color:var(--gray);font-weight:600;margin-bottom:8px"><i class="fas fa-list"></i> Per-State Totals</div>
+            <div class="table-wrapper" style="max-height:340px;overflow-y:auto">
+              <table>
+                <thead><tr><th>State</th><th>Sub-Admins</th><th>Total Work</th><th>Share</th></tr></thead>
+                <tbody id="locCompareTable"><tr><td colspan="4" style="text-align:center;color:var(--gray);padding:20px">Loading…</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div id="locCompareDrill" style="display:none;margin-top:18px;background:rgba(0,0,0,0.25);border-radius:10px;padding:14px 16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+            <div style="font-size:14px;font-weight:600;color:#a855f7"><i class="fas fa-search-plus"></i> <span id="locDrillTitle">State Drill-down</span></div>
+            <button class="btn btn-sm" onclick="closeLocCompareDrill()" style="background:rgba(255,255,255,0.08)"><i class="fas fa-times"></i> Close</button>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead><tr><th>Admin</th><th>Email</th><th>Role</th><th>Jobs</th><th>Contacts</th><th>Resumes</th><th>Memberships</th><th>Hired</th><th>Total</th></tr></thead>
+              <tbody id="locDrillBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>`;
+    main.appendChild(sec);
+  }
   // Inject section container if missing
   if (!document.getElementById('sec-adminWorking')) {
     const main = document.querySelector('.main-content') || document.body;
@@ -968,7 +1034,11 @@ function ensureAdminWorkingNav() {
       <div class="card">
         <div class="card-title" style="color:#e94560;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
           <span><i class="fas fa-user-shield" style="-webkit-text-fill-color:#e94560"></i> Admin Working Dashboard</span>
-          <span style="font-size:12px;color:var(--gray);font-weight:normal">Sub-admins active in your allocated locations</span>
+          <span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button class="btn btn-sm" onclick="exportAdminWorkingCsv()" title="Download a CSV of every sub-admin and their last-7-day activity series" style="background:#22c55e;color:#fff;font-weight:600"><i class="fas fa-file-csv"></i> Export CSV</button>
+            <button class="btn btn-sm" onclick="loadAdminWorkingScoped()" title="Refresh data" style="background:rgba(255,255,255,0.08);color:#fff"><i class="fas fa-sync"></i></button>
+            <span style="font-size:12px;color:var(--gray);font-weight:normal">Sub-admins active in your allocated locations</span>
+          </span>
         </div>
         <div class="table-wrapper">
           <table>
@@ -976,7 +1046,7 @@ function ensureAdminWorkingNav() {
             <tbody id="adminWorkingScopedBody"><tr><td colspan="10" style="text-align:center;color:var(--gray);padding:20px">Loading…</td></tr></tbody>
           </table>
         </div>
-        <p style="font-size:11px;color:var(--gray);margin-top:8px"><i class="fas fa-info-circle"></i> Scope: only sub-admins inside your allocated state(s). You can Edit, Remove, or download a Report. Operations Manager / Branch Head rows are read-only.</p>
+        <p style="font-size:11px;color:var(--gray);margin-top:8px"><i class="fas fa-info-circle"></i> Scope: sub-admins inside your allocated state(s) <strong>and everyone you personally promoted</strong> (marked with a 🌟). You can Edit, Remove, or download a Report. Operations Manager / Branch Head rows are read-only.</p>
       </div>`;
     main.appendChild(sec);
   }
@@ -1001,17 +1071,27 @@ async function loadAdminWorkingScoped() {
   body.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--gray);padding:20px"><i class="fas fa-spinner fa-spin"></i> Loading…</td></tr>';
   try {
     const allowed = (adminData?.locations || []).map(s => (s||'').toLowerCase());
+    const myRole = adminData?.adminRole || '';
+    const isOpsOrBranchHead = myRole === 'Operations Manager' || myRole === 'Branch Head';
     const snap = await getDocs(collection(db, 'users'));
     const targets = [];
     snap.forEach(d => {
       const u = d.data();
       if (u.role !== 'Admin' || d.id === currentUser.uid) return;
       const locs = Array.isArray(u.locations) ? u.locations : [];
-      const hasOverlap = allowed.length === 0
-        ? locs.length === 0
+      // Three ways an admin row qualifies:
+      //  (a) Their allocated states overlap mine — historical scope
+      //  (b) I (or my chain) personally promoted them — fixes Op Mgr / Branch Head
+      //      who used to be invisible because their promotee's states didn't overlap
+      //      with the OM/BH's own allocation
+      //  (c) For an OM/BH with no specific allocation, surface every sub-admin (their
+      //      remit is org-wide) so they always see the people they manage
+      const overlap = allowed.length === 0
+        ? (isOpsOrBranchHead ? true : locs.length === 0)
         : locs.some(l => allowed.includes((l||'').toLowerCase()));
-      if (!hasOverlap) return;
-      targets.push({ uid: d.id, ...u });
+      const myPromotee = u.promotedBy === currentUser.uid;
+      if (!overlap && !myPromotee) return;
+      targets.push({ uid: d.id, ...u, _myPromotee: myPromotee });
     });
     if (!targets.length) {
       __awScopedCache = [];
@@ -1118,8 +1198,11 @@ async function loadAdminWorkingScoped() {
         ? '<span title="Activity dropping vs earlier this week" style="color:#ef4444;font-size:10px;margin-left:4px">▼</span>'
         : (total7 > 0 ? '<span title="Active" style="color:#22c55e;font-size:10px;margin-left:4px">●</span>' : '');
       const sparkCell = `<div style="display:flex;align-items:center;gap:6px"><svg width="${W}" height="${H}" style="display:block">${bars}</svg><span style="font-size:11px;color:var(--gray)">${total7}${lastNonZero === 6 ? '' : (lastNonZero === -1 ? ' · idle 7d' : ' · last ' + (6 - lastNonZero) + 'd ago')}</span>${trendIcon}</div>`;
+      const myPromoteeBadge = r._myPromotee
+        ? '<span title="You personally promoted this admin" style="margin-left:6px;font-size:11px">🌟</span>'
+        : '';
       return `<tr>
-        <td><strong>${nameSafe}</strong></td>
+        <td><strong>${nameSafe}</strong>${myPromoteeBadge}</td>
         <td style="font-size:11px">${safe(r.email||'')}</td>
         <td><span style="background:rgba(168,85,247,0.15);color:#c084fc;padding:3px 8px;border-radius:10px;font-size:11px">${safe(r.adminRole || 'Admin')}</span></td>
         <td style="text-align:center">${r.jobs}</td>
@@ -1136,6 +1219,200 @@ async function loadAdminWorkingScoped() {
   }
 }
 window.loadAdminWorkingScoped = loadAdminWorkingScoped;
+
+// ===== CSV EXPORT — Admin Working Dashboard with weekly activity series =====
+window.exportAdminWorkingCsv = function() {
+  const cache = __awScopedCache || [];
+  if (!cache.length) { showToast('No data to export. Open Admin Working first.', 'error'); return; }
+  const today = new Date(); today.setHours(0,0,0,0);
+  // Build last-7-day date headers (oldest -> newest), matching how series7d is filled (idx 0 = 6 days ago)
+  const dayHeaders = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today); d.setDate(today.getDate() - i);
+    dayHeaders.push(d.toISOString().slice(0,10));
+  }
+  const headers = ['Name','Email','Role','States','Jobs','Contacts','Resumes','Memberships','Hired','Total7d','Trend'].concat(dayHeaders.map(h => 'D_'+h));
+  const escape = v => {
+    const s = (v == null ? '' : String(v));
+    return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+  };
+  const rows = [headers.join(',')];
+  cache.forEach(r => {
+    const series = Array.isArray(r.series7d) ? r.series7d.slice(0,7) : [];
+    while (series.length < 7) series.push(0);
+    const total7 = series.reduce((a,b)=>a+(+b||0),0);
+    // Trend: compare last-3 vs prior-4 sum
+    const recent3 = series.slice(4).reduce((a,b)=>a+(+b||0),0);
+    const earlier4 = series.slice(0,4).reduce((a,b)=>a+(+b||0),0);
+    const trend = total7 === 0 ? 'idle' : (recent3 < earlier4 ? 'dropping' : (recent3 > earlier4 ? 'rising' : 'steady'));
+    const line = [
+      r.name || r.email || '',
+      r.email || '',
+      r.adminRole || 'Admin',
+      Array.isArray(r.locations) ? r.locations.join('|') : '',
+      r.jobs || 0, r.contacts || 0, r.resumes || 0, r.memberships || 0, r.hired || 0,
+      total7, trend
+    ].concat(series).map(escape).join(',');
+    rows.push(line);
+  });
+  const csv = rows.join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
+  a.href = url; a.download = `admin-working_${stamp}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+  showToast(`Exported ${cache.length} sub-admin rows as CSV.`, 'success');
+};
+
+// ===== LOCATION COMPARISON DASHBOARD — pie chart + drill-down =====
+let __locCompareCache = null;     // { state -> { admins:[uid...], jobs, contacts, resumes, memberships, hired, total } }
+let __locCompareChart = null;
+window.loadLocationComparison = async function() {
+  const tbody = document.getElementById('locCompareTable');
+  const empty = document.getElementById('locCompareEmpty');
+  const canvas = document.getElementById('locCompareChart');
+  if (!tbody || !canvas) return;
+  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--gray);padding:20px"><i class="fas fa-spinner fa-spin"></i> Aggregating…</td></tr>';
+  // Make sure underlying scope cache is fresh
+  if (!__awScopedCache || !__awScopedCache.length) {
+    await loadAdminWorkingScoped();
+  }
+  const cache = __awScopedCache || [];
+  // Aggregate per-state work across every sub-admin in our scope
+  const byState = {};
+  cache.forEach(r => {
+    const total = (r.jobs||0) + (r.contacts||0) + (r.resumes||0) + (r.memberships||0) + (r.hired||0);
+    const locs = Array.isArray(r.locations) && r.locations.length ? r.locations : ['Unassigned'];
+    locs.forEach(raw => {
+      const st = (raw || 'Unassigned').trim() || 'Unassigned';
+      if (!byState[st]) byState[st] = { admins: [], jobs:0, contacts:0, resumes:0, memberships:0, hired:0, total:0, rows:[] };
+      const b = byState[st];
+      if (!b.admins.includes(r.uid)) b.admins.push(r.uid);
+      b.jobs += (r.jobs||0); b.contacts += (r.contacts||0); b.resumes += (r.resumes||0);
+      b.memberships += (r.memberships||0); b.hired += (r.hired||0); b.total += total;
+      b.rows.push(r);
+    });
+  });
+  __locCompareCache = byState;
+  const states = Object.keys(byState).sort((a,b) => byState[b].total - byState[a].total);
+  const grandTotal = states.reduce((s,st) => s + byState[st].total, 0);
+
+  // Render table
+  if (!states.length || grandTotal === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--gray);padding:20px">No state-level activity yet.</td></tr>';
+    if (empty) empty.style.display = 'block';
+    canvas.style.display = 'none';
+    if (__locCompareChart) { try { __locCompareChart.destroy(); } catch(_){} __locCompareChart = null; }
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  canvas.style.display = 'block';
+  const safe = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  tbody.innerHTML = states.map(st => {
+    const b = byState[st];
+    const pct = grandTotal ? ((b.total / grandTotal) * 100).toFixed(1) : '0.0';
+    return `<tr style="cursor:pointer" onclick="openLocCompareDrill('${safe(st).replace(/'/g, "\\'")}')" title="Click to drill into ${safe(st)}">
+      <td><strong>${safe(st)}</strong></td>
+      <td style="text-align:center">${b.admins.length}</td>
+      <td style="text-align:center"><strong>${b.total}</strong></td>
+      <td style="text-align:center">${pct}%</td>
+    </tr>`;
+  }).join('');
+
+  // Render pie chart (Chart.js 4 already loaded)
+  const palette = ['#a855f7','#22c55e','#f59e0b','#3b82f6','#ec4899','#14b8a6','#ef4444','#eab308','#6366f1','#84cc16','#f97316','#06b6d4','#d946ef','#10b981','#f43f5e'];
+  const colors = states.map((_, i) => palette[i % palette.length]);
+  if (__locCompareChart) { try { __locCompareChart.destroy(); } catch(_){} }
+  if (typeof Chart === 'undefined') {
+    console.warn('Chart.js not loaded; pie chart skipped');
+  } else {
+    __locCompareChart = new Chart(canvas, {
+      type: 'pie',
+      data: { labels: states, datasets: [{ data: states.map(st => byState[st].total), backgroundColor: colors, borderColor: 'rgba(0,0,0,0.5)', borderWidth: 2 }] },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { color: '#fff', font: { size: 11 } } },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                const v = ctx.parsed; const pct = grandTotal ? ((v/grandTotal)*100).toFixed(1) : '0.0';
+                const adm = byState[ctx.label]?.admins.length || 0;
+                return `${ctx.label}: ${v} work units · ${pct}% · ${adm} admin${adm===1?'':'s'}`;
+              }
+            }
+          }
+        },
+        onClick: (evt, els) => {
+          if (!els.length) return;
+          const idx = els[0].index;
+          const st = states[idx];
+          if (st) openLocCompareDrill(st);
+        }
+      }
+    });
+  }
+};
+
+window.openLocCompareDrill = function(state) {
+  const wrap = document.getElementById('locCompareDrill');
+  const body = document.getElementById('locDrillBody');
+  const title = document.getElementById('locDrillTitle');
+  if (!wrap || !body || !__locCompareCache || !__locCompareCache[state]) return;
+  const b = __locCompareCache[state];
+  const safe = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  title.textContent = `${state} — ${b.admins.length} admin${b.admins.length===1?'':'s'} · ${b.total} total work units`;
+  // Sort admins desc by per-admin total work in this state
+  const rows = b.rows.slice().sort((x, y) => {
+    const tx = (x.jobs||0)+(x.contacts||0)+(x.resumes||0)+(x.memberships||0)+(x.hired||0);
+    const ty = (y.jobs||0)+(y.contacts||0)+(y.resumes||0)+(y.memberships||0)+(y.hired||0);
+    return ty - tx;
+  });
+  body.innerHTML = rows.map(r => {
+    const t = (r.jobs||0)+(r.contacts||0)+(r.resumes||0)+(r.memberships||0)+(r.hired||0);
+    return `<tr>
+      <td><strong>${safe(r.name || r.email || '—')}</strong>${r._myPromotee?' 🌟':''}</td>
+      <td style="font-size:11px">${safe(r.email||'')}</td>
+      <td><span style="background:rgba(168,85,247,0.15);color:#c084fc;padding:3px 8px;border-radius:10px;font-size:11px">${safe(r.adminRole||'Admin')}</span></td>
+      <td style="text-align:center">${r.jobs||0}</td>
+      <td style="text-align:center">${r.contacts||0}</td>
+      <td style="text-align:center">${r.resumes||0}</td>
+      <td style="text-align:center">${r.memberships||0}</td>
+      <td style="text-align:center">${r.hired||0}</td>
+      <td style="text-align:center"><strong>${t}</strong></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--gray);padding:14px">No admins.</td></tr>';
+  wrap.style.display = 'block';
+  wrap.scrollIntoView({ behavior:'smooth', block:'nearest' });
+};
+window.closeLocCompareDrill = function() {
+  const wrap = document.getElementById('locCompareDrill');
+  if (wrap) wrap.style.display = 'none';
+};
+window.exportLocCompareCsv = function() {
+  if (!__locCompareCache) { showToast('Open the dashboard first.', 'error'); return; }
+  const states = Object.keys(__locCompareCache).sort((a,b) => __locCompareCache[b].total - __locCompareCache[a].total);
+  if (!states.length) { showToast('Nothing to export.', 'error'); return; }
+  const grand = states.reduce((s,st) => s + __locCompareCache[st].total, 0);
+  const escape = v => { const s = (v==null?'':String(v)); return /[",\n\r]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s; };
+  const lines = [['State','SubAdmins','Jobs','Contacts','Resumes','Memberships','Hired','Total','SharePct'].join(',')];
+  states.forEach(st => {
+    const b = __locCompareCache[st];
+    const pct = grand ? ((b.total/grand)*100).toFixed(2) : '0';
+    lines.push([st, b.admins.length, b.jobs, b.contacts, b.resumes, b.memberships, b.hired, b.total, pct].map(escape).join(','));
+  });
+  const blob = new Blob([lines.join('\r\n')], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
+  a.href = url; a.download = `location-comparison_${stamp}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+  showToast('Per-state totals exported.', 'success');
+};
 
 // Remove (demote) a sub-admin from this admin's allocated states.
 // Same outcome as owner's demoteAdmin: resets role/tag/auths/locations and clears MPIN.
@@ -1262,6 +1539,7 @@ window.showSection = function(name) {
     case 'jobList': loadJobList(); break;
     case 'managePromoted': loadManagePromoted(); break;
     case 'myPromotionRequests': loadMyPromotionRequests(); break;
+    case 'locCompare': loadLocationComparison(); break;
     case 'manageMpin': loadOtherMpinList(); loadMpinRecordsAdmin(); break;
     case 'auditLog': loadAdminAuditLog(); break;
     case 'resumeRecords': loadAdResumeRecords(); break;
@@ -2800,7 +3078,7 @@ window.enableChatBubble = async function(notifId) {
     document.getElementById('adminNotifModal')?.classList.remove('active');
     // Make sure GroupChat module is initialised so the bubble can mount
     try {
-      if (!window.GroupChat) { const m = await import('./js/group-chat.js?v=3'); m.default.init({ user: currentUser }); }
+      if (!window.GroupChat) { const m = await import('./js/group-chat.js?v=4'); m.default.init({ user: currentUser }); }
     } catch(_){}
   } catch(e) {
     alert('Could not enable chat: ' + (e.message || 'unknown error'));
@@ -2898,7 +3176,7 @@ window.refreshChatboxInbox = async function() {
   // Ensure GroupChat is initialised
   if (!window.GroupChat || !window.GroupChat.currentUser) {
     try {
-      const m = await import('./js/group-chat.js?v=3');
+      const m = await import('./js/group-chat.js?v=4');
       m.default.init({ user: currentUser });
       // wait briefly for first snapshot
       await new Promise(r => setTimeout(r, 800));
@@ -2965,7 +3243,7 @@ function updateChatboxBadge(n) {
 
 window.openChatFromInbox = async function(groupId) {
   if (!window.GroupChat) {
-    const m = await import('./js/group-chat.js?v=3');
+    const m = await import('./js/group-chat.js?v=4');
     m.default.init({ user: currentUser });
   }
   const panel = document.getElementById('gc-panel');
