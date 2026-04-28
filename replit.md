@@ -34,6 +34,22 @@ A full-featured hospitality job portal with role-based authentication (Owner, Ad
 - **User doc fields**: `walletBalance`, `referralCode`, `referredBy`, `referredByCode`, `primeReferralCredited`, `referralPrimeCount`, `activeCoupon`.
 - **Shared module**: `js/wallet-ui.js` (attachWallet UI: balance/topup/withdraw/history + My Coupons + referral; payMembershipFromWallet, maybeCreditReferral).
 
+## Recent Fixes (April 2026)
+
+**Gemini AI fully restored on production + Replit preview.** Three bugs were fixed in `cloudflare-worker/worker.js`:
+
+1. **`503 "high demand"` errors killed AI** — retry logic only handled 429/404. Added `isRetryableGeminiError()` covering 503/502/500/504 + "overloaded/unavailable/busy" patterns.
+2. **Model fallback chain too narrow** — expanded to 5 models, lighter ones first: `gemini-2.5-flash-lite` → `gemini-2.5-flash` → `gemini-2.0-flash-lite` → `gemini-2.0-flash` → `gemini-flash-latest`.
+3. **`/api/chat-stream` (SSE) hung forever** — the streaming IIFE was being terminated by Cloudflare's runtime as soon as the Response returned. Fixed by adding `ctx` to fetch handler signature and using `ctx.waitUntil(streamWork)` to tie background work to request lifetime.
+
+Same retry/fallback logic mirrored in `server.js` for true-localhost mode.
+
+**Cloudflare API token + Account ID** stored as Replit Secrets:
+- `CLOUDFLARE_API_TOKEN` (also needed as GitHub Actions secret)
+- Account ID: `f2b611267d083445915f58695aee5fb7`
+
+**Auto-deploy via GitHub Actions** — `.github/workflows/deploy-cloudflare-worker.yml` runs `wrangler deploy` on every push that touches `cloudflare-worker/**`. Requires `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` GitHub repo secrets.
+
 ## Production Deployment — Hybrid Free (Firebase Hosting + Cloudflare Worker)
 The site is split across two free-tier services so **no credit card is needed**:
 - **Firebase Hosting (Spark plan)** — serves all static HTML/CSS/JS, plus Firestore, Auth, Storage.

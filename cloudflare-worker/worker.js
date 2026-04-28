@@ -188,7 +188,7 @@ async function handleChat(req, env) {
 }
 
 // ---------- /api/chat-stream (SSE) ----------
-async function handleChatStream(req, env) {
+async function handleChatStream(req, env, ctx) {
   const body = await req.json().catch(() => ({}));
   const { message, history = [], lang = 'en' } = body || {};
   const enc = new TextEncoder();
@@ -222,7 +222,7 @@ async function handleChatStream(req, env) {
   const writer = writable.getWriter();
   const write = (s) => writer.write(enc.encode(s));
 
-  (async () => {
+  const streamWork = (async () => {
     const primary = env.GEMINI_MODEL || DEFAULT_MODEL;
     const order = [primary, ...MODEL_FALLBACKS];
     const tried = new Set();
@@ -302,6 +302,14 @@ async function handleChatStream(req, env) {
       await writer.close();
     } catch (_) {}
   });
+
+  // CRITICAL: tie the background streaming work to the request lifetime.
+  // Without ctx.waitUntil(), Cloudflare's runtime may suspend or terminate the
+  // IIFE the moment we return the Response, leaving the SSE body empty and the
+  // client hanging forever.
+  if (ctx && typeof ctx.waitUntil === 'function') {
+    ctx.waitUntil(streamWork);
+  }
 
   return new Response(readable, { status: 200, headers: sseHeaders });
 }
@@ -561,7 +569,7 @@ ${JSON.stringify(missTexts)}`;
 
 // ---------- Main fetch handler ----------
 export default {
-  async fetch(req, env) {
+  async fetch(req, env, ctx) {
     const url = new URL(req.url);
     const cors = corsHeaders(req, env);
 
@@ -590,7 +598,7 @@ export default {
     try {
       switch (url.pathname) {
         case '/api/chat':        return await handleChat(req, env);
-        case '/api/chat-stream': return await handleChatStream(req, env);
+        case '/api/chat-stream': return await handleChatStream(req, env, ctx);
         case '/api/resume':      return await handleResume(req, env);
         case '/api/job-match':   return await handleJobMatch(req, env);
         case '/api/translate':   return await handleTranslate(req, env);
