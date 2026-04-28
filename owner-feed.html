@@ -54,6 +54,10 @@
     <div class="navbar-right">
       <span class="user-tag tag-owner">Owner</span>
       <span class="tag-user-name" id="ownerName"></span>
+      <button class="btn btn-sm navbar-chat-btn hidden" id="navChatBtn" title="Group Chats">
+        <i class="fas fa-comments"></i>
+        <span id="navChatBtnBadge" class="nav-chat-badge">0</span>
+      </button>
       <button class="btn btn-sm" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#fff;position:relative" onclick="showSection('notifications')">
         <i class="fas fa-bell"></i> <span id="notifBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;font-size:10px;width:18px;height:18px;border-radius:50%;display:none;align-items:center;justify-content:center;font-weight:700" id="notifBadge">0</span>
       </button>
@@ -1531,7 +1535,7 @@ function unlockDashboard() {
   document.getElementById('mainDashboard').style.display = 'block';
   loadRevenue();
   // Init group chat (Phase 4)
-  import('./js/group-chat.js?v=3').then(m => {
+  import('./js/group-chat.js?v=4').then(m => {
     m.default.init({ user: currentUser });
     window.__OWNER_GROUP_CHAT_READY__ = true;
   }).catch(e => console.warn('GroupChat init failed:', e));
@@ -4239,7 +4243,7 @@ window.createConnectHubGroup = async function() {
   const roles = [...new Set(Array.from(document.querySelectorAll('.ch_member_cb:checked')).map(c => c.dataset.role))];
   try {
     if (!window.GroupChat) {
-      const m = await import('./js/group-chat.js?v=3');
+      const m = await import('./js/group-chat.js?v=4');
       m.default.init({ user: currentUser });
     }
     await window.GroupChat.createGroup({ name, states, roles, memberUids });
@@ -4293,7 +4297,7 @@ function startConnectGroupsListener() {
 }
 
 window.ch_openGroup = async function(id) {
-  if (!window.GroupChat) { const m = await import('./js/group-chat.js?v=3'); m.default.init({ user: currentUser }); }
+  if (!window.GroupChat) { const m = await import('./js/group-chat.js?v=4'); m.default.init({ user: currentUser }); }
   if (typeof window.GroupChat.openThread === 'function') {
     if (typeof window.GroupChat.togglePanel === 'function') {
       const panel = document.getElementById('gc-panel');
@@ -4304,12 +4308,12 @@ window.ch_openGroup = async function(id) {
 };
 window.ch_dismissGroup = async function(id) {
   if (!confirm('Close this group? Members will see "closed by Owner" and cannot send messages.')) return;
-  if (!window.GroupChat) { const m = await import('./js/group-chat.js?v=3'); m.default.init({ user: currentUser }); }
+  if (!window.GroupChat) { const m = await import('./js/group-chat.js?v=4'); m.default.init({ user: currentUser }); }
   await window.GroupChat.dismissGroup(id);
   showToast('Group closed');
 };
 window.ch_restoreGroup = async function(id) {
-  if (!window.GroupChat) { const m = await import('./js/group-chat.js?v=3'); m.default.init({ user: currentUser }); }
+  if (!window.GroupChat) { const m = await import('./js/group-chat.js?v=4'); m.default.init({ user: currentUser }); }
   await window.GroupChat.restoreGroup(id);
   showToast('Group restored');
 };
@@ -4804,7 +4808,7 @@ window.generateAllReports = async function(period) {
   const el = document.getElementById('reportsMsg');
   el.textContent = `Generating ${period} reports for all groups…`; el.className='alert alert-success show';
   try {
-    if (!window.GroupChat) { const m = await import('./js/group-chat.js?v=3'); m.default.init({ user: auth.currentUser }); }
+    if (!window.GroupChat) { const m = await import('./js/group-chat.js?v=4'); m.default.init({ user: auth.currentUser }); }
     // Wait a moment for groups subscription
     await new Promise(r => setTimeout(r, 800));
     const groups = window.GroupChat.groups || [];
