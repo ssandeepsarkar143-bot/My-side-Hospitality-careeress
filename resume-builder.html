@@ -277,7 +277,7 @@ async function generateResume() {
   btn.disabled = true; loader.classList.add('show');
 
   try {
-    const res = await fetch('/api/resume', {
+    const res = await fetch((window.hcApiUrl ? window.hcApiUrl('/api/resume') : '/api/resume'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ profile })
@@ -507,6 +507,7 @@ function esc(s){return String(s||'').replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt
 </script>
 
 <script src="js/pwa-install.js"></script>
+<script src="js/api-config.js"></script>
 <script src="js/chatbot.js"></script>
 </body>
 </html>

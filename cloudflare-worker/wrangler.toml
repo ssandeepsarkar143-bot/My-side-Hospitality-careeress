@@ -1,0 +1,27 @@
+# Cloudflare Worker config for the Hospitality Careers Gemini proxy.
+#
+# Deploy steps (one-time):
+#   1. npm install -g wrangler
+#   2. wrangler login
+#   3. cd cloudflare-worker
+#   4. wrangler secret put GEMINI_KEY      # paste your Gemini API key
+#   5. wrangler deploy
+#
+# After deploy you'll get a URL like:
+#   https://hospitality-gemini.<your-subdomain>.workers.dev
+# Paste that URL into js/api-config.js (HC_AI_BASE_PROD).
+
+name = "hospitality-gemini"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+
+# Optional: restrict which web origins may call the worker.
+# Leave empty (or set to "*") to allow any origin.
+# Example: "https://hospitality-careers-e662f.web.app,https://hospitality-careers-e662f.firebaseapp.com"
+[vars]
+ALLOWED_ORIGINS = ""
+GEMINI_MODEL = "gemini-flash-latest"
+
+# GEMINI_KEY is a SECRET — set it via:
+#   wrangler secret put GEMINI_KEY
+# Do NOT put it in this file.

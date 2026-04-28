@@ -34,32 +34,56 @@ A full-featured hospitality job portal with role-based authentication (Owner, Ad
 - **User doc fields**: `walletBalance`, `referralCode`, `referredBy`, `referredByCode`, `primeReferralCredited`, `referralPrimeCount`, `activeCoupon`.
 - **Shared module**: `js/wallet-ui.js` (attachWallet UI: balance/topup/withdraw/history + My Coupons + referral; payMembershipFromWallet, maybeCreditReferral).
 
-## Firebase Deployment (from VS Code) — Phase 9 Final
-**One-time setup:**
-1. `npm install -g firebase-tools`
-2. `firebase login`
-3. `firebase use hospitality-careers-e662f`
+## Production Deployment — Hybrid Free (Firebase Hosting + Cloudflare Worker)
+The site is split across two free-tier services so **no credit card is needed**:
+- **Firebase Hosting (Spark plan)** — serves all static HTML/CSS/JS, plus Firestore, Auth, Storage.
+- **Cloudflare Workers (free plan)** — proxies all `/api/*` calls to Gemini and holds the API key as an encrypted secret. 100,000 requests/day free.
 
-**Setting the Gemini API key (CRITICAL — without this, AI Resume + Chatbot won't work in production):**
-4. Get a free Gemini API key from https://aistudio.google.com/apikey
-5. Run: `firebase functions:secrets:set GEMINI_API_KEY`
-6. When prompted, paste the API key (starts with `AIza...`) and press Enter.
-7. Verify with: `firebase functions:secrets:access GEMINI_API_KEY` (should print the key).
+### Architecture
+| Layer | Where | Cost |
+|---|---|---|
+| Frontend (HTML/CSS/JS) | Firebase Hosting | $0 |
+| Auth + Firestore + Storage | Firebase Spark | $0 |
+| AI proxy (`/api/chat`, `/api/chat-stream`, `/api/resume`, `/api/translate`) | Cloudflare Worker | $0 |
+| In-app notifications (bell icon) | Firestore listener | $0 |
+| Local development | Replit Express `server.js` (port 5000) | $0 |
 
-**Deploy everything:**
-8. `firebase deploy` — deploys hosting + functions + rules + storage rules in one go.
-   - For partial deploys: `firebase deploy --only hosting,firestore:rules,functions`
-   - For rules only: `firebase deploy --only firestore:rules` (run after editing `firestore.rules`)
+The front-end auto-detects environment via `js/api-config.js`:
+- On `localhost`, `*.replit.dev`, `*.replit.app`, `*.repl.co` → calls go to the local Express server (relative URLs).
+- On Firebase Hosting domains → calls go to the Cloudflare Worker URL configured in `js/api-config.js` (`HC_AI_BASE_PROD`).
 
-**How AI calls work after deploy:**
-- All `/api/chat`, `/api/resume`, `/api/preview-end` calls auto-route to Cloud Functions via `firebase.json` rewrites.
-- The function reads `GEMINI_API_KEY` from Firebase Secrets at runtime — no `.env` file needed.
-- If AI returns "API key not configured": re-run step 5 and redeploy with `firebase deploy --only functions`.
+### One-time setup
 
-**Verify AI Resume Builder works after deploy:**
+**Step A — Deploy the Cloudflare Worker (5 minutes, no credit card):**
+1. `npm install -g wrangler`
+2. `wrangler login` (browser opens; sign up with email + password — no card asked)
+3. `cd cloudflare-worker`
+4. `wrangler secret put GEMINI_KEY` — paste your free Gemini key from https://aistudio.google.com/apikey
+5. `wrangler deploy` — copy the resulting URL, e.g. `https://hospitality-gemini.<your-subdomain>.workers.dev`
+
+See `cloudflare-worker/README.md` for full details, CORS lock-down, and verification curls.
+
+**Step B — Wire the front-end to the Worker:**
+6. Open `js/api-config.js` and replace the empty `HC_AI_BASE_PROD = ''` with your Worker URL from step 5.
+
+**Step C — Deploy Firebase Hosting:**
+7. `npm install -g firebase-tools`
+8. `firebase login`
+9. `firebase use hospitality-careers-e662f`
+10. `firebase deploy --only hosting,firestore:rules,storage` — deploys static site + rules.
+
+> **Note:** `firebase.json` no longer contains Cloud Functions rewrites (those required Blaze plan). The `functions/` folder is kept for reference only and is excluded from hosting via the `ignore` list.
+
+### Verify AI Resume Builder works after deploy
 1. Open `https://hospitality-careers-e662f.web.app/resume-builder.html`
-2. Fill name + job target + 1 experience + 1 skill → click **Generate My Resume**
-3. Should show formatted resume within 5–10s. If "Failed": open browser console → look for `/api/resume` response → if 500, GEMINI_API_KEY missing or quota exceeded.
+2. Fill Full Name + Job Title + 1 experience + 1 skill → click **Generate My Resume**
+3. Should show a formatted resume within 5–10s. If "Failed":
+   - Browser DevTools Network tab → look for the `/api/resume` request — its URL should point to your Worker (`hospitality-gemini.*.workers.dev`), not your Firebase domain.
+   - If 500 from the Worker: `wrangler tail` in `cloudflare-worker/` to see live logs. Most common cause is missing/wrong `GEMINI_KEY`.
+
+### About OS lock-screen push notifications
+True OS-level push (browser closed, lock-screen wake-up) needs a server process that calls FCM whenever a Firestore notification doc is written. That requires Cloud Functions (Blaze) **or** a paid always-on VM — neither is achievable on the $0 / no-card path.
+**Current behavior:** the in-app bell icon delivers real-time notifications via Firestore listener whenever the page is open; PWA install gives a home-screen icon. Add Cloud Functions later when a card is available.
 
 ## User Roles & Redirects
 - **Owner** (ssandeepsarkar143@gmail.com) → `owner-feed.html`

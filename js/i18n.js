@@ -650,7 +650,7 @@ async function runAutoTranslate() {
     for (let i = 0; i < needed.length; i += BATCH) {
       const slice = needed.slice(i, i + BATCH);
       try {
-        const r = await fetch('/api/translate', {
+        const r = await fetch((window.hcApiUrl ? window.hcApiUrl('/api/translate') : '/api/translate'), {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ texts: slice, lang })
         });

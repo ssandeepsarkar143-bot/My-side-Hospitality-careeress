@@ -340,7 +340,7 @@ async function sendMsg(text) {
 
   // Try streaming endpoint first
   try {
-    const res = await fetch('/api/chat-stream', {
+    const res = await fetch((window.hcApiUrl ? window.hcApiUrl('/api/chat-stream') : '/api/chat-stream'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
       body: JSON.stringify({ message: msg, lang: currentLang, history: HC_HISTORY.slice(-8) })
@@ -389,7 +389,7 @@ async function sendMsg(text) {
   } catch (_) { /* fall back to non-stream */ }
 
   try {
-    const res = await fetch('/api/chat', {
+    const res = await fetch((window.hcApiUrl ? window.hcApiUrl('/api/chat') : '/api/chat'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: msg, lang: currentLang, history: HC_HISTORY.slice(-8) })
