@@ -11,6 +11,8 @@ Allow: /help.html
 Allow: /feedback.html
 Allow: /membership.html
 Allow: /resume-builder.html
+Allow: /privacy.html
+Allow: /terms.html
 Allow: /css/
 Allow: /js/
 Allow: /logo.png
