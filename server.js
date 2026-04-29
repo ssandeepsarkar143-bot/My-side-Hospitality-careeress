@@ -189,7 +189,7 @@ const PUBLIC_KB = `HOSPITALITY CAREERS — public knowledge:
 
 ABOUT THE PLATFORM
 • Hospitality Careers (findhospitalitycareers.web.app) is an Indian hospitality-focused career platform. We connect verified hospitality talent — Front Office, F&B Service, Kitchen, Housekeeping, Spa & Wellness, Sales & Marketing, Security and HR — with hotels, resorts, cafés, restaurants, F&B chains, cruise lines and catering companies across India.
-• Founded in 2026 by Suman Sarkar with a simple promise: every hospitality professional deserves a fulfilling career, and every employer deserves verified, ready-to-work talent.
+• Launched in 2026 by the Hospitality Careers management team with a simple promise: every hospitality professional deserves a fulfilling career, and every employer deserves verified, ready-to-work talent.
 • Officially launched in April 2026.
 • Two main user types: Job Seekers (Users / Prime Members) and Employers (post jobs and hire staff).
 
@@ -198,7 +198,7 @@ OUR STORY (mature, brand-friendly)
 • Today we serve candidates and employers across multiple Indian states with full state-wise admin coverage, AI-powered resume tools, real-time chat, secure UPI payments and a points-based HC Wallet.
 
 LEADERSHIP (public)
-• Founder & CEO: Suman Sarkar — vision, product and partnerships.
+• The platform is operated by the Hospitality Careers management team — vision, product and partnerships.
 • The current leadership team also includes Operations and Admin leads visible on the public About page (about.html). Admin and Operations leads are regional and are added on the About page as they come on board.
 • For the latest, always direct the user to the About page (about.html) — it is updated by the team.
 
@@ -356,7 +356,7 @@ If a non-management user asks about anything in the restricted list above, give 
 
 ALWAYS-SAFE TOPICS (you may answer freely, but stay mature and never invent specific numbers):
 • Public features (jobs, Prime, payments, resume builder, wallet, refer & earn, coupons, group chat, notifications)
-• Founder/CEO name (Suman Sarkar) and the public About page
+• The Hospitality Careers management team and the public About page
 • "Our story" / why the platform exists / mission
 • Which states we operate in (point to Find Job filters for the live list)
 • Feedback / reviews — answer with the mature "we just launched, be one of the first" framing

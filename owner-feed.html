@@ -744,7 +744,7 @@
           <div class="card">
             <div class="card-title"><i class="fas fa-info-circle"></i> About Us Content</div>
             <div class="form-group"><label>Website Launch Date</label><input type="text" id="ss_launchDate" class="form-control" placeholder="e.g. January 2024"/></div>
-            <div class="form-group"><label>Owner Name</label><input type="text" id="ss_ownerName" class="form-control" placeholder="Suman Sarkar"/></div>
+            <div class="form-group"><label>Owner Name</label><input type="text" id="ss_ownerName" class="form-control" placeholder="Management"/></div>
             <div class="form-group"><label>Owner Photo URL</label><input type="text" id="ss_ownerPhoto" class="form-control" placeholder="https://..."/></div>
             <div class="form-group">
               <label>Or Upload Owner Photo</label>
@@ -4172,7 +4172,7 @@ async function loadSiteSettings() {
     if (snap.exists()) {
       const s = snap.data();
       document.getElementById('ss_launchDate').value = s.launchDate||'';
-      document.getElementById('ss_ownerName').value = s.ownerName||'Suman Sarkar';
+      document.getElementById('ss_ownerName').value = s.ownerName||'Management';
       document.getElementById('ss_ownerPhoto').value = s.ownerPhoto||'';
       document.getElementById('ss_adminName').value = s.adminName||'';
       document.getElementById('ss_adminPhoto').value = s.adminPhoto||'';
