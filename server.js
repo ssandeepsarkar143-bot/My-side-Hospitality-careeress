@@ -16,6 +16,7 @@ const htmlPages = new Set([
   'help.html',
   'index.html',
   'job-post-from.html',
+  'jobs.html',
   'membership.html',
   'owner-feed.html',
   'prime-feed.html',

@@ -144,7 +144,14 @@ True OS-level push (browser closed, lock-screen wake-up) needs a server process 
 ## Logo
 Place your logo file as `logo.png` in the project root (also stored in `public/logo.png`).
 
-## Recent Fixes (2026-04-29, Latest) — Notifications, Bell badges, AI overhaul, full SEO
+## Recent Fixes (2026-04-29, Latest) — /jobs.html landing page + cross-site SEO wiring
+- **New `/jobs.html` landing page** (~24 KB) — fully static, indexable category landing page targeting "hospitality jobs in India" and 8 sub-categories. Sections: hero with breadcrumb, intro card (`<h1>India's Trusted Hospitality Job Portal</h1>`), 8 category cards with rich keyword-dense descriptions and common-role lists (Front Office, F&B Service, Kitchen/Culinary, Housekeeping, Spa & Wellness, Sales & Marketing, Security, HR), 15 city chips (Delhi NCR, Mumbai, Bangalore, Hyderabad, Chennai, Kolkata, Pune, Goa, Jaipur, Udaipur, Kochi, Ahmedabad, Gurgaon, Noida, Chandigarh), "Why Job Seekers Choose" benefits list, 5-question FAQ, gold CTA card, full footer. Uses existing `pub-nav / pub-hero / pub-section / pub-card` classes from `css/styles.css` plus inline scoped styles.
+- **Structured data on /jobs.html**: single `@graph` with 3 entities — `BreadcrumbList`, `CollectionPage` (with 8 `about` Things), and `FAQPage` (4 Q&A) — all referencing `https://findhospitalitycareers.web.app/jobs.html` as canonical, `en-IN` locale.
+- **Cross-site nav wiring**: added `Jobs` link (with `fa-briefcase` icon) right after `Home` in the `pub-nav` of `about.html`, `contact.html`, `feedback.html`, `help.html`, `resume-builder.html`. `index.html` got a new "Jobs" link in both the sub-nav strip under the hero and the trust footer. `jobs.html` itself navigates to all other public pages.
+- **Sitemap + robots**: `sitemap.xml` now includes `<loc>.../jobs.html</loc>` with `<priority>0.95</priority>` and `<changefreq>daily</changefreq>` (placed second, right after the homepage). `robots.txt` adds `Allow: /jobs.html` in the public-pages block.
+- **Server whitelist**: `server.js`' `htmlPages` Set received `'jobs.html'` so Express serves it at `/jobs.html` (without that, the route returned a 404 even though the file existed and JSON-LD validated).
+
+## Recent Fixes (2026-04-29) — Notifications, Bell badges, AI overhaul, full SEO
 - **Owner-only silent maintenance banner**: `js/maintenance-overlay.js` adds `_userIsOwner` flag — owner sees no banner. Admin / sub-admin / `bypassUids` keep working but see a small unobtrusive banner (no End-Now button — that lives only on the owner dashboard). All other users still see the full block when `blockSite=true`.
 - **`js/notify-helpers.js`** auto-notifies owner + every admin/sub-admin whose `authorities[<key>]` is true and whose `locations` overlap the requester's `state` for every new request, with an "Approval guide" hint embedded in the message body (request type, action, and where to act in the dashboard).
 - **`js/request-badges.js` (new, site-wide)**: live `onSnapshot` of unread `notifications` for the current user, broken down per `requestType`. Fills:
