@@ -198,5 +198,12 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow write: if isOwner();
     }
+
+    // APP MAINTENANCE — public read so the site-wide overlay/banner can render
+    // for everyone (including signed-out visitors). Owner-only write.
+    match /app_maintenance/{id} {
+      allow read: if true;
+      allow write: if isOwner();
+    }
   }
 }
