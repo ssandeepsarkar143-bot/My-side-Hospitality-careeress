@@ -105,6 +105,15 @@
     <div class="site-title" data-i18n="login.title">Hospitality Careers</div>
     <div class="site-subtitle" data-i18n="login.subtitle">Your Gateway to Hospitality Jobs</div>
 
+    <!-- Trust badge: makes legitimacy clear to users + Google Safe Browsing -->
+    <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin:10px 0 4px;font-size:11.5px;color:#bfbfcc;letter-spacing:0.3px">
+      <i class="fas fa-shield-alt" style="color:#34d058"></i>
+      <span>Secure sign-in protected by <strong style="color:#fff">Google Firebase Authentication</strong></span>
+    </div>
+    <div style="text-align:center;font-size:11px;color:#888;margin-bottom:14px">
+      Official portal of Hospitality Careers — founded by Suman Sarkar
+    </div>
+
     <div id="alertBox" class="alert"></div>
 
     <form id="loginForm">
@@ -137,6 +146,20 @@
       <span data-i18n="login.noacc">Don't have an account?</span> <span class="text-link" id="openSignup" data-i18n="login.signup">Create an Account</span>
     </div>
 
+    <!-- Anti-phishing notice (Google Safe Browsing trust signal) -->
+    <div style="margin-top:14px;padding:10px 12px;background:rgba(52,208,88,0.06);border:1px solid rgba(52,208,88,0.18);border-radius:8px;font-size:11.5px;color:#bfbfcc;line-height:1.55;text-align:center">
+      <i class="fas fa-info-circle" style="color:#34d058;margin-right:4px"></i>
+      We <strong style="color:#fff">never</strong> ask for your password, OTP, MPIN or UPI PIN over phone, SMS or email.
+    </div>
+
+    <!-- Legal links right next to the form (required trust signal) -->
+    <div style="margin-top:10px;text-align:center;font-size:11.5px;color:#888;line-height:1.7">
+      By continuing you agree to our<br/>
+      <a href="/terms.html" style="color:#d4af37;text-decoration:none">Terms of Service</a>
+      &nbsp;·&nbsp;
+      <a href="/privacy.html" style="color:#d4af37;text-decoration:none">Privacy Policy</a>
+    </div>
+
     <!-- DOWNLOAD APP BUTTONS (controlled from owner site settings) -->
     <div id="downloadAppSection" style="display:none;margin-top:20px;padding:14px 0 6px;border-top:1px solid rgba(255,255,255,0.1)">
       <p style="text-align:center;font-size:12px;color:var(--gray);margin-bottom:10px;letter-spacing:0.5px">📱 DOWNLOAD OUR APP</p>
@@ -152,11 +175,13 @@
       </div>
     </div>
 
-    <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.08);display:flex;justify-content:center;gap:16px;flex-wrap:wrap">
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.08);display:flex;justify-content:center;gap:14px;flex-wrap:wrap">
       <a href="about.html" style="color:var(--gray);font-size:12px;text-decoration:none;transition:color 0.2s" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--gray)'"><i class="fas fa-info-circle"></i> <span data-i18n="nav.about">About</span></a>
       <a href="contact.html" style="color:var(--gray);font-size:12px;text-decoration:none;transition:color 0.2s" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--gray)'"><i class="fas fa-envelope"></i> <span data-i18n="nav.contact">Contact</span></a>
       <a href="feedback.html" style="color:var(--gray);font-size:12px;text-decoration:none;transition:color 0.2s" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--gray)'"><i class="fas fa-star"></i> <span data-i18n="nav.feedback">Feedback</span></a>
       <a href="help.html" style="color:var(--gray);font-size:12px;text-decoration:none;transition:color 0.2s" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--gray)'"><i class="fas fa-question-circle"></i> <span data-i18n="nav.help">Help</span></a>
+      <a href="privacy.html" style="color:var(--gray);font-size:12px;text-decoration:none;transition:color 0.2s" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--gray)'"><i class="fas fa-shield-alt"></i> Privacy</a>
+      <a href="terms.html" style="color:var(--gray);font-size:12px;text-decoration:none;transition:color 0.2s" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--gray)'"><i class="fas fa-file-contract"></i> Terms</a>
     </div>
   </div>
 </div>
@@ -268,7 +293,15 @@
 <!-- ===== TRUST FOOTER ===== -->
 <footer role="contentinfo" style="position:relative;z-index:2;max-width:1100px;margin:24px auto 32px;padding:18px 22px;text-align:center;color:#9d9da8;font-size:12px;font-family:'Poppins',sans-serif;border-top:1px solid rgba(255,255,255,0.06)">
   <p style="margin:0 0 6px"><i class="fas fa-shield-alt"></i> Secure UPI payments · <i class="fas fa-lock"></i> Firebase-powered authentication · <i class="fas fa-mobile-alt"></i> Installable PWA</p>
-  <p style="margin:0">© <span id="hcYear"></span> Hospitality Careers · All trademarks belong to their respective owners.</p>
+  <p style="margin:0 0 8px">
+    <a href="/about.html" style="color:#bfbfcc;text-decoration:none;margin:0 6px">About</a> ·
+    <a href="/contact.html" style="color:#bfbfcc;text-decoration:none;margin:0 6px">Contact</a> ·
+    <a href="/help.html" style="color:#bfbfcc;text-decoration:none;margin:0 6px">Help</a> ·
+    <a href="/feedback.html" style="color:#bfbfcc;text-decoration:none;margin:0 6px">Feedback</a> ·
+    <a href="/privacy.html" style="color:#bfbfcc;text-decoration:none;margin:0 6px">Privacy Policy</a> ·
+    <a href="/terms.html" style="color:#bfbfcc;text-decoration:none;margin:0 6px">Terms of Service</a>
+  </p>
+  <p style="margin:0">© <span id="hcYear"></span> Hospitality Careers · Founded by Suman Sarkar · All trademarks belong to their respective owners.</p>
   <script>document.getElementById('hcYear').textContent=new Date().getFullYear();</script>
 </footer>
 
