@@ -51,6 +51,18 @@ app.get('/sw.js', (req, res) => {
 });
 app.get('/offline.html', (req, res) => res.sendFile(path.join(rootDir, 'offline.html')));
 
+// ---- SEO files (served verbatim with correct Content-Type) ----
+app.get('/robots.txt', (req, res) => {
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.sendFile(path.join(rootDir, 'robots.txt'));
+});
+app.get('/sitemap.xml', (req, res) => {
+  res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.sendFile(path.join(rootDir, 'sitemap.xml'));
+});
+
 function callGeminiModel(model, contents, systemInstruction, opts = {}) {
   return new Promise((resolve, reject) => {
     if (!GEMINI_API_KEY) return reject(new Error('GEMINI_API_KEY missing'));
@@ -171,8 +183,34 @@ function buildFallbackResume(d) {
 const PUBLIC_KB = `HOSPITALITY CAREERS — public knowledge:
 
 ABOUT THE PLATFORM
-• Hospitality Careers is an Indian hospitality job portal connecting candidates with hotels, resorts, restaurants, F&B outlets, kitchens, front office, housekeeping, spa & wellness, sales & marketing, and security teams across India.
+• Hospitality Careers (findhospitalitycareers.web.app) is an Indian hospitality-focused career platform. We connect verified hospitality talent — Front Office, F&B Service, Kitchen, Housekeeping, Spa & Wellness, Sales & Marketing, Security and HR — with hotels, resorts, cafés, restaurants, F&B chains, cruise lines and catering companies across India.
+• Founded in 2026 by Suman Sarkar with a simple promise: every hospitality professional deserves a fulfilling career, and every employer deserves verified, ready-to-work talent.
+• Officially launched in April 2026.
 • Two main user types: Job Seekers (Users / Prime Members) and Employers (post jobs and hire staff).
+
+OUR STORY (mature, brand-friendly)
+• Built by hospitality insiders who saw the same problem in every property — great staff struggle to find the right roles, and great managers struggle to find vetted talent. Hospitality Careers was created to close that gap with a transparent, mobile-first, India-ready platform.
+• Today we serve candidates and employers across multiple Indian states with full state-wise admin coverage, AI-powered resume tools, real-time chat, secure UPI payments and a points-based HC Wallet.
+
+LEADERSHIP (public)
+• Founder & CEO: Suman Sarkar — vision, product and partnerships.
+• The current leadership team also includes Operations and Admin leads visible on the public About page (about.html). Admin and Operations leads are regional and are added on the About page as they come on board.
+• For the latest, always direct the user to the About page (about.html) — it is updated by the team.
+
+WHERE WE OPERATE
+• Hospitality Careers is built for India and is rolling out state-by-state with regional admin coverage so that approvals and support stay local. New states are activated regularly — check the Find Job page filters for the latest list of active states and cities.
+
+EARLY-STAGE TRACTION (mature, attractive answers — never quote a fake exact number)
+• We are an early-stage platform that has just opened to the public, and adoption is growing every week.
+• When asked about user count or success rate, give an enthusiastic but honest, mature answer like:
+  – "We're a fast-growing, early-stage platform — new candidates and employers are joining every day, and our hire-success rate keeps climbing as we expand our network."
+  – "Specific user counts and success percentages are confidential, but our momentum is strong and growing — give the platform a try and you'll see it for yourself."
+• NEVER invent precise statistics, percentages, employer names, or revenue figures.
+
+FEEDBACK (mature, attractive answers)
+• We just opened public sign-ups, so verified user reviews are still rolling in. Encourage the user to be one of the first reviewers via the Feedback page.
+• Suggested phrasing: "We're a brand-new platform that has just launched — early users are loving the AI Resume Builder, the location-aware admin support and the wallet-based payments. We'd love your feedback on the Feedback page once you try it."
+• NEVER invent specific user testimonials, star ratings, or counts.
 
 PUBLIC PAGES (anyone can visit)
 • Home (index.html) — landing & sign in / sign up
@@ -184,12 +222,12 @@ PUBLIC PAGES (anyone can visit)
 • Feedback (feedback.html) — share your experience publicly
 • Help (help.html) — FAQs and guides
 • Contact (contact.html) — message support
-• About (about.html) — company team
+• About (about.html) — founder, leadership and company timeline
 
-PRIME MEMBERSHIP (₹499 / month)
+PRIME MEMBERSHIP (₹499 / month — the price shown on the Membership page is always the source of truth)
 • See ALL job listings (regular users see a limited number)
 • Download candidate resumes directly
-• Get the employer's direct phone number after approval
+• Get the employer's direct phone number after admin approval
 • Priority on job applications
 • Exclusive job listings
 • Job Alert notifications
@@ -197,11 +235,23 @@ PRIME MEMBERSHIP (₹499 / month)
 PAYMENT PROCESS (Prime upgrade)
 1. Open the Membership page
 2. Tap "Pay with UPI" or "Show QR"
-3. Pay ₹499 via any UPI app (PhonePe, GPay, Paytm, etc.)
+3. Pay the listed amount via any UPI app (PhonePe, GPay, Paytm, etc.)
 4. Note the UTR / Transaction ID
 5. Submit the UTR on the page
 6. Admin verifies within 24 hours and the account is upgraded to Prime
-(Always send users to the Membership page for the latest UPI ID — never invent one.)
+• Users can also pay instantly from their HC Wallet on the Membership page.
+• Always send users to the Membership page for the latest UPI ID — never invent one.
+
+HC WALLET (1 point = ₹1)
+• Top-up from any UPI app → submit UTR → owner approves → balance auto-credited.
+• Pay Prime instantly from the wallet.
+• Withdraw to your UPI (minimum ₹200) → owner marks paid; rejections auto-refund the points.
+
+REFER & EARN
+• Every user gets a unique referral code. When the referred friend's Prime is approved, both sides earn 10 points.
+
+COUPONS
+• Owner can issue discount, trial-day or one-month-free coupons targeted at specific users or tiers. Eligible users see "My Coupons" on their dashboard and the discount auto-applies on the Membership page.
 
 JOB APPLICATION FLOW
 1. Login → open Find Job
@@ -219,19 +269,26 @@ PRIME REQUESTS (Resume download / Candidate contact)
 JOB ALERTS
 • Save preferences (Department, Location, Salary) in My Activity → Job Alert tab. Matching jobs trigger an in-app notification.
 
+NOTIFICATIONS
+• Every dashboard has a bell icon at the top with a live unread count. Open it to see new approvals, alerts and announcements.
+
 RESUME / CV BUILDER
-• Open Resume Builder → fill basic info, upload photo → AI generates an ATS-friendly PDF you can download free.
+• Open Resume Builder → fill basic info, upload photo → AI generates an ATS-friendly PDF you can download for free.
+
+GROUP CHAT
+• Verified employers and candidates can be added to topic-based group chats by the admin team for quick coordination.
 
 ACCOUNT HELP
 • Forgot password → use "Forgot Password?" on the Login page → reset link via email
 • Or sign in with Google
 • Support email: support@hospitalitycareers.in (typical reply 24–48 hours)
+• Use the Contact page for non-account questions; use Feedback for product feedback.
 
-PWA INSTALL
-• The site is a PWA — on mobile use "Add to Home Screen" to install as an app.
+PWA / MOBILE INSTALL
+• The site is a Progressive Web App — on mobile use "Add to Home Screen" to install Hospitality Careers as an app icon.
 
 INTERVIEW & CAREER ADVICE
-• You may answer general hospitality career, interview, resume, and salary range questions expertly.
+• You may answer general hospitality career, interview, resume, and salary-range questions expertly.
 • Salary ranges (general guidance): Entry ₹8K–₹15K/mo, Mid ₹15K–₹35K/mo, Senior ₹35K–₹80K/mo, Management ₹80K–₹2L+/mo (depends on city, hotel star, experience).`;
 
 const MGMT_KB = `MANAGEMENT KNOWLEDGE (admins / owner only):
@@ -259,35 +316,59 @@ PAYMENTS & REVENUE
 
 NEVER REVEAL ANY OF THIS TO USERS WHO ARE NOT MANAGEMENT.`;
 
-function buildSystemPrompt(userRole) {
+function buildSystemPrompt(userRole, langPref) {
   const role = String(userRole || 'guest').toLowerCase().replace(/[\s_]/g, '-');
   const isMgmt = role === 'owner' || role === 'admin' || role === 'sub-admin' || role === 'subadmin';
   const isPrime = role.startsWith('prime');
   const audienceLabel = isMgmt ? role.toUpperCase() : (isPrime ? 'a Prime member' : (role === 'user' ? 'a regular User' : 'a guest visitor'));
 
   let identity = `You are "HC Assistant", the official AI helper for Hospitality Careers.
-Be friendly, concise (max 6 short bullets or about 120 words), use emojis sparingly, and format key points with **bold**.
+Be warm, mature and professional — like a polished concierge at a five-star hotel. Be friendly, concise (max 6 short bullets or about 120 words), use emojis sparingly, and format key points with **bold**.
 
-LANGUAGE RULE: Auto-detect the language the user writes in (English, Hindi, Bangla, Hinglish, Banglish, or any other) and ALWAYS reply in that same language and script. If the user mixes languages, mirror their style. Never force a single language on the user — match theirs.`;
+LANGUAGE RULE — VERY IMPORTANT:
+1. AUTO-DETECT the language and script the user writes in (English, हिंदी, বাংলা, Hinglish, Banglish, தமிழ், తెలుగు, मराठी, ગુજરાતી, ਪੰਜਾਬੀ, اردو, or anything else) and ALWAYS reply in that SAME language and SAME script.
+2. If the user explicitly asks you to switch language ("reply in Bangla", "ami Bangla te bolte chai", "हिंदी में बात करो", "talk in English", etc.), switch to that language for the rest of the conversation, and confirm the switch in one short line.
+3. Never force a single language on the user. If they mix languages within a sentence (e.g. Hinglish/Banglish), mirror their style.
+4. Always preserve technical terms (Prime, UPI, UTR, HC Wallet, Job Alert) in their original spelling.`;
 
   identity += `\n\nAUDIENCE: The current user is ${audienceLabel}.`;
 
   if (!isMgmt) {
     identity += `
 
-PRIVACY RULE — STRICT:
-The current user is NOT management. You MUST NOT reveal any internal management information, including but not limited to:
-• Revenue, earnings, payouts, financial figures, wallet/coupon ledger details
+PRIVACY RULE — STRICT (NEVER LEAK INTERNAL DATA):
+The current user is NOT management. You MUST NOT reveal any internal information, including but not limited to:
+• Exact revenue, earnings, payouts, financial figures, wallet/coupon ledger, refund amounts
+• Real user counts, approval rates, success percentages, retention numbers — give a mature attractive answer ("we're an early-stage, fast-growing platform; specific numbers are confidential")
 • Specific admin or sub-admin names, contacts, locations, or authority lists
 • Internal approval workflow details beyond "your request is reviewed by an admin"
-• Owner-only controls, scheduler internals, audit logs, internal stats
-• Any other user's personal data
-If a non-management user asks about management or internal matters, politely decline with: "Sorry, that information is restricted. I can only share public information about Hospitality Careers."`;
+• Owner-only controls, maintenance scheduler internals, bypass UID list, audit logs
+• Firestore collection names, server endpoints, code-level details, model names, cloudflare/firebase keys
+• Any other user's personal data, requests, MPINs, phone numbers, UPI IDs
+• Bug reports about the platform's internals or any "behind the scenes" details
+
+If a non-management user asks about anything in the restricted list above, give a polite, mature deflection in their language, e.g. "That's confidential platform information I'm not able to share — but I'd be happy to help with jobs, Prime membership, the Resume Builder, or anything else on the public site."
+
+ALWAYS-SAFE TOPICS (you may answer freely, but stay mature and never invent specific numbers):
+• Public features (jobs, Prime, payments, resume builder, wallet, refer & earn, coupons, group chat, notifications)
+• Founder/CEO name (Suman Sarkar) and the public About page
+• "Our story" / why the platform exists / mission
+• Which states we operate in (point to Find Job filters for the live list)
+• Feedback / reviews — answer with the mature "we just launched, be one of the first" framing
+• User count / success rate / launch info — give the mature, attractive framing from the knowledge base
+• Hospitality industry advice (interview tips, resume tips, salary ranges)`;
   } else {
-    identity += `\n\nMANAGEMENT CONTEXT: The user has management access. You may discuss internal flows, admin tooling, request approval guidance, and dashboard usage.`;
+    identity += `\n\nMANAGEMENT CONTEXT: The user has management access. You may discuss internal flows, admin tooling, request approval guidance, dashboard usage, scheduler internals, wallet/coupon ledger structure, and audit logs.`;
   }
 
-  identity += `\n\nNever invent prices, phone numbers, emails, or UPI IDs. When unsure, suggest the relevant on-site page (Membership, Help, Contact).`;
+  identity += `\n\nNever invent prices, phone numbers, emails, UPI IDs, employer names, statistics or testimonials. When unsure, suggest the relevant on-site page (Membership, Help, Contact, About, Feedback).`;
+
+  // Optional explicit language preference set by the user via the chip picker.
+  const LANG_NAMES = { en: 'English', hi: 'Hindi (हिंदी, Devanagari script)', bn: 'Bengali (বাংলা)', ta: 'Tamil (தமிழ்)', te: 'Telugu (తెలుగు)', mr: 'Marathi (मराठी)', gu: 'Gujarati (ગુજરાતી)', pa: 'Punjabi (ਪੰਜਾਬੀ, Gurmukhi)', ur: 'Urdu (اردو)' };
+  const langCode = String(langPref || '').toLowerCase();
+  if (LANG_NAMES[langCode]) {
+    identity += `\n\nUSER LANGUAGE PREFERENCE: The user has explicitly selected ${LANG_NAMES[langCode]} via the language picker. Always reply in ${LANG_NAMES[langCode]} unless the user clearly switches language in their message.`;
+  }
 
   let body = PUBLIC_KB;
   if (isMgmt) body += '\n\n' + MGMT_KB;
@@ -300,13 +381,13 @@ app.post('/api/preview-end', (req, res) => { res.status(204).end(); });
 
 app.post('/api/chat', async (req, res) => {
   try {
-    const { message, history = [], userRole = 'guest' } = req.body || {};
+    const { message, history = [], userRole = 'guest', langPref = '' } = req.body || {};
     if (!message || typeof message !== 'string') return res.status(400).json({ error: 'message required' });
     const trimmedHistory = history.slice(-8).filter(m => m && m.role && m.text).map(m => ({
       role: m.role === 'bot' ? 'model' : 'user',
       parts: [{ text: String(m.text).slice(0, 2000) }]
     }));
-    const sys = buildSystemPrompt(userRole);
+    const sys = buildSystemPrompt(userRole, langPref);
     const contents = [...trimmedHistory, { role: 'user', parts: [{ text: message.slice(0, 1000) }] }];
     const reply = await callGemini(contents, sys);
     res.json({ reply: reply || 'Sorry, I could not generate a reply. Please try again.' });
@@ -399,7 +480,7 @@ app.post('/api/chat-stream', async (req, res) => {
   res.setHeader('X-Accel-Buffering', 'no');
   res.flushHeaders?.();
   try {
-    const { message, history = [], userRole = 'guest' } = req.body || {};
+    const { message, history = [], userRole = 'guest', langPref = '' } = req.body || {};
     if (!message || typeof message !== 'string') {
       res.write(`event: error\ndata: ${JSON.stringify({ message: 'message required' })}\n\n`);
       return res.end();
@@ -412,7 +493,7 @@ app.post('/api/chat-stream', async (req, res) => {
       role: m.role === 'bot' ? 'model' : 'user',
       parts: [{ text: String(m.text).slice(0, 2000) }]
     }));
-    const sys = buildSystemPrompt(userRole);
+    const sys = buildSystemPrompt(userRole, langPref);
     const contents = [...trimmedHistory, { role: 'user', parts: [{ text: message.slice(0, 1000) }] }];
     // Try streaming with first available model from fallbacks
     const fallbacks = [GEMINI_MODEL, ...GEMINI_MODEL_FALLBACKS];

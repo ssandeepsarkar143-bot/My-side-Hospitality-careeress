@@ -2,10 +2,19 @@
 'use strict';
 
 const LANGS = {
-  en: { name: 'English', short: 'EN', flag: '🇬🇧' }
+  auto: { name: 'Auto', short: 'AUTO', flag: '🌐' },
+  en:   { name: 'English', short: 'EN', flag: '🇬🇧' },
+  hi:   { name: 'हिंदी',   short: 'HI', flag: '🇮🇳' },
+  bn:   { name: 'বাংলা',   short: 'BN', flag: '🇧🇩' },
+  ta:   { name: 'தமிழ்',  short: 'TA', flag: '🇮🇳' },
+  te:   { name: 'తెలుగు', short: 'TE', flag: '🇮🇳' },
+  mr:   { name: 'मराठी',  short: 'MR', flag: '🇮🇳' },
+  gu:   { name: 'ગુજરાતી', short: 'GU', flag: '🇮🇳' },
+  pa:   { name: 'ਪੰਜਾਬੀ',  short: 'PA', flag: '🇮🇳' },
+  ur:   { name: 'اردو',   short: 'UR', flag: '🇵🇰' }
 };
 
-let currentLang = localStorage.getItem('hc_assistant_lang') || 'en';
+let currentLang = localStorage.getItem('hc_assistant_lang') || 'auto';
 
 const KB = [
   {
@@ -77,11 +86,23 @@ const QUICK_Q = {
   en: ['What is Prime membership?', 'How to apply for a job?', 'How to make payment for Prime?', 'Interview tips for hospitality', 'What is Job Alert feature?']
 };
 const GREET = {
-  en: "Hi! 👋 I'm **HC Assistant** — your smart guide.\n\nAsk me about jobs, Prime membership, payments, resume tips & more!"
+  en: "Hi! 👋 I'm **HC Assistant** — your smart guide.\n\nAsk me anything in your own language — I auto-detect it!",
+  hi: "नमस्ते! 👋 मैं **HC Assistant** हूँ — Hospitality Careers की स्मार्ट गाइड।\n\nनौकरी, Prime, पेमेंट या रिज़्यूमे — किसी भी भाषा में पूछें!",
+  bn: "নমস্কার! 👋 আমি **HC Assistant** — Hospitality Careers-এর স্মার্ট গাইড।\n\nচাকরি, Prime, পেমেন্ট বা রেজ়িউমে — যেকোনো ভাষায় প্রশ্ন করুন!",
+  ur: "السلام علیکم! 👋 میں **HC Assistant** ہوں — کسی بھی زبان میں سوال کریں۔"
 };
 
 const LANG_CONFIRM = {
-  en: "This assistant only speaks English."
+  auto: "Sure — I'll auto-detect your language and reply in the same one. 🌐",
+  en: "Got it — I'll reply in English from now on.",
+  hi: "ठीक है — अब मैं हिंदी में जवाब दूँगा।",
+  bn: "ঠিক আছে — এখন থেকে আমি বাংলায় উত্তর দেব।",
+  ta: "சரி — இனிமேல் தமிழில் பதிலளிப்பேன்.",
+  te: "సరే — ఇక నుండి తెలుగులో సమాధానం ఇస్తాను.",
+  mr: "ठीक आहे — आता मी मराठीत उत्तर देईन.",
+  gu: "બરાબર — હવેથી હું ગુજરાતીમાં જવાબ આપીશ.",
+  pa: "ਠੀਕ ਹੈ — ਹੁਣ ਤੋਂ ਮੈਂ ਪੰਜਾਬੀ ਵਿੱਚ ਜਵਾਬ ਦਿਆਂਗਾ।",
+  ur: "ٹھیک ہے — اب میں اردو میں جواب دوں گا۔"
 };
 
 function getResponse(msg) {
@@ -152,7 +173,7 @@ style.textContent = `
 #hc-quick{padding:0 10px 8px;display:flex;gap:5px;flex-wrap:wrap}
 .hc-qb{background:rgba(212,175,55,.08);border:1px solid rgba(212,175,55,.22);color:#d4af37;font-size:11px;padding:4px 10px;border-radius:18px;cursor:pointer;white-space:nowrap;transition:background .15s}
 .hc-qb:hover{background:rgba(212,175,55,.22)}
-#hc-lang-row{display:none}
+#hc-lang-row{display:flex;flex-wrap:wrap;gap:4px;padding:6px 10px 0;justify-content:center}
 .hc-lang-chip{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.62);font-size:10px;font-weight:700;padding:4px 8px;border-radius:14px;cursor:pointer}
 .hc-lang-chip.active{background:rgba(212,175,55,.18);border-color:rgba(212,175,55,.42);color:#d4af37}
 #hc-input-row{display:flex;gap:7px;padding:8px 12px 13px;border-top:1px solid rgba(255,255,255,.06)}
@@ -298,7 +319,7 @@ async function sendMsg(text) {
     const res = await fetch((window.hcApiUrl ? window.hcApiUrl('/api/chat-stream') : '/api/chat-stream'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
-      body: JSON.stringify({ message: msg, userRole: getCurrentUserRole(), history: HC_HISTORY.slice(-8) })
+      body: JSON.stringify({ message: msg, userRole: getCurrentUserRole(), history: HC_HISTORY.slice(-8), langPref: currentLang })
     });
     if (!res.ok || !res.body) throw new Error('stream not ok');
     removeTyping();
@@ -347,7 +368,7 @@ async function sendMsg(text) {
     const res = await fetch((window.hcApiUrl ? window.hcApiUrl('/api/chat') : '/api/chat'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: msg, userRole: getCurrentUserRole(), history: HC_HISTORY.slice(-8) })
+      body: JSON.stringify({ message: msg, userRole: getCurrentUserRole(), history: HC_HISTORY.slice(-8), langPref: currentLang })
     });
     const data = await res.json();
     removeTyping();

@@ -1,11 +1,17 @@
 // Maintenance window overlay / banner — site-wide
 // Reads `app_maintenance/current` from Firestore in realtime.
 // Behaviour:
-//   • If active && now is inside [startAt, endAt]:
-//       – Owner / Admin / Sub-Admin always keep full access (silent).
-//       – Other users see a small top banner.
-//       – If blockSite=true, non-management users see a fullscreen overlay.
-//   • If only scheduled (start in the future) — small advisory banner for everyone.
+//   • Owner: NEVER sees a banner — silent full-access override
+//     (owner can end maintenance from the Owner dashboard or the
+//      maintenance scheduler card).
+//   • Admin / Sub-Admin: full access + small advisory banner so they
+//     know maintenance is live (no End Now button — only Owner can end).
+//   • Whitelisted "bypass" UIDs (testing accounts in the bypassUids list):
+//     full access + small "testing-bypass" banner.
+//   • Other users while active && now is inside [startAt, endAt]:
+//       – Soft banner if blockSite=false, fullscreen overlay if blockSite=true.
+//   • If only scheduled (start in the future) — small advisory banner for everyone
+//     (except the owner, who stays silent).
 
 import { auth, db } from '/js/firebase-config.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
@@ -13,6 +19,7 @@ import { doc, getDoc, onSnapshot, setDoc, serverTimestamp } from 'https://www.gs
 
 const MGMT_ROLES = new Set(['owner', 'admin', 'sub-admin', 'subadmin']);
 
+let _userIsOwner = false;
 let _userIsManagement = false;
 let _currentUid = '';
 let _maintenanceData = null;
@@ -106,9 +113,15 @@ function render() {
     _renderTimer = setTimeout(render, nextEdgeMs + 250);
   }
 
-  // Management always keeps full access — small banner only, even when active.
-  // Whitelisted "bypass" UIDs (testing accounts) get the same treatment but with
-  // a softer label so the owner knows the override is permission-based.
+  // Owner: completely silent — no banner, full access. The owner can manage
+  // and end the window from the Owner dashboard maintenance scheduler card.
+  if (_userIsOwner) { removeUI(); return; }
+
+  // Admin / Sub-Admin: full access + small advisory banner so they know
+  // maintenance is live. They cannot end the window from the banner —
+  // only the Owner can end (from the dashboard).
+  // Whitelisted "bypass" UIDs (testing accounts) get the same treatment with
+  // a softer label so the user knows the override is permission-based.
   const bypassed = !_userIsManagement && _isBypassed();
   if (_userIsManagement || bypassed) {
     removeUI();
@@ -117,16 +130,11 @@ function render() {
     b.className = isActiveNow ? '' : 'scheduled';
     const label = isActiveNow ? 'Maintenance is ACTIVE NOW' : 'Maintenance scheduled at ' + fmt(m.startAt);
     const overrideText = _userIsManagement
-      ? 'You have management override (full access).'
+      ? 'You have management override (full access). Only the Owner can end this window.'
       : 'You have testing-bypass access (full access).';
-    const endBtn = _userIsManagement
-      ? ` <button type="button" class="hcMaintEndBtn" id="hcMaintEndBtn"><i class="fas fa-power-off"></i> End now</button>`
-      : '';
-    b.innerHTML = `<i class="fas fa-tools"></i> ${label} · ${overrideText}${endBtn}`;
+    b.innerHTML = `<i class="fas fa-tools"></i> ${label} · ${overrideText}`;
     document.body.appendChild(b);
     document.body.classList.add('hc-maint-banner');
-    const btn = document.getElementById('hcMaintEndBtn');
-    if (btn) btn.addEventListener('click', endMaintenanceFromBanner);
     return;
   }
 
@@ -183,14 +191,15 @@ async function endMaintenanceFromBanner(ev) {
 
 // Resolve user role (best effort) so we can decide management override.
 async function resolveRole(user) {
-  if (!user) { _userIsManagement = false; _currentUid = ''; return; }
+  if (!user) { _userIsManagement = false; _userIsOwner = false; _currentUid = ''; return; }
   _currentUid = user.uid || '';
   try {
     const { getDoc, doc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
     const snap = await getDoc(doc(db, 'users', user.uid));
     const role = String(snap.data()?.role || '').toLowerCase();
     _userIsManagement = MGMT_ROLES.has(role);
-  } catch { _userIsManagement = false; }
+    _userIsOwner = role === 'owner';
+  } catch { _userIsManagement = false; _userIsOwner = false; }
 }
 
 (async function start() {

@@ -1,0 +1,30 @@
+# Hospitality Careers — robots.txt
+# Allow public crawling of marketing & login pages, block authenticated dashboards
+# and API endpoints from being indexed.
+
+User-agent: *
+Allow: /
+Allow: /index.html
+Allow: /about.html
+Allow: /contact.html
+Allow: /help.html
+Allow: /feedback.html
+Allow: /membership.html
+Allow: /resume-builder.html
+Allow: /css/
+Allow: /js/
+Allow: /logo.png
+Allow: /manifest.webmanifest
+
+Disallow: /api/
+Disallow: /owner-feed.html
+Disallow: /admin-feed.html
+Disallow: /user-feed.html
+Disallow: /prime-feed.html
+Disallow: /profile.html
+Disallow: /job-post-from.html
+Disallow: /attached_assets/
+Disallow: /functions/
+Disallow: /cloudflare-worker/
+
+Sitemap: https://findhospitalitycareers.web.app/sitemap.xml

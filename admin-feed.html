@@ -134,11 +134,11 @@
       <div class="sidebar-section" id="nav_userControl_wrap" style="display:none">User Management</div>
       <div class="sidebar-item hidden" id="nav_userControl" onclick="showSection('userControl')"><i class="fas fa-users"></i> User Control</div>
       <div class="sidebar-section" id="auth_sections_header" style="display:none">Requests</div>
-      <div class="sidebar-item hidden" id="nav_connectReqs" onclick="showSection('connectReqs')"><i class="fas fa-link"></i> Connect Employer</div>
-      <div class="sidebar-item hidden" id="nav_contactReqs" onclick="showSection('contactReqs')"><i class="fas fa-phone"></i> Contact Requests</div>
-      <div class="sidebar-item hidden" id="nav_resumeReqs" onclick="showSection('resumeReqs')"><i class="fas fa-file-download"></i> Resume Requests</div>
-      <div class="sidebar-item hidden" id="nav_membershipReqs" onclick="showSection('membershipReqs')"><i class="fas fa-crown"></i> Membership</div>
-      <div class="sidebar-item hidden" id="nav_jobRequests" onclick="showSection('jobRequests')"><i class="fas fa-inbox"></i> Job Post Requests</div>
+      <div class="sidebar-item hidden" id="nav_connectReqs" onclick="showSection('connectReqs')"><i class="fas fa-link"></i> Connect Employer <span id="adminBadge_employerConnect" class="req-pending-badge" style="display:none">0</span></div>
+      <div class="sidebar-item hidden" id="nav_contactReqs" onclick="showSection('contactReqs')"><i class="fas fa-phone"></i> Contact Requests <span id="adminBadge_contact" class="req-pending-badge" style="display:none">0</span></div>
+      <div class="sidebar-item hidden" id="nav_resumeReqs" onclick="showSection('resumeReqs')"><i class="fas fa-file-download"></i> Resume Requests <span id="adminBadge_resumeDownload" class="req-pending-badge" style="display:none">0</span></div>
+      <div class="sidebar-item hidden" id="nav_membershipReqs" onclick="showSection('membershipReqs')"><i class="fas fa-crown"></i> Membership <span id="adminBadge_membership" class="req-pending-badge" style="display:none">0</span></div>
+      <div class="sidebar-item hidden" id="nav_jobRequests" onclick="showSection('jobRequests')"><i class="fas fa-inbox"></i> Job Post Requests <span id="adminBadge_jobPost" class="req-pending-badge" style="display:none">0</span></div>
       <div class="sidebar-item hidden" id="nav_jobList" onclick="showSection('jobList')"><i class="fas fa-list"></i> Manage Jobs</div>
       <div class="sidebar-section hidden" id="nav_management_header">Management (Ops/Branch Head)</div>
       <div class="sidebar-item hidden" id="nav_resumeRecords" onclick="showSection('resumeRecords')"><i class="fas fa-file-alt"></i> AI Resume Records</div>
@@ -4321,5 +4321,7 @@ window.submitChangePassword = async function() {
 <script src="js/pwa-install.js"></script>
 <script type="module" src="js/freeze-guard.js"></script>
 <script type="module" src="js/role-reauth-guard.js?v=1"></script>
+<script type="module" src="/js/maintenance-overlay.js"></script>
+<script type="module" src="/js/request-badges.js"></script>
 </body>
 </html>

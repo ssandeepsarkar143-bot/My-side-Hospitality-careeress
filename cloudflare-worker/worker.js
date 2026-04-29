@@ -128,35 +128,55 @@ NEVER REVEAL ANY OF THIS TO USERS WHO ARE NOT MANAGEMENT.`;
 
 // Build the final system prompt based on the requesting user's role.
 // Role values from the client: 'guest' | 'user' | 'prime' | 'prime2' | 'prime3' | 'admin' | 'sub-admin' | 'owner'
-function buildSystemPrompt(userRole) {
+function buildSystemPrompt(userRole, langPref) {
   const role = String(userRole || 'guest').toLowerCase().replace(/[\s_]/g, '-');
   const isMgmt = role === 'owner' || role === 'admin' || role === 'sub-admin' || role === 'subadmin';
   const isPrime = role.startsWith('prime');
   const audienceLabel = isMgmt ? role.toUpperCase() : (isPrime ? 'a Prime member' : (role === 'user' ? 'a regular User' : 'a guest visitor'));
 
   let identity = `You are "HC Assistant", the official AI helper for Hospitality Careers.
-Be friendly, concise (max 6 short bullets or about 120 words), use emojis sparingly, and format key points with **bold**.
+Be warm, mature and professional — like a polished concierge at a five-star hotel. Be friendly, concise (max 6 short bullets or about 120 words), use emojis sparingly, and format key points with **bold**.
 
-LANGUAGE RULE: Auto-detect the language the user writes in (English, Hindi, Bangla, Hinglish, Banglish, or any other) and ALWAYS reply in that same language and script. If the user mixes languages, mirror their style. Never force a single language on the user — match theirs.`;
+LANGUAGE RULE — VERY IMPORTANT:
+1. AUTO-DETECT the language and script the user writes in (English, हिंदी, বাংলা, Hinglish, Banglish, தமிழ், తెలుగు, मराठी, ગુજરાતી, ਪੰਜਾਬੀ, اردو, or anything else) and ALWAYS reply in that SAME language and SAME script.
+2. If the user explicitly asks you to switch language, switch and confirm in one short line.
+3. Never force a single language on the user. Mirror Hinglish/Banglish.
+4. Always preserve technical terms (Prime, UPI, UTR, HC Wallet, Job Alert) in their original spelling.`;
 
   identity += `\n\nAUDIENCE: The current user is ${audienceLabel}.`;
 
   if (!isMgmt) {
     identity += `
 
-PRIVACY RULE — STRICT:
-The current user is NOT management. You MUST NOT reveal any internal management information, including but not limited to:
-• Revenue, earnings, payouts, financial figures, wallet/coupon ledger details
-• Specific admin or sub-admin names, contacts, locations, or authority lists
+PRIVACY RULE — STRICT (NEVER LEAK INTERNAL DATA):
+The current user is NOT management. You MUST NOT reveal:
+• Exact revenue, earnings, payouts, wallet/coupon ledger
+• Real user counts, approval rates, success percentages — give a mature attractive answer ("we're an early-stage, fast-growing platform; specific numbers are confidential")
+• Specific admin/sub-admin names, contacts, locations, or authority lists
 • Internal approval workflow details beyond "your request is reviewed by an admin"
-• Owner-only controls, scheduler internals, audit logs, internal stats
-• Any other user's personal data
-If a non-management user asks about management or internal matters, politely decline with: "Sorry, that information is restricted. I can only share public information about Hospitality Careers."`;
+• Owner-only controls, maintenance scheduler internals, bypass UID list, audit logs
+• Firestore collection names, server endpoints, code-level details, model names, keys
+• Any other user's personal data, requests, MPINs, phone numbers, UPI IDs
+
+ALWAYS-SAFE TOPICS (you may answer freely, mature tone, never invent specific numbers):
+• Public features (jobs, Prime, payments, resume builder, wallet, refer & earn, coupons, group chat, notifications)
+• Founder/CEO name (Suman Sarkar) and the public About page
+• "Our story" / mission
+• Which states we operate in (point to Find Job filters for the live list)
+• Feedback / reviews — "we just launched, be one of the first to review us"
+• User count / success rate / launch info — "early-stage, fast-growing, momentum is strong; exact numbers are confidential"
+• Hospitality industry advice (interview tips, resume tips, salary ranges)`;
   } else {
-    identity += `\n\nMANAGEMENT CONTEXT: The user has management access. You may discuss internal flows, admin tooling, request approval guidance, and dashboard usage.`;
+    identity += `\n\nMANAGEMENT CONTEXT: The user has management access. You may discuss internal flows, admin tooling, request approval guidance, dashboard usage, scheduler internals, wallet/coupon ledger structure, and audit logs.`;
   }
 
-  identity += `\n\nNever invent prices, phone numbers, emails, or UPI IDs. When unsure, suggest the relevant on-site page (Membership, Help, Contact).`;
+  identity += `\n\nNever invent prices, phone numbers, emails, UPI IDs, employer names, statistics or testimonials. When unsure, suggest the relevant on-site page (Membership, Help, Contact, About, Feedback).`;
+
+  const LANG_NAMES = { en: 'English', hi: 'Hindi (हिंदी)', bn: 'Bengali (বাংলা)', ta: 'Tamil (தமிழ்)', te: 'Telugu (తెలుగు)', mr: 'Marathi (मराठी)', gu: 'Gujarati (ગુજરાતી)', pa: 'Punjabi (ਪੰਜਾਬੀ)', ur: 'Urdu (اردو)' };
+  const langCode = String(langPref || '').toLowerCase();
+  if (LANG_NAMES[langCode]) {
+    identity += `\n\nUSER LANGUAGE PREFERENCE: The user has explicitly selected ${LANG_NAMES[langCode]}. Always reply in ${LANG_NAMES[langCode]} unless the user clearly switches language in their message.`;
+  }
 
   let body = PUBLIC_KB;
   if (isMgmt) body += '\n\n' + MGMT_KB;
@@ -286,7 +306,7 @@ function buildFallbackResume(d) {
 // ---------- /api/chat ----------
 async function handleChat(req, env) {
   const body = await req.json().catch(() => ({}));
-  const { message, history = [], userRole = 'guest' } = body || {};
+  const { message, history = [], userRole = 'guest', langPref = '' } = body || {};
   if (!message || typeof message !== 'string') {
     return jsonResponse(req, env, { error: 'message required' }, 400);
   }
@@ -294,7 +314,7 @@ async function handleChat(req, env) {
     role: m.role === 'bot' ? 'model' : 'user',
     parts: [{ text: String(m.text).slice(0, 2000) }]
   }));
-  const sys = buildSystemPrompt(userRole);
+  const sys = buildSystemPrompt(userRole, langPref);
   const contents = [...trimmedHistory, { role: 'user', parts: [{ text: message.slice(0, 1000) }] }];
   try {
     const reply = await callGemini(env, contents, sys);
@@ -307,7 +327,7 @@ async function handleChat(req, env) {
 // ---------- /api/chat-stream (SSE) ----------
 async function handleChatStream(req, env, ctx) {
   const body = await req.json().catch(() => ({}));
-  const { message, history = [], userRole = 'guest' } = body || {};
+  const { message, history = [], userRole = 'guest', langPref = '' } = body || {};
   const enc = new TextEncoder();
   const cors = corsHeaders(req, env);
   const sseHeaders = {
@@ -331,7 +351,7 @@ async function handleChatStream(req, env, ctx) {
     role: m.role === 'bot' ? 'model' : 'user',
     parts: [{ text: String(m.text).slice(0, 2000) }]
   }));
-  const sys = buildSystemPrompt(userRole);
+  const sys = buildSystemPrompt(userRole, langPref);
   const contents = [...trimmedHistory, { role: 'user', parts: [{ text: message.slice(0, 1000) }] }];
 
   const { readable, writable } = new TransformStream();
