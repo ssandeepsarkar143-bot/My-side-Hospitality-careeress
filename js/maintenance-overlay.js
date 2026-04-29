@@ -2,22 +2,24 @@
 // Reads `app_maintenance/current` from Firestore in realtime.
 // Behaviour:
 //   • Owner: NEVER sees a banner — silent full-access override
-//     (owner can end maintenance from the Owner dashboard or the
-//      maintenance scheduler card).
+//     (identified by email, matching firestore.rules + every other module).
+//   • Whitelisted "bypass" UIDs (testing accounts in the bypassUids list):
+//     SILENT full-access override too — used by the owner to preview the
+//     site as a normal user would, without any maintenance UI getting in
+//     the way during update verification.
 //   • Admin / Sub-Admin: full access + small advisory banner so they
 //     know maintenance is live (no End Now button — only Owner can end).
-//   • Whitelisted "bypass" UIDs (testing accounts in the bypassUids list):
-//     full access + small "testing-bypass" banner.
 //   • Other users while active && now is inside [startAt, endAt]:
 //       – Soft banner if blockSite=false, fullscreen overlay if blockSite=true.
-//   • If only scheduled (start in the future) — small advisory banner for everyone
-//     (except the owner, who stays silent).
+//   • If only scheduled (start in the future) — small advisory banner for
+//     everyone (except the owner & bypass UIDs, who stay silent).
 
 import { auth, db } from '/js/firebase-config.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import { doc, getDoc, onSnapshot, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
-const MGMT_ROLES = new Set(['owner', 'admin', 'sub-admin', 'subadmin']);
+const OWNER_EMAIL = 'ssandeepsarkar143@gmail.com';
+const MGMT_ROLES = new Set(['admin', 'sub-admin', 'subadmin']);
 
 let _userIsOwner = false;
 let _userIsManagement = false;
@@ -115,24 +117,21 @@ function render() {
 
   // Owner: completely silent — no banner, full access. The owner can manage
   // and end the window from the Owner dashboard maintenance scheduler card.
-  if (_userIsOwner) { removeUI(); return; }
+  // Whitelisted "bypass" UIDs (testing accounts) get the SAME silent treatment
+  // so the owner can preview the site as a normal user during an update
+  // without any maintenance UI interfering with the test.
+  if (_userIsOwner || _isBypassed()) { removeUI(); return; }
 
   // Admin / Sub-Admin: full access + small advisory banner so they know
   // maintenance is live. They cannot end the window from the banner —
   // only the Owner can end (from the dashboard).
-  // Whitelisted "bypass" UIDs (testing accounts) get the same treatment with
-  // a softer label so the user knows the override is permission-based.
-  const bypassed = !_userIsManagement && _isBypassed();
-  if (_userIsManagement || bypassed) {
+  if (_userIsManagement) {
     removeUI();
     const b = document.createElement('div');
     b.id = 'hcMaintBanner';
     b.className = isActiveNow ? '' : 'scheduled';
     const label = isActiveNow ? 'Maintenance is ACTIVE NOW' : 'Maintenance scheduled at ' + fmt(m.startAt);
-    const overrideText = _userIsManagement
-      ? 'You have management override (full access). Only the Owner can end this window.'
-      : 'You have testing-bypass access (full access).';
-    b.innerHTML = `<i class="fas fa-tools"></i> ${label} · ${overrideText}`;
+    b.innerHTML = `<i class="fas fa-tools"></i> ${label} · You have management override (full access). Only the Owner can end this window.`;
     document.body.appendChild(b);
     document.body.classList.add('hc-maint-banner');
     return;
@@ -190,16 +189,20 @@ async function endMaintenanceFromBanner(ev) {
 }
 
 // Resolve user role (best effort) so we can decide management override.
+// Owner is identified by EMAIL (matching firestore.rules + every other module),
+// not by a `role` field — the owner's user doc may not have role=owner set.
 async function resolveRole(user) {
   if (!user) { _userIsManagement = false; _userIsOwner = false; _currentUid = ''; return; }
   _currentUid = user.uid || '';
+  const email = String(user.email || '').toLowerCase();
+  _userIsOwner = email === OWNER_EMAIL;
+  if (_userIsOwner) { _userIsManagement = true; return; }
   try {
-    const { getDoc, doc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
     const snap = await getDoc(doc(db, 'users', user.uid));
-    const role = String(snap.data()?.role || '').toLowerCase();
+    const data = snap.data() || {};
+    const role = String(data.role || data.userRole || data.accountType || '').toLowerCase();
     _userIsManagement = MGMT_ROLES.has(role);
-    _userIsOwner = role === 'owner';
-  } catch { _userIsManagement = false; _userIsOwner = false; }
+  } catch { _userIsManagement = false; }
 }
 
 (async function start() {
