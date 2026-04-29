@@ -112,16 +112,16 @@
       <div class="sidebar-item" onclick="showSection('adminWorking')"><i class="fas fa-user-shield"></i> Admin Working</div>
       <div class="sidebar-item" onclick="showSection('promotionRequests')"><i class="fas fa-paper-plane"></i> Promotion Requests <span id="ownerPromoReqBadge" style="display:none;background:#f59e0b;color:#000;font-size:10px;padding:2px 7px;border-radius:10px;margin-left:6px">0</span></div>
       <div class="sidebar-section">Job Management</div>
-      <div class="sidebar-item" onclick="showSection('jobRequests')"><i class="fas fa-inbox"></i> Job Post Requests</div>
+      <div class="sidebar-item" onclick="showSection('jobRequests')"><i class="fas fa-inbox"></i> Job Post Requests <span id="ownerBadge_jobPost" class="req-pending-badge" style="display:none">0</span></div>
       <div class="sidebar-item" onclick="showSection('joblist')"><i class="fas fa-list"></i> Manage Job List</div>
       <div class="sidebar-item" onclick="window.open('job-post-from.html','_self')"><i class="fas fa-plus-circle"></i> Add Job (Live)</div>
       <div class="sidebar-section">Candidate</div>
       <div class="sidebar-item" onclick="showSection('candidates')"><i class="fas fa-user-graduate"></i> Candidate List</div>
       <div class="sidebar-section">Requests & Approvals</div>
-      <div class="sidebar-item" onclick="showSection('connectReqs')"><i class="fas fa-link"></i> Connect Employer</div>
-      <div class="sidebar-item" onclick="showSection('contactReqs')"><i class="fas fa-phone"></i> Contact Requests</div>
-      <div class="sidebar-item" onclick="showSection('resumeReqs')"><i class="fas fa-file-download"></i> Resume Requests</div>
-      <div class="sidebar-item" onclick="showSection('membershipReqs')"><i class="fas fa-crown"></i> Membership Requests</div>
+      <div class="sidebar-item" onclick="showSection('connectReqs')"><i class="fas fa-link"></i> Connect Employer <span id="ownerBadge_employerConnect" class="req-pending-badge" style="display:none">0</span></div>
+      <div class="sidebar-item" onclick="showSection('contactReqs')"><i class="fas fa-phone"></i> Contact Requests <span id="ownerBadge_contact" class="req-pending-badge" style="display:none">0</span></div>
+      <div class="sidebar-item" onclick="showSection('resumeReqs')"><i class="fas fa-file-download"></i> Resume Requests <span id="ownerBadge_resumeDownload" class="req-pending-badge" style="display:none">0</span></div>
+      <div class="sidebar-item" onclick="showSection('membershipReqs')"><i class="fas fa-crown"></i> Membership Requests <span id="ownerBadge_membership" class="req-pending-badge" style="display:none">0</span></div>
       <div class="sidebar-section">Wallet & Payments</div>
       <div class="sidebar-item" onclick="showSection('walletTopups')"><i class="fas fa-wallet"></i> HC Wallet Top-ups</div>
       <div class="sidebar-item" onclick="showSection('walletWithdrawals')"><i class="fas fa-money-bill-transfer"></i> Wallet Withdrawals</div>
@@ -604,6 +604,17 @@
             <p style="font-size:11px;color:var(--gray);margin:6px 0 0 22px">
               When unchecked, a small banner appears at the top of every page but the site stays usable.
             </p>
+          </div>
+          <div class="form-group" style="background:rgba(56,189,248,.06);border:1px solid rgba(56,189,248,.25);border-radius:10px;padding:12px">
+            <label style="color:#7dd3fc"><i class="fas fa-vial"></i> Testing bypass — whitelisted user IDs</label>
+            <p style="font-size:11px;color:var(--gray);margin:4px 0 8px">
+              Paste one Firebase user UID per line (or comma-separated). These accounts will <strong>NOT</strong> see the maintenance overlay, even when the site is blocked — useful for previewing changes during the update.
+            </p>
+            <textarea id="maintBypassUids" class="form-control" rows="2" placeholder="abc123XYZ&#10;def456PQR" style="font-family:monospace;font-size:12px"></textarea>
+            <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center">
+              <button type="button" class="btn btn-sm" style="background:rgba(56,189,248,.15);color:#7dd3fc;border:1px solid rgba(56,189,248,.3)" onclick="saveMaintenanceBypassOnly()"><i class="fas fa-save"></i> Save bypass list now</button>
+              <span style="font-size:11px;color:var(--gray)"><i class="fas fa-info-circle"></i> You can update this list at any time, even while maintenance is live.</span>
+            </div>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="btn btn-primary" onclick="saveMaintenanceWindow()"><i class="fas fa-calendar-check"></i> Schedule / Update Window</button>
@@ -3609,9 +3620,18 @@ async function loadMaintenanceCurrent() {
     document.getElementById('maintEndAt').value = _toLocalInput(m.endAt);
     document.getElementById('maintMessage').value = m.message || '';
     document.getElementById('maintBlockSite').checked = !!m.blockSite;
+    const bypassEl = document.getElementById('maintBypassUids');
+    if (bypassEl) bypassEl.value = Array.isArray(m.bypassUids) ? m.bypassUids.join('\n') : '';
   } catch (e) {
     box.innerHTML = '<i class="fas fa-exclamation-circle" style="color:#ef4444"></i> Could not load maintenance status.';
   }
+}
+
+function _parseBypassUids(raw) {
+  return String(raw || '')
+    .split(/[\s,;]+/)
+    .map(s => s.trim())
+    .filter(s => s.length >= 6 && s.length <= 128);
 }
 // Preset professional messages for the maintenance scheduler
 const MAINT_PRESETS = {
@@ -3659,6 +3679,7 @@ window.saveMaintenanceWindow = async function () {
   const message = document.getElementById('maintMessage').value.trim();
   const blockSite = document.getElementById('maintBlockSite').checked;
   const notifyUsers = document.getElementById('maintNotifyUsers')?.checked !== false;
+  const bypassUids = _parseBypassUids(document.getElementById('maintBypassUids')?.value);
   if (!startStr || !endStr) { showToast('Please pick both Start and End date/time.', 'error'); return; }
   const startAt = new Date(startStr);
   const endAt = new Date(endStr);
@@ -3672,6 +3693,7 @@ window.saveMaintenanceWindow = async function () {
       endAt,
       message,
       blockSite,
+      bypassUids,
       scheduledBy: currentUser?.uid || 'owner',
       scheduledAt: serverTimestamp(),
       lastUpdated: serverTimestamp(),
@@ -3689,6 +3711,20 @@ window.saveMaintenanceWindow = async function () {
     showToast('Failed to save: ' + (e.message || 'unknown error'), 'error');
   }
 };
+window.saveMaintenanceBypassOnly = async function () {
+  const bypassUids = _parseBypassUids(document.getElementById('maintBypassUids')?.value);
+  try {
+    await setDoc(doc(db, 'app_maintenance', 'current'), {
+      bypassUids,
+      lastUpdated: serverTimestamp()
+    }, { merge: true });
+    showToast(`✅ Bypass list saved (${bypassUids.length} UID${bypassUids.length === 1 ? '' : 's'}). Changes apply instantly.`);
+    loadMaintenanceCurrent();
+  } catch (e) {
+    showToast('Failed to save bypass list: ' + (e.message || 'unknown error'), 'error');
+  }
+};
+
 window.endMaintenanceNow = async function () {
   if (!confirm('End the maintenance window right now? Users will see the site as normal again.')) return;
   try {
