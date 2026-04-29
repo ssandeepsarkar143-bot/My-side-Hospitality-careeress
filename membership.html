@@ -172,6 +172,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, collection, getDocs, addDoc, query, where, serverTimestamp, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { payMembershipFromWallet } from './js/wallet-ui.js';
+import { notifyForNewRequest } from './js/notify-helpers.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyCuAuc9qhA7D_-Lqt-69pbG81KTIiDFVpg",
@@ -334,7 +335,7 @@ window.submitUTR = async function() {
   const btn = document.getElementById('utrSubmitBtn');
   btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...'; btn.disabled = true;
   try {
-    await addDoc(collection(db, 'requests'), {
+    const reqRef = await addDoc(collection(db, 'requests'), {
       type: 'membership',
       requesterId: currentUser.uid,
       requesterEmail: currentUser.email,
@@ -344,6 +345,14 @@ window.submitUTR = async function() {
       validityDays,
       status: 'pending',
       createdAt: serverTimestamp()
+    });
+    notifyForNewRequest(reqRef, {
+      requestType: 'membership',
+      requesterUid: currentUser.uid,
+      requesterEmail: currentUser.email,
+      requesterName: currentUserData?.displayName || currentUser.displayName || currentUser.email,
+      subject: `Prime ${validityDays}-day · ₹${finalAmount} · UTR ${utr}`,
+      extra: { utr, amount: finalAmount, validityDays }
     });
     document.getElementById('utrSubmitBtn').style.display = 'none';
     document.getElementById('utrInput').parentElement.style.display = 'none';

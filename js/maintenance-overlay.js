@@ -14,8 +14,15 @@ import { doc, getDoc, onSnapshot, setDoc, serverTimestamp } from 'https://www.gs
 const MGMT_ROLES = new Set(['owner', 'admin', 'sub-admin', 'subadmin']);
 
 let _userIsManagement = false;
+let _currentUid = '';
 let _maintenanceData = null;
 let _renderTimer = null;
+
+function _isBypassed() {
+  if (!_currentUid || !_maintenanceData) return false;
+  const list = Array.isArray(_maintenanceData.bypassUids) ? _maintenanceData.bypassUids : [];
+  return list.includes(_currentUid);
+}
 
 function fmt(ts) {
   if (!ts) return '';
@@ -100,13 +107,22 @@ function render() {
   }
 
   // Management always keeps full access — small banner only, even when active.
-  if (_userIsManagement) {
+  // Whitelisted "bypass" UIDs (testing accounts) get the same treatment but with
+  // a softer label so the owner knows the override is permission-based.
+  const bypassed = !_userIsManagement && _isBypassed();
+  if (_userIsManagement || bypassed) {
     removeUI();
     const b = document.createElement('div');
     b.id = 'hcMaintBanner';
     b.className = isActiveNow ? '' : 'scheduled';
     const label = isActiveNow ? 'Maintenance is ACTIVE NOW' : 'Maintenance scheduled at ' + fmt(m.startAt);
-    b.innerHTML = `<i class="fas fa-tools"></i> ${label} · You have management override (full access). <button type="button" class="hcMaintEndBtn" id="hcMaintEndBtn"><i class="fas fa-power-off"></i> End now</button>`;
+    const overrideText = _userIsManagement
+      ? 'You have management override (full access).'
+      : 'You have testing-bypass access (full access).';
+    const endBtn = _userIsManagement
+      ? ` <button type="button" class="hcMaintEndBtn" id="hcMaintEndBtn"><i class="fas fa-power-off"></i> End now</button>`
+      : '';
+    b.innerHTML = `<i class="fas fa-tools"></i> ${label} · ${overrideText}${endBtn}`;
     document.body.appendChild(b);
     document.body.classList.add('hc-maint-banner');
     const btn = document.getElementById('hcMaintEndBtn');
@@ -167,7 +183,8 @@ async function endMaintenanceFromBanner(ev) {
 
 // Resolve user role (best effort) so we can decide management override.
 async function resolveRole(user) {
-  if (!user) { _userIsManagement = false; return; }
+  if (!user) { _userIsManagement = false; _currentUid = ''; return; }
+  _currentUid = user.uid || '';
   try {
     const { getDoc, doc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
     const snap = await getDoc(doc(db, 'users', user.uid));
