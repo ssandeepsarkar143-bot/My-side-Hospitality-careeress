@@ -1,18 +1,21 @@
 # Hospitality Careers – Job Portal
 
 ## Project Overview
-A full-featured hospitality job portal with role-based authentication (Owner, Admin / Sub-Admin, Prime, User), Firebase backend, multi-page dashboard, English-only UI & AI assistant (April 2026), site-wide maintenance scheduler, and auto-notification of Owner + location-allocated Admin on every user request.
+A full-featured hospitality job portal with role-based authentication (Owner, Admin / Sub-Admin, Prime, User), Firebase backend, multi-page dashboard, English-only UI with a multi-language AI assistant (April 2026), site-wide maintenance scheduler, and auto-notification of Owner + location-allocated Admin on every user request.
 
 ## Site-wide Modules (loaded on every page)
-- `js/maintenance-overlay.js` — listens to `app_maintenance/current`. Shows a small banner when a maintenance window is scheduled or active; blocks the site with a fullscreen overlay for non-management users when `blockSite=true`. Owner / Admin / Sub-Admin always retain full access.
+- `js/maintenance-overlay.js` — listens to `app_maintenance/current`. Shows a small banner when a maintenance window is scheduled or active; blocks the site with a fullscreen overlay for non-management users when `blockSite=true`. Owner / Admin / Sub-Admin always retain full access and see an inline **End now** button right inside the banner so they can close the window early from any page.
 - `js/notify-helpers.js` — helper module that resolves recipients (Owner + Admins whose `authorities[<key>]` is true and whose `locations` overlap the requester's `state`) and writes notifications with an approval guide hint. Used by `user-feed.html` and `prime-feed.html` after every new `requests` document.
 
 ## AI Assistant (Gemini)
-- `js/chatbot.js` is English-only. It dynamic-imports `js/firebase-config.js` and exposes `window.hcCurrentUserRole` from the Firestore `users/{uid}.role` doc.
-- Both `server.js` (`/api/chat`, `/api/chat-stream`) and `cloudflare-worker/worker.js` accept `userRole` in the request body and call `buildSystemPrompt(userRole)` which returns an English-only prompt with comprehensive `PUBLIC_KB` for everyone and `MGMT_KB` (revenue, admin tooling, scheduler internals) revealed only to `owner` / `admin` / `sub-admin`. Non-management users are explicitly forbidden from receiving management info.
+- `js/chatbot.js` UI is English-only, but the AI itself **auto-detects the user's language** (English, Hindi, Bangla, Hinglish, Banglish, …) and replies in the same language and script.
+- Both `server.js` (`/api/chat`, `/api/chat-stream`) and `cloudflare-worker/worker.js` accept `userRole` in the request body and call `buildSystemPrompt(userRole)` which returns a multi-language prompt with comprehensive `PUBLIC_KB` for everyone and `MGMT_KB` (revenue, admin tooling, scheduler internals) revealed only to `owner` / `admin` / `sub-admin`. Non-management users are explicitly forbidden from receiving management info.
+- The unused `js/i18n.js` (legacy Hindi translations) has been removed; the rest of the static UI is fully English.
 
 ## Maintenance Scheduler (Owner Notifications tab)
 Card inside `#sec-notifications` in `owner-feed.html`. Writes to `app_maintenance/current` with shape `{ active, startAt, endAt, message, blockSite, scheduledBy, scheduledAt, lastUpdated, endedAt? }`.
+
+The form now includes a **professional message preset** dropdown (Platform upgrade, New features, Performance tuning, Security patch, Database optimisation, Bug fixes, Emergency, plus a Custom option) and a **"Notify all users"** checkbox (default on). When the window is saved, every user gets an in-app notification with the start/end times and message. Owner can end the window early from any page via the **End now** button on the management banner, or from the Owner dashboard.
 
 ## Tech Stack
 - **Frontend**: Pure HTML5, CSS3, Vanilla JavaScript (ES Modules)

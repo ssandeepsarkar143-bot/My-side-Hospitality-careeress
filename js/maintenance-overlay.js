@@ -9,7 +9,7 @@
 
 import { auth, db } from '/js/firebase-config.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-import { doc, getDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+import { doc, getDoc, onSnapshot, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
 const MGMT_ROLES = new Set(['owner', 'admin', 'sub-admin', 'subadmin']);
 
@@ -36,6 +36,13 @@ function ensureStyles() {
       animation:hcMaintSlide .35s ease; }
     #hcMaintBanner.scheduled { background:linear-gradient(90deg,#92400e,#d97706); }
     #hcMaintBanner i.fa-tools { font-size:14px; }
+    #hcMaintBanner button.hcMaintEndBtn {
+      margin-left:12px; background:#fff; color:#7f1d1d; border:none;
+      font-family:'Poppins',sans-serif; font-weight:700; font-size:11px;
+      padding:5px 12px; border-radius:14px; cursor:pointer;
+      box-shadow:0 2px 6px rgba(0,0,0,.25); transition:transform .15s, box-shadow .15s; }
+    #hcMaintBanner button.hcMaintEndBtn:hover { transform:translateY(-1px); box-shadow:0 4px 10px rgba(0,0,0,.35); }
+    #hcMaintBanner button.hcMaintEndBtn:disabled { opacity:.55; cursor:wait; transform:none; }
     @keyframes hcMaintSlide { from{transform:translateY(-100%);opacity:0} to{transform:translateY(0);opacity:1} }
     body.hc-maint-banner { padding-top:42px !important; }
     #hcMaintOverlay { position:fixed; inset:0; z-index:99999;
@@ -98,9 +105,12 @@ function render() {
     const b = document.createElement('div');
     b.id = 'hcMaintBanner';
     b.className = isActiveNow ? '' : 'scheduled';
-    b.innerHTML = `<i class="fas fa-tools"></i> ${isActiveNow ? 'Maintenance is ACTIVE NOW' : 'Maintenance scheduled at ' + fmt(m.startAt)} · You have management override (full access).`;
+    const label = isActiveNow ? 'Maintenance is ACTIVE NOW' : 'Maintenance scheduled at ' + fmt(m.startAt);
+    b.innerHTML = `<i class="fas fa-tools"></i> ${label} · You have management override (full access). <button type="button" class="hcMaintEndBtn" id="hcMaintEndBtn"><i class="fas fa-power-off"></i> End now</button>`;
     document.body.appendChild(b);
     document.body.classList.add('hc-maint-banner');
+    const btn = document.getElementById('hcMaintEndBtn');
+    if (btn) btn.addEventListener('click', endMaintenanceFromBanner);
     return;
   }
 
@@ -131,6 +141,28 @@ function render() {
     : `<i class="fas fa-tools"></i> Scheduled maintenance: ${fmt(m.startAt)} → ${fmt(m.endAt)}. Plan ahead.`;
   document.body.appendChild(b);
   document.body.classList.add('hc-maint-banner');
+}
+
+// Owner / Admin / Sub-Admin can end the active maintenance window from the banner
+// itself, no need to navigate to the owner dashboard. Useful when an upgrade
+// finishes earlier than planned.
+async function endMaintenanceFromBanner(ev) {
+  const btn = ev?.currentTarget;
+  if (btn && btn.disabled) return;
+  if (!confirm('End the maintenance window now? The site will become fully available to users immediately.')) return;
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Ending…'; }
+  try {
+    await setDoc(doc(db, 'app_maintenance', 'current'), {
+      active: false,
+      blockSite: false,
+      endedAt: serverTimestamp(),
+      lastUpdated: serverTimestamp()
+    }, { merge: true });
+    // The onSnapshot listener will re-render and remove the banner automatically.
+  } catch (e) {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-power-off"></i> End now'; }
+    alert('Could not end maintenance: ' + (e?.message || 'unknown error'));
+  }
 }
 
 // Resolve user role (best effort) so we can decide management override.

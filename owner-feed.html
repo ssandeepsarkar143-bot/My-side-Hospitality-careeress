@@ -569,8 +569,32 @@
             </div>
           </div>
           <div class="form-group">
+            <label>Message preset</label>
+            <select id="maintMessagePreset" class="form-control" onchange="applyMaintPreset()">
+              <option value="">— Select a professional preset —</option>
+              <option value="upgrade">Platform upgrade in progress</option>
+              <option value="features">Rolling out new features &amp; improvements</option>
+              <option value="performance">Performance tuning &amp; speed optimisation</option>
+              <option value="security">Security patch &amp; routine hardening</option>
+              <option value="database">Database optimisation &amp; backup</option>
+              <option value="bugfix">Bug fixes &amp; stability improvements</option>
+              <option value="emergency">Urgent emergency maintenance</option>
+              <option value="custom">✏️ Custom message…</option>
+            </select>
+            <p style="font-size:11px;color:var(--gray);margin:6px 0 0">Choose a polished preset, then tweak below if needed.</p>
+          </div>
+          <div class="form-group">
             <label>Message shown to users</label>
             <textarea id="maintMessage" class="form-control" rows="2" maxlength="280" placeholder="e.g. We're upgrading the platform. Back online shortly — thank you for your patience."></textarea>
+          </div>
+          <div class="form-group">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+              <input type="checkbox" id="maintNotifyUsers" style="width:auto;margin:0" checked/>
+              <span>Send an in-app notification to <strong>all users</strong> when the window is scheduled / updated</span>
+            </label>
+            <p style="font-size:11px;color:var(--gray);margin:6px 0 0 22px">
+              Users get a heads-up with the start time, end time, and your message.
+            </p>
           </div>
           <div class="form-group">
             <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
@@ -3589,17 +3613,58 @@ async function loadMaintenanceCurrent() {
     box.innerHTML = '<i class="fas fa-exclamation-circle" style="color:#ef4444"></i> Could not load maintenance status.';
   }
 }
+// Preset professional messages for the maintenance scheduler
+const MAINT_PRESETS = {
+  upgrade: "We're rolling out a platform upgrade to bring you a smoother experience. The site will be temporarily unavailable during this window. Thank you for your patience — we'll be back shortly.",
+  features: "We're rolling out exciting new features and improvements. The site will be briefly offline during this update. Thanks for waiting — better things are on the way!",
+  performance: "Scheduled performance tuning is underway to make the platform faster and more responsive. Service will resume shortly.",
+  security: "A routine security patch is being applied to keep your data safe. The site will be back online once the update is complete.",
+  database: "Scheduled database optimisation and backup are in progress. The site will be temporarily unavailable to ensure your data remains secure and fast.",
+  bugfix: "We're applying bug fixes and stability improvements based on user feedback. We'll be right back — thank you for your patience.",
+  emergency: "We're performing urgent emergency maintenance to resolve an issue. Service will be restored as soon as possible. Sorry for the inconvenience."
+};
+window.applyMaintPreset = function () {
+  const sel = document.getElementById('maintMessagePreset');
+  const ta = document.getElementById('maintMessage');
+  if (!sel || !ta) return;
+  const v = sel.value;
+  if (v && v !== 'custom' && MAINT_PRESETS[v]) {
+    ta.value = MAINT_PRESETS[v];
+    ta.focus();
+  } else if (v === 'custom') {
+    ta.value = '';
+    ta.focus();
+  }
+};
+
+async function broadcastMaintenanceNotice(startAt, endAt, message, blockSite) {
+  // Send a one-line notification to every user (including admins) so they have a heads-up.
+  try {
+    const snap = await getDocs(collection(db, 'users'));
+    const fmt = d => d.toLocaleString();
+    const summary = blockSite ? 'The site will be temporarily unavailable.' : 'You may notice brief slowdowns.';
+    const note = `🛠 Scheduled maintenance: ${fmt(startAt)} → ${fmt(endAt)}. ${summary} ${message}`;
+    const targets = snap.docs.map(d => d.id);
+    await Promise.all(targets.map(uid => sendNotification(uid, note, 'info', true, 'all')));
+    return targets.length;
+  } catch (e) {
+    console.warn('broadcastMaintenanceNotice failed', e);
+    return 0;
+  }
+}
+
 window.saveMaintenanceWindow = async function () {
   const startStr = document.getElementById('maintStartAt').value;
   const endStr = document.getElementById('maintEndAt').value;
   const message = document.getElementById('maintMessage').value.trim();
   const blockSite = document.getElementById('maintBlockSite').checked;
+  const notifyUsers = document.getElementById('maintNotifyUsers')?.checked !== false;
   if (!startStr || !endStr) { showToast('Please pick both Start and End date/time.', 'error'); return; }
   const startAt = new Date(startStr);
   const endAt = new Date(endStr);
   if (isNaN(startAt) || isNaN(endAt)) { showToast('Invalid date/time.', 'error'); return; }
   if (endAt <= startAt) { showToast('End time must be after Start time.', 'error'); return; }
-  if (!message) { showToast('Please enter a message users will see.', 'error'); return; }
+  if (!message) { showToast('Please enter a message users will see (or pick a preset above).', 'error'); return; }
   try {
     await setDoc(doc(db, 'app_maintenance', 'current'), {
       active: true,
@@ -3609,10 +3674,17 @@ window.saveMaintenanceWindow = async function () {
       blockSite,
       scheduledBy: currentUser?.uid || 'owner',
       scheduledAt: serverTimestamp(),
-      lastUpdated: serverTimestamp()
+      lastUpdated: serverTimestamp(),
+      endedAt: null
     }, { merge: true });
-    showToast('✅ Maintenance window saved. Users will see it during the scheduled time.');
+    let extra = '';
+    if (notifyUsers) {
+      const count = await broadcastMaintenanceNotice(startAt, endAt, message, blockSite);
+      if (count) extra = ` Notified ${count} user${count === 1 ? '' : 's'}.`;
+    }
+    showToast('✅ Maintenance window saved.' + extra);
     loadMaintenanceCurrent();
+    if (typeof loadNotifications === 'function') loadNotifications();
   } catch (e) {
     showToast('Failed to save: ' + (e.message || 'unknown error'), 'error');
   }

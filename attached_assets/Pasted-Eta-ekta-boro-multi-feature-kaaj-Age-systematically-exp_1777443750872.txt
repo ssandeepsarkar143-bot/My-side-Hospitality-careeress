@@ -1,0 +1,103 @@
+Eta ekta boro multi-feature kaaj. Age systematically explore kori ki ki ache, tarpor implementation start korbo. Multiple files parallel-e dekhi:
+
+
+2 actions
+Bujhechi — eta 4 ta boro feature, ekta master plan banachi. Communicate korbo briefly then deep-dive in parallel:
+
+
+7 actions
+Sob explore complete! Now ami systematic plan banalo. Started Phase 1 — Bangla → English translation. All Bangla occurrences read kori parallel:
+
+
+2 actions
+Akhon translate korchi all files in parallel:
+
+
+14 actions
+prime-feed.html clean! Now batch-translate owner-feed.html and wallet-ui.js, plus rewrite chatbot.js with English-only KB:
+
+
+13 actions
+Now let me write the comprehensive English-only system prompt with role-based gating, in BOTH worker and server in parallel:
+
+
+5 actions
+Now update both chat handlers in worker.js to use the new buildSystemPrompt(userRole), then mirror everything in server.js, then update chatbot.js client to pass userRole. All in parallel:
+
+
+4 actions
+Worker fully updated. Now mirror to server.js and update chatbot.js client-side in parallel:
+
+
+19 actions
+i18n.js isn't referenced anywhere — no switcher to hide. Phase 1 + Phase 4 (system prompt + role gating) are essentially done. Let me commit progress, restart the app, and continue:
+
+
+8 actions
+Now Phase 2 (Maintenance Scheduler) and Phase 3 (auto-notifications). Let me understand the existing notification flow first:
+
+
+2 actions
+Let me look at the sec-notifications block to know where to insert maintenance UI:
+
+
+Opened owner-feed.html
+Now I'll add the maintenance scheduler card inside the Notifications section, plus all needed pieces in parallel:
+
+
+Edited owner-feed.html
+Now find where loadNotifications is to wire the maintenance JS handlers, and look at owner-feed JS imports:
+
+
+5 actions
+Now create the maintenance overlay module + add it to all relevant pages, in parallel:
+
+
+Created js/maintenance-overlay.js
+Now add the maintenance overlay script to all relevant HTML pages. Let me find which pages need it and inject in parallel:
+
+
+3 actions
+Now Phase 3 — auto-notify Owner + location-allocated Admin on every user request. Let me see the existing request creation patterns:
+
+
+6 actions
+Now create the notify helper and wire it into user-feed.html and prime-feed.html:
+
+
+Created js/notify-helpers.js
+Now wire the notify helper into both feed pages — patch the imports and call after each request creation:
+
+
+8 actions
+Restart workflow and verify it boots clean:
+
+
+4 actions
+App boots cleanly. Let me commit Phase 2 + Phase 3 progress:
+
+
+4 actions
+Both deploy workflows trigger on the replit-agent branch — let me push so Firebase + Cloudflare auto-deploy:
+
+
+2 actions
+All four phases are complete and pushed. Let me clean up the session plan and update the project doc:
+
+
+4 actions
+All four big features are done and live on GitHub (auto-deploy to Firebase Hosting + Cloudflare Worker is now in flight on the replit-agent branch).
+
+Here's what shipped in this session:
+
+1. English-everywhere — Every Bangla string was removed from the profile, About, user feed, prime feed, owner feed, wallet UI, and the AI assistant. The chatbot's knowledge base and the Cloudflare/Express AI endpoints now run a single English prompt, no language switcher.
+
+2. Maintenance scheduler (Owner → Notifications tab) — A polished card lets you set start/end dates, a custom message, and choose "show banner only" vs "block the whole site" for users. It writes to a single Firestore doc and a new site-wide module on every page listens live, showing a small banner during a scheduled window and a full-screen overlay during a hard maintenance period. Owner / Admin / Sub-Admin always keep full access even during a hard block, so you can keep working.
+
+3. Auto-notify on every user request — When a user sends an Employer Connect, Resume Download, or Contact request, the system now automatically notifies you (Owner) plus every Admin/Sub-Admin who (a) has the matching authority enabled and (b) covers the user's state. Each notification includes a short approval guide pointing them to Owner/Admin → Requests.
+
+4. AI with full site knowledge + role gating — The assistant now has a comprehensive English knowledge base covering every page, feature, role, the wallet, refer & earn, requests workflow, and maintenance scheduler. It auto-detects who's chatting from their Firestore profile: normal and Prime users only ever see the public knowledge, while Owner / Admin / Sub-Admin additionally get the management knowledge (revenue, admin tools, scheduler internals).
+
+The local app boots cleanly and the changes are pushed (commits 40425c9 + 28e9456).
+
+Next, I can add an in-app notification bell with unread count and a dropdown list, so you and your admins see new request notifications instantly without leaving the page you're on. Would you like me to do that?
