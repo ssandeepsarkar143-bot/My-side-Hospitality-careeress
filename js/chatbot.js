@@ -2,126 +2,86 @@
 'use strict';
 
 const LANGS = {
-  en: { name: 'English', short: 'EN', flag: '🇬🇧' },
-  hi: { name: 'हिन्दी', short: 'HI', flag: '🇮🇳' },
-  bn: { name: 'বাংলা', short: 'BN', flag: '🟢' }
+  en: { name: 'English', short: 'EN', flag: '🇬🇧' }
 };
 
 let currentLang = localStorage.getItem('hc_assistant_lang') || 'en';
 
 const KB = [
   {
-    keys: /hello|hi\b|hey|good\s*morning|good\s*evening|namaste|হ্যালো|নমস্কার|হেলো|কেমন আছ|হ্যাই|নমস্তে|নমস্কার/i,
-    en: "Hello! 👋 I'm **HC Assistant** — your smart guide for Hospitality Careers. How can I help you today?\n\nI can assist with:\n• **Jobs** – Browse & apply\n• **Prime Membership** – Benefits & pricing\n• **Payments** – UPI process\n• **Resume Tips** – Stand out\n• **Interview Prep** – Ace it!",
-    hi: "नमस्ते! 👋 मैं **HC Assistant** हूँ। Hospitality Careers पर आपका स्वागत है!\n\nमैं इनमें मदद कर सकता हूँ:\n• **Jobs** – ढूंढें और apply करें\n• **Prime Membership** – फायदे और कीमत\n• **Payment** – UPI प्रक्रिया\n• **Resume Tips** – बेहतर बनाएं\n• **Interview Prep** – तैयारी करें",
-    bn: "হ্যালো! 👋 আমি **HC Assistant** — Hospitality Careers এর আপনার AI সহকারী!\n\nআমি এই বিষয়গুলোতে সাহায্য করতে পারি:\n• **চাকরি** – খুঁজুন ও আবেদন করুন\n• **Prime Membership** – সুবিধা ও মূল্য\n• **Payment** – UPI প্রক্রিয়া\n• **Resume Tips** – উন্নত করুন\n• **Interview Prep** – প্রস্তুতি নিন"
+    keys: /hello|hi\b|hey|good\s*morning|good\s*evening|namaste| /i,
+    en: "Hello! 👋 I'm **HC Assistant** — your smart guide for Hospitality Careers. How can I help you today?\n\nI can assist with:\n• **Jobs** – Browse & apply\n• **Prime Membership** – Benefits & pricing\n• **Payments** – UPI process\n• **Resume Tips** – Stand out\n• **Interview Prep** – Ace it!"
   },
   {
-    keys: /prime|membership|সদস্যপদ|member|subscription|সদস্য|upgrade|প্রাইম|prime.*member|member.*prime|সদস্যতা/i,
-    en: "**Prime Membership 🌟**\n\n✅ See ALL job listings (regular users see limited)\n✅ Download candidate resumes directly\n✅ Get employer's direct phone number\n✅ Priority in job applications\n✅ Exclusive job listings\n✅ Job Alert notifications\n\n💰 **₹499 / month**\n\n👉 Go to **Membership** page to subscribe via UPI.\n\n⏰ Account upgraded within **24 hours** after payment.",
-    hi: "**Prime Membership 🌟**\n\n✅ सभी job listings देखें\n✅ Resume download करें\n✅ Employer का direct phone number\n✅ Job applications में priority\n✅ Exclusive job listings\n✅ Job Alert notifications\n\n💰 **₹499 / माह**\n\n👉 **Membership** page पर UPI से subscribe करें।\n\n⏰ Payment के बाद **24 घंटे** में upgrade होगा।",
-    bn: "**Prime Membership 🌟**\n\n✅ সমস্ত job listing দেখুন (সাধারণ user সীমিত দেখেন)\n✅ Candidate এর resume সরাসরি download করুন\n✅ Employer এর direct phone number পান\n✅ Job application এ priority\n✅ Exclusive job listing\n✅ Job Alert notification\n\n💰 **মাত্র ₹৪৯৯/মাস**\n\n👉 **Membership** পেজে গিয়ে UPI দিয়ে subscribe করুন।\n\n⏰ Payment এর **২৪ ঘণ্টার** মধ্যে account upgrade হয়।"
+    keys: /prime|membership|member|subscription|upgrade|prime.*member|member.*prime/i,
+    en: "**Prime Membership 🌟**\n\n✅ See ALL job listings (regular users see limited)\n✅ Download candidate resumes directly\n✅ Get employer's direct phone number\n✅ Priority in job applications\n✅ Exclusive job listings\n✅ Job Alert notifications\n\n💰 **₹499 / month**\n\n👉 Go to **Membership** page to subscribe via UPI.\n\n⏰ Account upgraded within **24 hours** after payment."
   },
   {
-    keys: /apply|job apply|আবেদন|application|কিভাবে apply|how to apply|চাকরি.*আবেদন|naukri|apply.*job|job.*apply/i,
-    en: "**How to Apply for a Job 📝**\n\n1️⃣ Login to your account\n2️⃣ Go to **Find Job** section\n3️⃣ Use filters: Department, Position, City, Salary\n4️⃣ Click **Apply** on any job card\n5️⃣ Fill your details & upload CV (optional)\n6️⃣ Hit **Submit Application**!\n\n✅ Track your applications in **My Activity** section.\n⭐ **Prime members** get direct employer contact!",
-    hi: "**Job Apply कैसे करें 📝**\n\n1️⃣ Account में login करें\n2️⃣ **Find Job** section खोलें\n3️⃣ Filters लगाएं: Department, City, Salary\n4️⃣ Job card पर **Apply** click करें\n5️⃣ Details भरें & CV upload करें\n6️⃣ **Submit Application** click करें!\n\n✅ **My Activity** में applications track करें।\n⭐ **Prime members** को employer का direct contact मिलता है!",
-    bn: "**চাকরির জন্য আবেদন কিভাবে করবেন 📝**\n\n1️⃣ Account এ login করুন\n2️⃣ **Find Job** section এ যান\n3️⃣ Filter ব্যবহার করুন: Department, City, Salary\n4️⃣ যেকোনো job card এ **Apply** click করুন\n5️⃣ Details পূরণ করুন ও CV upload করুন\n6️⃣ **Submit Application** click করুন!\n\n✅ **My Activity** তে application track করুন।\n⭐ **Prime member** হলে employer এর direct contact পাবেন!"
+    keys: /apply|job apply|application| apply|how to apply|.*|naukri|apply.*job|job.*apply/i,
+    en: "**How to Apply for a Job 📝**\n\n1️⃣ Login to your account\n2️⃣ Go to **Find Job** section\n3️⃣ Use filters: Department, Position, City, Salary\n4️⃣ Click **Apply** on any job card\n5️⃣ Fill your details & upload CV (optional)\n6️⃣ Hit **Submit Application**!\n\n✅ Track your applications in **My Activity** section.\n⭐ **Prime members** get direct employer contact!"
   },
   {
-    keys: /job alert|alert|notification|notif|চাকরির সতর্কতা|job.*notif|alert.*job|job.*subscribe|নতুন চাকরি/i,
-    en: "**Job Alert Feature 🔔**\n\nSave your job preferences and get notified when matching jobs are posted!\n\n**How to set up:**\n1️⃣ Login to your account\n2️⃣ Go to **My Activity** section\n3️⃣ Find **Job Alert** tab\n4️⃣ Choose Department, Location & Salary range\n5️⃣ Click **Save Alert**!\n\n🔔 You'll get in-app notifications when a matching job goes live.",
-    hi: "**Job Alert Feature 🔔**\n\nआपकी पसंदीदा job preferences save करें और matching jobs आने पर notification पाएं!\n\n**Setup कैसे करें:**\n1️⃣ Account login करें\n2️⃣ **My Activity** section खोलें\n3️⃣ **Job Alert** tab ढूंढें\n4️⃣ Department, Location & Salary choose करें\n5️⃣ **Save Alert** click करें!\n\n🔔 Matching job आने पर in-app notification मिलेगा।",
-    bn: "**Job Alert Feature 🔔**\n\nআপনার পছন্দের job preferences save করুন এবং matching job এলে notification পান!\n\n**কিভাবে set করবেন:**\n1️⃣ Account এ login করুন\n2️⃣ **My Activity** section এ যান\n3️⃣ **Job Alert** tab খুঁজুন\n4️⃣ Department, Location ও Salary range বেছে নিন\n5️⃣ **Save Alert** click করুন!\n\n🔔 Matching job এলেই in-app notification পাবেন।"
+    keys: /job alert|alert|notification|notif| |job.*notif|alert.*job|job.*subscribe| /i,
+    en: "**Job Alert Feature 🔔**\n\nSave your job preferences and get notified when matching jobs are posted!\n\n**How to set up:**\n1️⃣ Login to your account\n2️⃣ Go to **My Activity** section\n3️⃣ Find **Job Alert** tab\n4️⃣ Choose Department, Location & Salary range\n5️⃣ Click **Save Alert**!\n\n🔔 You'll get in-app notifications when a matching job goes live."
   },
   {
-    keys: /pay|payment|upi|পেমেন্ট|টাকা|amount|price|fee|ফি|কত টাকা|how much|পেমেন্ট.*কিভাবে|কিভাবে pay/i,
-    en: "**Payment Process 💳**\n\n**Step-by-step:**\n1️⃣ Go to **Membership** page\n2️⃣ Click **'Pay with UPI'** or **'Show QR'**\n3️⃣ Pay **₹499** using any UPI app (PhonePe, GPay, Paytm)\n4️⃣ Note the **UTR / Transaction ID**\n5️⃣ Enter UTR on the page & submit\n6️⃣ Admin verifies → you become **Prime** ✅\n\n⏰ Usually verified within **24 hours**.\n\n📌 For latest UPI ID, check the **Membership** page.",
-    hi: "**Payment Process 💳**\n\n**Steps:**\n1️⃣ **Membership** page पर जाएं\n2️⃣ **'Pay with UPI'** या **'Show QR'** click करें\n3️⃣ किसी भी UPI app से **₹499** pay करें\n4️⃣ **UTR / Transaction ID** नोट करें\n5️⃣ UTR page पर enter करके submit करें\n6️⃣ Admin verify करेगा → आप **Prime** बन जाएंगे ✅\n\n⏰ **24 घंटे** में verify होता है।\n\n📌 Latest UPI ID के लिए **Membership** page देखें।",
-    bn: "**Payment প্রক্রিয়া 💳**\n\n**ধাপে ধাপে:**\n1️⃣ **Membership** পেজে যান\n2️⃣ **'Pay with UPI'** বা **'Show QR'** click করুন\n3️⃣ যেকোনো UPI app দিয়ে **₹৪৯৯** pay করুন (PhonePe, GPay, Paytm)\n4️⃣ **UTR / Transaction ID** note করুন\n5️⃣ UTR page এ দিয়ে submit করুন\n6️⃣ Admin verify করলে → আপনি **Prime** হবেন ✅\n\n⏰ সাধারণত **২৪ ঘণ্টার** মধ্যে verify হয়।\n\n📌 সর্বশেষ UPI ID জানতে **Membership** পেজ দেখুন।"
+    keys: /pay|payment|upi|amount|price|fee| |how much|.*| pay/i,
+    en: "**Payment Process 💳**\n\n**Step-by-step:**\n1️⃣ Go to **Membership** page\n2️⃣ Click **'Pay with UPI'** or **'Show QR'**\n3️⃣ Pay **₹499** using any UPI app (PhonePe, GPay, Paytm)\n4️⃣ Note the **UTR / Transaction ID**\n5️⃣ Enter UTR on the page & submit\n6️⃣ Admin verifies → you become **Prime** ✅\n\n⏰ Usually verified within **24 hours**.\n\n📌 For latest UPI ID, check the **Membership** page."
   },
   {
-    keys: /cv|resume|রেজুমে|curriculum|বায়োডাটা|biodata|সিভি|resume.*tip|cv.*tip|resume.*upload|upload.*cv/i,
-    en: "**Resume / CV Guide 📄**\n\n**Must-have sections:**\n✅ Full Name, Phone, Email, City\n✅ Professional Summary (2–3 lines)\n✅ Work Experience (latest first)\n✅ Skills & Certifications\n✅ Education\n✅ References (optional)\n\n**Pro tips:**\n• Keep it **1–2 pages max**\n• Mention specific **hotel names & designations**\n• Highlight **customer service** skills\n• Use **simple, clean formatting**\n\n💡 Upload CV in your profile → employers can see it!",
-    hi: "**Resume / CV Guide 📄**\n\n**जरूरी sections:**\n✅ नाम, Phone, Email, शहर\n✅ Professional Summary\n✅ Work Experience (नया पहले)\n✅ Skills & Certifications\n✅ Education\n\n**Pro Tips:**\n• **1–2 pages** में रखें\n• Hotel name & designation mention करें\n• **Customer service** skills highlight करें\n\n💡 Profile में CV upload करें → employers देखेंगे!",
-    bn: "**Resume / CV Guide 📄**\n\n**অবশ্যই থাকতে হবে:**\n✅ নাম, Phone, Email, শহর\n✅ Professional Summary (২-৩ লাইন)\n✅ কাজের অভিজ্ঞতা (সর্বশেষ আগে)\n✅ Skills ও Certifications\n✅ শিক্ষা\n\n**Pro Tips:**\n• **১-২ পাতার** বেশি না\n• Hotel এর নাম ও designation স্পষ্ট লিখুন\n• **Customer service** skill highlight করুন\n\n💡 Profile এ CV upload করুন → employers দেখতে পাবেন!"
+    keys: /cv|resume|curriculum|biodata|resume.*tip|cv.*tip|resume.*upload|upload.*cv/i,
+    en: "**Resume / CV Guide 📄**\n\n**Must-have sections:**\n✅ Full Name, Phone, Email, City\n✅ Professional Summary (2–3 lines)\n✅ Work Experience (latest first)\n✅ Skills & Certifications\n✅ Education\n✅ References (optional)\n\n**Pro tips:**\n• Keep it **1–2 pages max**\n• Mention specific **hotel names & designations**\n• Highlight **customer service** skills\n• Use **simple, clean formatting**\n\n💡 Upload CV in your profile → employers can see it!"
   },
   {
-    keys: /hotel|resort|restaurant|hospitality|হোটেল|রেস্টুরেন্ট|spa|catering|department|industry/i,
-    en: "**Hospitality Industry Jobs 🏨**\n\n**Departments we cover:**\n• F&B Service (Captain, Steward, Bartender)\n• Kitchen / Culinary (Chef, Cook, Commis)\n• Front Office (Receptionist, Concierge, GSA)\n• Housekeeping (Room Attendant, Supervisor)\n• Sales & Marketing\n• Spa & Wellness\n• Security\n• HR & Training\n\n**Properties:**\n5-Star Hotels, Resorts, Restaurants, Cruise Lines, Airlines Catering\n\n👉 Browse jobs in the **Find Job** section!",
-    hi: "**Hospitality Industry Jobs 🏨**\n\n**Departments:**\n• F&B Service\n• Kitchen / Culinary\n• Front Office\n• Housekeeping\n• Sales & Marketing\n• Spa & Wellness\n\n**Properties:**\n5-Star Hotels, Resorts, Restaurants, Cruise\n\n👉 **Find Job** section में browse करें!",
-    bn: "**Hospitality Industry Jobs 🏨**\n\n**Departments:**\n• F&B Service (Captain, Steward, Bartender)\n• Kitchen / Culinary (Chef, Cook, Commis)\n• Front Office (Receptionist, GSA)\n• Housekeeping\n• Sales & Marketing\n• Spa & Wellness\n\n**Properties:**\n5-Star Hotels, Resorts, Restaurants, Cruise\n\n👉 **Find Job** section এ browse করুন!"
+    keys: /hotel|resort|restaurant|hospitality|spa|catering|department|industry/i,
+    en: "**Hospitality Industry Jobs 🏨**\n\n**Departments we cover:**\n• F&B Service (Captain, Steward, Bartender)\n• Kitchen / Culinary (Chef, Cook, Commis)\n• Front Office (Receptionist, Concierge, GSA)\n• Housekeeping (Room Attendant, Supervisor)\n• Sales & Marketing\n• Spa & Wellness\n• Security\n• HR & Training\n\n**Properties:**\n5-Star Hotels, Resorts, Restaurants, Cruise Lines, Airlines Catering\n\n👉 Browse jobs in the **Find Job** section!"
   },
   {
-    keys: /salary|বেতন|pay scale|income|মাইনে|কত বেতন|salary.*range|how much.*earn/i,
-    en: "**Salary Guide 💰**\n\n| Level | Range |\n|---|---|\n| Entry Level | ₹8K–₹15K/mo |\n| Mid Level | ₹15K–₹35K/mo |\n| Senior Level | ₹35K–₹80K/mo |\n| Management | ₹80K–₹2L+/mo |\n\n**Varies by:**\n• Star category of hotel\n• City (Metro vs Tier-2)\n• Department\n• Years of experience\n\n💡 Search specific jobs for exact salary details!",
-    hi: "**Salary Guide 💰**\n\n• Entry Level: ₹8K–₹15K\n• Mid Level: ₹15K–₹35K\n• Senior Level: ₹35K–₹80K\n• Management: ₹80K–₹2L+\n\nSalary hotel की star category, city और experience पर depend करती है।",
-    bn: "**Salary Guide 💰**\n\n• Entry Level: ₹৮K–₹১৫K/মাস\n• Mid Level: ₹১৫K–₹৩৫K/মাস\n• Senior Level: ₹৩৫K–₹৮০K/মাস\n• Management: ₹৮০K–₹২L+/মাস\n\nSalary নির্ভর করে hotel এর star category, city ও অভিজ্ঞতার উপর।\n\n💡 নির্দিষ্ট job search করে সঠিক salary দেখুন!"
+    keys: /salary|pay scale|income| |salary.*range|how much.*earn/i,
+    en: "**Salary Guide 💰**\n\n| Level | Range |\n|---|---|\n| Entry Level | ₹8K–₹15K/mo |\n| Mid Level | ₹15K–₹35K/mo |\n| Senior Level | ₹35K–₹80K/mo |\n| Management | ₹80K–₹2L+/mo |\n\n**Varies by:**\n• Star category of hotel\n• City (Metro vs Tier-2)\n• Department\n• Years of experience\n\n💡 Search specific jobs for exact salary details!"
   },
   {
-    keys: /interview|ইন্টারভিউ|tips|interview.*prep|preparation|साक्षात्कार|কিভাবে interview/i,
-    en: "**Interview Tips for Hospitality 🎯**\n\n**Appearance:**\n✅ Full formal dress (groomed, clean)\n✅ Ironed clothes, polished shoes\n✅ Avoid strong perfume\n\n**During Interview:**\n✅ Research the hotel/company first\n✅ Arrive 15 mins early\n✅ Firm handshake & eye contact\n✅ Smile & be courteous\n\n**Common Questions:**\n→ 'Tell me about yourself'\n→ 'Why hospitality?'\n→ 'How do you handle difficult guests?'\n→ 'What's your strength?'\n\n💡 **Be confident, calm and service-oriented!**",
-    hi: "**Interview Tips 🎯**\n\n**Appearance:**\n✅ Formal dress\n✅ Groomed & clean\n\n**During:**\n✅ Company research करें\n✅ 15 मिनट पहले पहुंचें\n✅ Eye contact & smile\n\n**Common Questions:**\n→ 'अपने बारे में बताएं'\n→ 'Hospitality क्यों?'\n→ 'Difficult guest को handle?'\n\n💡 आत्मविश्वासी रहें!",
-    bn: "**Interview Tips 🎯**\n\n**চেহারা:**\n✅ Full formal dress\n✅ Clean, groomed, ironed\n\n**Interview এ:**\n✅ Hotel/Company সম্পর্কে আগে research করুন\n✅ ১৫ মিনিট আগে পৌঁছান\n✅ Eye contact ও smile\n\n**সাধারণ প্রশ্ন:**\n→ 'নিজের সম্পর্কে বলুন'\n→ 'Hospitality কেন?'\n→ 'কঠিন guest কিভাবে সামলাবেন?'\n\n💡 **আত্মবিশ্বাসী ও সৌজন্যমূলক হন!**"
+    keys: /interview|tips|interview.*prep|preparation| interview/i,
+    en: "**Interview Tips for Hospitality 🎯**\n\n**Appearance:**\n✅ Full formal dress (groomed, clean)\n✅ Ironed clothes, polished shoes\n✅ Avoid strong perfume\n\n**During Interview:**\n✅ Research the hotel/company first\n✅ Arrive 15 mins early\n✅ Firm handshake & eye contact\n✅ Smile & be courteous\n\n**Common Questions:**\n→ 'Tell me about yourself'\n→ 'Why hospitality?'\n→ 'How do you handle difficult guests?'\n→ 'What's your strength?'\n\n💡 **Be confident, calm and service-oriented!**"
   },
   {
-    keys: /hire|staff|recruit|নিয়োগ|employer|post.*job|job.*post|কর্মী/i,
-    en: "**Hire Staff / Post a Job 🏢**\n\n**For Employers:**\n1️⃣ Click **'Post a Job'** in your dashboard\n2️⃣ Fill job details (position, salary, vacancy, location)\n3️⃣ Submit → Admin approves → Job goes LIVE!\n\n**With Prime Membership:**\n✅ Browse candidate profiles\n✅ Download resumes\n✅ Contact candidates directly\n\n📌 Job post is free. **Prime** unlocks full candidate access.",
-    hi: "**Staff Hire / Job Post करें 🏢**\n\n**Employers के लिए:**\n1️⃣ Dashboard में **'Post a Job'** click करें\n2️⃣ Details भरें (position, salary, location)\n3️⃣ Submit → Admin approve → Job LIVE!\n\n**Prime के साथ:**\n✅ Candidate profiles देखें\n✅ Resumes download करें\n✅ Direct contact करें",
-    bn: "**Staff Hire / Job Post করুন 🏢**\n\n**Employer দের জন্য:**\n1️⃣ Dashboard এ **'Post a Job'** click করুন\n2️⃣ Details দিন (position, salary, location)\n3️⃣ Submit → Admin approve → Job LIVE!\n\n**Prime Membership এ:**\n✅ Candidate profiles দেখুন\n✅ Resume download করুন\n✅ সরাসরি contact করুন\n\n📌 Job post ফ্রি। **Prime** দিয়ে সম্পূর্ণ access পাবেন।"
+    keys: /hire|staff|recruit|employer|post.*job|job.*post/i,
+    en: "**Hire Staff / Post a Job 🏢**\n\n**For Employers:**\n1️⃣ Click **'Post a Job'** in your dashboard\n2️⃣ Fill job details (position, salary, vacancy, location)\n3️⃣ Submit → Admin approves → Job goes LIVE!\n\n**With Prime Membership:**\n✅ Browse candidate profiles\n✅ Download resumes\n✅ Contact candidates directly\n\n📌 Job post is free. **Prime** unlocks full candidate access."
   },
   {
-    keys: /contact|যোগাযোগ|phone|email|address|helpline|সাপোর্ট|support|help.*contact|contact.*us/i,
-    en: "**Contact & Support 📞**\n\n📧 **Email:** support@hospitalitycareers.in\n🌐 Visit the **Contact** page for direct messaging\n💬 Use the **Feedback** page for suggestions\n\n**From your Dashboard:**\n• Check **Notifications** for updates\n• Contact Admin through the platform\n\nWe typically respond within **24–48 hours**.",
-    hi: "**Contact & Support 📞**\n\n📧 **Email:** support@hospitalitycareers.in\n🌐 **Contact** page पर जाएं\n💬 **Feedback** page use करें\n\nहम **24–48 घंटों** में जवाब देते हैं।",
-    bn: "**Contact & Support 📞**\n\n📧 **Email:** support@hospitalitycareers.in\n🌐 **Contact** page এ সরাসরি message করুন\n💬 **Feedback** page এ suggestion দিন\n\nআমরা সাধারণত **২৪-৪৮ ঘণ্টার** মধ্যে reply করি।"
+    keys: /contact|phone|email|address|helpline|support|help.*contact|contact.*us/i,
+    en: "**Contact & Support 📞**\n\n📧 **Email:** support@hospitalitycareers.in\n🌐 Visit the **Contact** page for direct messaging\n💬 Use the **Feedback** page for suggestions\n\n**From your Dashboard:**\n• Check **Notifications** for updates\n• Contact Admin through the platform\n\nWe typically respond within **24–48 hours**."
   },
   {
-    keys: /login|sign in|password|account|লগইন|পাসওয়ার্ড|forgot|password.*forgot|account.*help|login.*problem/i,
-    en: "**Account Help 🔐**\n\n**Forgot Password?**\n→ Click 'Forgot Password?' on the Login page\n→ Enter your email → Reset link sent!\n\n**Google Sign-in issues?**\n→ Refresh browser / clear cache\n→ Try incognito mode\n\n**New here?**\n→ Click **'Create an Account'** on homepage\n→ Or sign in with **Google** (instant!)\n\n**Account locked / issues?**\n→ Email: support@hospitalitycareers.in",
-    hi: "**Account Help 🔐**\n\n**Password भूल गए?**\n→ Login page पर 'Forgot Password?' click करें\n→ Email enter करें → Reset link आएगा!\n\n**Google Sign-in problem?**\n→ Browser refresh करें\n→ Incognito mode try करें\n\n**नए user?**\n→ Homepage पर **'Create an Account'** click करें",
-    bn: "**Account সমস্যা 🔐**\n\n**Password ভুলে গেছেন?**\n→ Login page এ 'Forgot Password?' click করুন\n→ Email দিন → Reset link আসবে!\n\n**Google Sign-in সমস্যা?**\n→ Browser refresh করুন\n→ Incognito mode try করুন\n\n**নতুন user?**\n→ Homepage থেকে **'Create an Account'** click করুন\n\n**সমস্যা থাকলে:** support@hospitalitycareers.in"
+    keys: /login|sign in|password|account|forgot|password.*forgot|account.*help|login.*problem/i,
+    en: "**Account Help 🔐**\n\n**Forgot Password?**\n→ Click 'Forgot Password?' on the Login page\n→ Enter your email → Reset link sent!\n\n**Google Sign-in issues?**\n→ Refresh browser / clear cache\n→ Try incognito mode\n\n**New here?**\n→ Click **'Create an Account'** on homepage\n→ Or sign in with **Google** (instant!)\n\n**Account locked / issues?**\n→ Email: support@hospitalitycareers.in"
   },
   {
-    keys: /thank|ধন্যবাদ|thanks|bye|goodbye|ok|ঠিক আছে|শুভকামনা|best of luck|good luck/i,
-    en: "You're welcome! 😊 Feel free to ask anytime.\n\n**Best of luck** with your hospitality career! 🌟\n\n_HC Assistant is here 24/7 for you._",
-    hi: "आपका स्वागत है! 😊 कभी भी पूछ सकते हैं।\n\nआपके hospitality career में **शुभकामनाएं**! 🌟",
-    bn: "স্বাগতম! 😊 যেকোনো সময় জিজ্ঞেস করুন।\n\nHospitality career এ আপনার জন্য **শুভকামনা**! 🌟\n\n_HC Assistant সবসময় আপনার পাশে।_"
+    keys: /thank|thanks|bye|goodbye|ok| |best of luck|good luck/i,
+    en: "You're welcome! 😊 Feel free to ask anytime.\n\n**Best of luck** with your hospitality career! 🌟\n\n_HC Assistant is here 24/7 for you._"
   },
   {
-    keys: /কি|what is|কিভাবে|how to|কেন|why|কোথায়|where|কখন|when|বলো|tell me|explain|বুঝাও|details/i,
-    en: null,
-    hi: null,
-    bn: null
+    keys: /what is|how to|why|where|when|tell me|explain|details/i,
+    en: null
   }
 ];
 
 const DEFAULT = {
-  en: "Hmm, I'm not sure about that. 🤔 I can help with:\n\n• **Prime Membership** – Benefits & cost\n• **Job Applications** – How to apply\n• **Payment** – UPI process\n• **Resume Tips** – Stand out\n• **Interview Prep** – Ace the interview\n• **Job Alerts** – Get notified\n• **Contact** – Reach support\n\nTry asking something like: _'How do I apply for a job?'_ or _'What is Prime membership?'_",
-  hi: "मुझे समझ नहीं आया। 🤔 मैं इनमें मदद कर सकता हूँ:\n\n• **Prime Membership** – फायदे और कीमत\n• **Job Apply** – कैसे करें\n• **Payment** – UPI प्रक्रिया\n• **Resume Tips**\n• **Interview Prep**\n• **Job Alert**\n\nकुछ और पूछें।",
-  bn: "বুঝতে পারিনি। 🤔 আমি এই বিষয়ে সাহায্য করতে পারি:\n\n• **Prime Membership** – সুবিধা ও মূল্য\n• **Job Apply** – কিভাবে করবেন\n• **Payment** – UPI প্রক্রিয়া\n• **Resume Tips**\n• **Interview Prep**\n• **Job Alert**\n• **Contact** – Support\n\nযেমন জিজ্ঞেস করুন: _'চাকরির জন্য কিভাবে apply করব?'_"
+  en: "Hmm, I'm not sure about that. 🤔 I can help with:\n\n• **Prime Membership** – Benefits & cost\n• **Job Applications** – How to apply\n• **Payment** – UPI process\n• **Resume Tips** – Stand out\n• **Interview Prep** – Ace the interview\n• **Job Alerts** – Get notified\n• **Contact** – Reach support\n\nTry asking something like: _'How do I apply for a job?'_ or _'What is Prime membership?'_"
 };
 
 const QUICK = {
-  en: ['Prime Membership?', 'How to apply?', 'Payment steps', 'Interview Tips', 'Job Alert?'],
-  hi: ['Prime क्या है?', 'Apply कैसे करें?', 'Payment steps', 'Interview Tips', 'Job Alert?'],
-  bn: ['Prime কি?', 'Apply করব কিভাবে?', 'Payment steps', 'Interview Tips', 'Job Alert?']
+  en: ['Prime Membership?', 'How to apply?', 'Payment steps', 'Interview Tips', 'Job Alert?']
 };
 const QUICK_Q = {
-  en: ['What is Prime membership?', 'How to apply for a job?', 'How to make payment for Prime?', 'Interview tips for hospitality', 'What is Job Alert feature?'],
-  hi: ['Prime membership क्या है?', 'Job apply कैसे करें?', 'Prime के लिए payment कैसे करें?', 'Hospitality interview tips', 'Job Alert feature क्या है?'],
-  bn: ['Prime membership কি?', 'চাকরির জন্য কিভাবে apply করব?', 'Prime এর জন্য payment কিভাবে করব?', 'Hospitality interview tips', 'Job Alert feature কি?']
+  en: ['What is Prime membership?', 'How to apply for a job?', 'How to make payment for Prime?', 'Interview tips for hospitality', 'What is Job Alert feature?']
 };
 const GREET = {
-  en: "Hi! 👋 I'm **HC Assistant** — your smart guide.\n\nAsk me about jobs, Prime membership, payments, resume tips & more!",
-  hi: "नमस्ते! 👋 मैं **HC Assistant** हूँ।\n\nJobs, Prime membership, payment, resume tips के बारे में पूछें!",
-  bn: "হ্যালো! 👋 আমি **HC Assistant**!\n\nচাকরি, Prime membership, payment, resume tips সহ যেকোনো বিষয়ে জিজ্ঞেস করুন!"
+  en: "Hi! 👋 I'm **HC Assistant** — your smart guide.\n\nAsk me about jobs, Prime membership, payments, resume tips & more!"
 };
 
 const LANG_CONFIRM = {
-  en: "Assistant language is now set to **English**. You can also type: _set assistant language Bangla_ or _set assistant language Hindi_.",
-  hi: "Assistant language अब **हिन्दी** में set हो गई है। आप लिख सकते हैं: _set assistant language English_ या _set assistant language Bangla_।",
-  bn: "Assistant language এখন **বাংলা** set করা হয়েছে। আপনি লিখতে পারেন: _set assistant language English_ বা _set assistant language Hindi_।"
+  en: "This assistant only speaks English."
 };
 
 function getResponse(msg) {
@@ -141,11 +101,6 @@ function getResponse(msg) {
 }
 
 function detectLangCommand(msg) {
-  const m = msg.toLowerCase().trim();
-  if (!/(language|lang|ভাষা|ভাষাটা|भाषा|set|change|assistant)/i.test(m)) return null;
-  if (/(bangla|bengali|বাংলা|বাঙ্গলা|bangali)/i.test(m)) return 'bn';
-  if (/(hindi|हिन्दी|हिंदी)/i.test(m)) return 'hi';
-  if (/(english|ইংরেজি|अंग्रेज़ी|angrezi)/i.test(m)) return 'en';
   return null;
 }
 
@@ -287,7 +242,7 @@ function renderQuick() {
 }
 
 function updatePlaceholder() {
-  const ph = { en: 'Ask me anything...', hi: 'कुछ भी पूछें...', bn: 'যেকোনো প্রশ্ন করুন...' };
+  const ph = { en: 'Ask me anything...' };
   inputEl.placeholder = ph[currentLang] || ph.en;
 }
 
@@ -343,7 +298,7 @@ async function sendMsg(text) {
     const res = await fetch((window.hcApiUrl ? window.hcApiUrl('/api/chat-stream') : '/api/chat-stream'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
-      body: JSON.stringify({ message: msg, lang: currentLang, history: HC_HISTORY.slice(-8) })
+      body: JSON.stringify({ message: msg, userRole: getCurrentUserRole(), history: HC_HISTORY.slice(-8) })
     });
     if (!res.ok || !res.body) throw new Error('stream not ok');
     removeTyping();
@@ -392,7 +347,7 @@ async function sendMsg(text) {
     const res = await fetch((window.hcApiUrl ? window.hcApiUrl('/api/chat') : '/api/chat'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: msg, lang: currentLang, history: HC_HISTORY.slice(-8) })
+      body: JSON.stringify({ message: msg, userRole: getCurrentUserRole(), history: HC_HISTORY.slice(-8) })
     });
     const data = await res.json();
     removeTyping();
@@ -591,6 +546,42 @@ inputEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendMsg(); }
 renderLangChips();
 renderQuick();
 updatePlaceholder();
+
+// ----- Resolve current user role for AI role-based gating -----
+// We dynamic-import the firebase-config ES module, listen to auth state, and
+// look up the user document to expose `window.hcCurrentUserRole`.
+window.hcCurrentUserRole = window.hcCurrentUserRole || 'guest';
+(async () => {
+  try {
+    const [{ auth, db }, fbAuth, fbStore] = await Promise.all([
+      import('/js/firebase-config.js'),
+      import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js'),
+      import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js')
+    ]);
+    fbAuth.onAuthStateChanged(auth, async (user) => {
+      if (!user) { window.hcCurrentUserRole = 'guest'; return; }
+      try {
+        const snap = await fbStore.getDoc(fbStore.doc(db, 'users', user.uid));
+        const data = snap.exists() ? (snap.data() || {}) : {};
+        const role = String(data.role || data.userType || 'user').toLowerCase();
+        const isPrime = data.isPrime === true || /prime/.test(role);
+        let resolved = 'user';
+        if (role === 'owner') resolved = 'owner';
+        else if (role === 'admin' || role === 'sub-admin' || role === 'subadmin') resolved = role;
+        else if (isPrime) resolved = role.startsWith('prime') ? role : 'prime';
+        window.hcCurrentUserRole = resolved;
+      } catch (_) {
+        window.hcCurrentUserRole = 'user';
+      }
+    });
+  } catch (_) {
+    /* firebase not loadable — fall back to guest */
+  }
+})();
+
+function getCurrentUserRole() {
+  return window.hcCurrentUserRole || 'guest';
+}
 
 setTimeout(() => {
   if (!opened) { badgeEl.style.display = 'flex'; badgeEl.textContent = '1'; }

@@ -519,13 +519,13 @@ export async function attachWallet({ db, auth, user, userData, mountId = 'hcWall
     list.innerHTML = '<div class="hcw-sub">Loading…</div>';
     try {
       const snap = await getDocs(query(collection(db, 'users'), where('referredBy','==', user.uid)));
-      if (snap.empty) { list.innerHTML = '<div class="hcw-sub">এখনো কেউ আপনার referral link দিয়ে join করেনি। Link share করুন!</div>'; return; }
+      if (snap.empty) { list.innerHTML = '<div class="hcw-sub">No one has joined using your referral link yet. Share the link!</div>'; return; }
       const items = snap.docs.map(d => ({ id: d.id, ...d.data() }))
         .sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0));
       list.innerHTML = items.map(u => {
         let status, color;
-        if (u.role === 'Prime') { status = `👑 Prime member${u.tag&&u.tag!=='Prime'?' ('+u.tag+')':''} — আপনি ১০ pts পেয়েছেন`; color = '#22c55e'; }
-        else if (u.profileComplete || u.phone || u.displayName) { status = '👤 Signed up · Profile complete · এখনো Prime কেনেনি'; color = '#f59e0b'; }
+        if (u.role === 'Prime') { status = `👑 Prime member${u.tag&&u.tag!=='Prime'?' ('+u.tag+')':''} — you earned 10 pts`; color = '#22c55e'; }
+        else if (u.profileComplete || u.phone || u.displayName) { status = '👤 Signed up · Profile complete · has not bought Prime yet'; color = '#f59e0b'; }
         else { status = '🆕 Just signed up'; color = '#9ca3af'; }
         const name = (u.displayName || u.email || 'User').replace(/[<>]/g,'');
         return `<div class="hcw-tx" style="align-items:flex-start">

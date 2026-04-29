@@ -132,7 +132,7 @@ body { background: linear-gradient(135deg, #0d0d2b, #1a1a4e); }
     <div style="flex:1;min-width:0">
       <div style="font-size:11px;color:#a78bfa;font-weight:700;letter-spacing:1px;margin-bottom:2px">✨ NEW · BY HOSPITALITY CAREERS</div>
       <div style="font-size:16px;font-weight:800;margin-bottom:2px">Hospitality Careers Resume Studio</div>
-      <div style="font-size:12px;color:rgba(255,255,255,0.75)">Premium hospitality resume তৈরি করুন Photo সহ — কয়েক সেকেন্ডে Free PDF Download</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.75)">Create a premium hospitality resume with Photo — Free PDF download in seconds</div>
     </div>
     <div style="background:linear-gradient(135deg,#a78bfa,#6c63ff);color:#fff;padding:9px 16px;border-radius:10px;font-size:12px;font-weight:800;flex-shrink:0">Build Now <i class="fas fa-arrow-right" style="margin-left:4px"></i></div>
   </a>
@@ -592,42 +592,42 @@ function showPrimeApplyAlert(msg) {
 window.requestResumeDownload = async function(candidateId, candidateName) {
   try {
     const existing = await getDocs(query(collection(db,'requests'), where('type','==','resumeDownload'), where('requesterId','==',currentUser.uid), where('candidateId','==',candidateId)));
-    if (!existing.empty) { showToast('ইতিমধ্যে এই candidate এর জন্য resume request পাঠানো হয়েছে।', 'info'); return; }
+    if (!existing.empty) { showToast('A resume request has already been sent for this candidate.', 'info'); return; }
     await addDoc(collection(db, 'requests'), {
       type: 'resumeDownload', requesterId: currentUser.uid, requesterEmail: currentUser.email,
       candidateId, candidateName, status: 'pending', createdAt: serverTimestamp()
     });
-    showToast('✅ Resume request পাঠানো হয়েছে! Approve হলে notification পাবেন।');
+    showToast('✅ Resume request sent! You will receive a notification once approved.');
   } catch(e) {
-    showToast('❌ Request পাঠানো যায়নি। আবার চেষ্টা করুন।', 'error');
+    showToast('❌ Could not send the request. Please try again.', 'error');
   }
 };
 
 window.requestContact = async function(candidateId, candidateName) {
   try {
     const existing = await getDocs(query(collection(db,'requests'), where('type','==','contact'), where('requesterId','==',currentUser.uid), where('candidateId','==',candidateId)));
-    if (!existing.empty) { showToast('ইতিমধ্যে এই candidate এর জন্য contact request পাঠানো হয়েছে।', 'info'); return; }
+    if (!existing.empty) { showToast('A contact request has already been sent for this candidate.', 'info'); return; }
     await addDoc(collection(db, 'requests'), {
       type: 'contact', requesterId: currentUser.uid, requesterEmail: currentUser.email,
       candidateId, candidateName, status: 'pending', createdAt: serverTimestamp()
     });
-    showToast('✅ Contact request পাঠানো হয়েছে! Approve হলে notification পাবেন।');
+    showToast('✅ Contact request sent! You will receive a notification once approved.');
   } catch(e) {
-    showToast('❌ Request পাঠানো যায়নি। আবার চেষ্টা করুন।', 'error');
+    showToast('❌ Could not send the request. Please try again.', 'error');
   }
 };
 
 window.requestEmployerConnect = async function(jobId, jobTitle) {
   try {
     const existing = await getDocs(query(collection(db,'requests'), where('type','==','employerConnect'), where('requesterId','==',currentUser.uid), where('jobId','==',jobId)));
-    if (!existing.empty) { showToast('ইতিমধ্যে এই job এর জন্য employer connect request পাঠানো হয়েছে।', 'info'); return; }
+    if (!existing.empty) { showToast('An employer connect request has already been sent for this job.', 'info'); return; }
     await addDoc(collection(db, 'requests'), {
       type: 'employerConnect', requesterId: currentUser.uid, requesterEmail: currentUser.email,
       jobId, jobTitle, status: 'pending', createdAt: serverTimestamp()
     });
-    showToast('✅ Connect Employer request পাঠানো হয়েছে!');
+    showToast('✅ Connect Employer request sent!');
   } catch(e) {
-    showToast('❌ Request পাঠানো যায়নি। আবার চেষ্টা করুন।', 'error');
+    showToast('❌ Could not send the request. Please try again.', 'error');
   }
 };
 

@@ -492,7 +492,7 @@
         <!-- GLOBAL BASE PRICE -->
         <div class="card mb-16">
           <div class="card-title"><i class="fas fa-rupee-sign"></i> Membership Base Price (Global)</div>
-          <p style="font-size:12px;color:var(--gray);margin-bottom:12px">এটি সকল user এর জন্য Prime Membership এর base price। Discount পরে এই amount থেকে কাটা হবে। Default: ₹499</p>
+          <p style="font-size:12px;color:var(--gray);margin-bottom:12px">This is the base price of Prime Membership for all users. Discounts will be deducted from this amount. Default: ₹499</p>
           <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
             <div class="form-group" style="flex:1;margin-bottom:0">
               <label>Base Price (₹)</label>
@@ -505,27 +505,27 @@
         <div class="grid-2">
           <div class="card">
             <div class="card-title"><i class="fas fa-percent"></i> Add Discount / Offer</div>
-            <div class="form-group"><label>কাদের জন্য Offer?</label>
+            <div class="form-group"><label>Offer For?</label>
               <select id="discountCategory" class="form-control" onchange="toggleDiscountUserField()">
-                <option value="all">সবার জন্য (All Users)</option>
+                <option value="all">Everyone (All Users)</option>
                 <option value="normal">👤 Normal Users only (role = User)</option>
                 <option value="all_prime">👑 All Prime Members (any tier)</option>
                 <optgroup id="discountTagGroup" label="By Prime Tier"></optgroup>
-                <option value="newUsers1Week">নতুন Users (১ সপ্তাহের মধ্যে যোগ দিয়েছেন)</option>
-                <option value="specificUser">Specific User (নির্দিষ্ট ব্যক্তি)</option>
+                <option value="newUsers1Week">New Users (joined within 1 week)</option>
+                <option value="specificUser">Specific User</option>
               </select>
             </div>
-            <div class="form-group" id="specificUserField" style="display:none"><label>Specific User এর Email বা User ID</label><input type="text" id="discountUserId" class="form-control" placeholder="User email বা ID"/></div>
+            <div class="form-group" id="specificUserField" style="display:none"><label>Specific User's Email or User ID</label><input type="text" id="discountUserId" class="form-control" placeholder="User email or ID"/></div>
             <div class="form-group"><label>Discount Type</label>
               <select id="discountType" class="form-control" onchange="toggleDiscountFields()">
                 <option value="percent">Percentage Discount (%)</option>
                 <option value="amount">Flat Amount Discount (₹)</option>
               </select>
             </div>
-            <div class="form-group" id="percentField"><label>Discount Percentage (%)</label><input type="number" id="discountPercent" class="form-control" placeholder="যেমন: 20"/></div>
-            <div class="form-group" id="amountField" style="display:none"><label>Discount Amount (₹)</label><input type="number" id="discountAmount" class="form-control" placeholder="যেমন: 100"/></div>
-            <div class="form-group"><label>Extra Validity Days (Bonus Days)</label><input type="number" id="extraDays" class="form-control" placeholder="যেমন: 7"/></div>
-            <button class="btn btn-success" onclick="addDiscount()"><i class="fas fa-plus"></i> Offer Apply করুন</button>
+            <div class="form-group" id="percentField"><label>Discount Percentage (%)</label><input type="number" id="discountPercent" class="form-control" placeholder="e.g. 20"/></div>
+            <div class="form-group" id="amountField" style="display:none"><label>Discount Amount (₹)</label><input type="number" id="discountAmount" class="form-control" placeholder="e.g. 100"/></div>
+            <div class="form-group"><label>Extra Validity Days (Bonus Days)</label><input type="number" id="extraDays" class="form-control" placeholder="e.g. 7"/></div>
+            <button class="btn btn-success" onclick="addDiscount()"><i class="fas fa-plus"></i> Apply Offer</button>
           </div>
           <div class="card">
             <div class="card-title"><i class="fas fa-arrow-up"></i> Upgrade Membership Price</div>
@@ -573,7 +573,7 @@
       <!-- FEEDBACK RECORDS -->
       <div id="sec-feedbackRecords" class="page-section">
         <div class="section-title"><i class="fas fa-star"></i> Feedback Records</div>
-        <p style="font-size:12px;color:var(--gray);margin-bottom:12px"><i class="fas fa-info-circle"></i> "Show" চেক করলে সেই feedback, Feedback পেজের "What People Say" section এ দেখাবে।</p>
+        <p style="font-size:12px;color:var(--gray);margin-bottom:12px"><i class="fas fa-info-circle"></i> When "Show" is checked, that feedback will appear in the "What People Say" section of the Feedback page.</p>
         <div class="table-wrapper">
           <table>
             <thead><tr><th>Name</th><th>Email</th><th>Rating</th><th>Message</th><th>Date</th><th>Show Publicly</th></tr></thead>
@@ -585,7 +585,7 @@
       <!-- ENQUIRIES -->
       <div id="sec-enquiries" class="page-section">
         <div class="section-title"><i class="fas fa-comments"></i> User Enquiries</div>
-        <p style="font-size:12px;color:var(--gray);margin-bottom:12px"><i class="fas fa-info-circle"></i> Pending Top-up / Withdrawal / Coupon redemption এ user-রা যে enquiry পাঠিয়েছে সব এখানে।</p>
+        <p style="font-size:12px;color:var(--gray);margin-bottom:12px"><i class="fas fa-info-circle"></i> All enquiries sent by users for pending Top-up / Withdrawal / Coupon redemption appear here.</p>
         <div class="stats-grid" id="enquiryStats" style="margin-bottom:14px"></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
           <button class="btn btn-sm enq-tab-btn active" data-enq="all" onclick="setEnqTab('all')">All</button>
@@ -605,7 +605,7 @@
       <!-- AI RESUME RECORDS -->
       <div id="sec-resumeRecords" class="page-section">
         <div class="section-title"><i class="fas fa-file-alt"></i> AI Resume Builder Records</div>
-        <p style="font-size:12px;color:var(--gray);margin-bottom:12px"><i class="fas fa-info-circle"></i> AI Resume Builder ব্যবহার করে যারা resume তৈরি করেছে তাদের সম্পূর্ণ তথ্য এখানে আছে।</p>
+        <p style="font-size:12px;color:var(--gray);margin-bottom:12px"><i class="fas fa-info-circle"></i> Complete information of users who created resumes using the AI Resume Builder is shown here.</p>
         <div class="table-wrapper">
           <table>
             <thead><tr><th>Name</th><th>Job Title</th><th>Email</th><th>Phone</th><th>Experience</th><th>Skills</th><th>Date</th><th>Action</th></tr></thead>
@@ -678,9 +678,9 @@
             <!-- CO-FOUNDER -->
             <div style="padding:14px;background:rgba(212,175,55,0.04);border-radius:10px;border:1px solid rgba(212,175,55,0.15);margin-bottom:12px">
               <div style="font-size:13px;font-weight:700;color:var(--gold);margin-bottom:10px"><i class="fas fa-user-tie"></i> Co-Founder (About Page)</div>
-              <div class="form-group"><label>Co-Founder Name</label><input type="text" id="ss_adminName" class="form-control" placeholder="Co-Founder এর নাম"/></div>
+              <div class="form-group"><label>Co-Founder Name</label><input type="text" id="ss_adminName" class="form-control" placeholder="Co-Founder's name"/></div>
               <div class="form-group">
-                <label>Photo Upload (তাৎক্ষণিক)</label>
+                <label>Photo Upload (instant)</label>
                 <input type="file" id="ss_adminPhotoFile" class="form-control" accept="image/*" onchange="previewSitePersonPhoto(this,'ss_adminPhotoStatus','ss_adminPhotoPreview','ss_adminPhoto')"/>
                 <div id="ss_adminPhotoStatus" style="font-size:12px;margin-top:4px;display:none"></div>
                 <div id="ss_adminPhotoPreview" style="margin-top:8px;display:none"><img style="width:60px;height:60px;border-radius:50%;object-fit:cover;border:2px solid var(--gold)" id="ss_adminPhotoImg"/></div>
@@ -690,9 +690,9 @@
             <!-- OPERATION MANAGER -->
             <div style="padding:14px;background:rgba(167,139,250,0.04);border-radius:10px;border:1px solid rgba(167,139,250,0.15);margin-bottom:12px">
               <div style="font-size:13px;font-weight:700;color:#a78bfa;margin-bottom:10px"><i class="fas fa-briefcase"></i> Operation Manager (About Page)</div>
-              <div class="form-group"><label>Operation Manager Name</label><input type="text" id="ss_opName" class="form-control" placeholder="Operation Manager এর নাম"/></div>
+              <div class="form-group"><label>Operation Manager Name</label><input type="text" id="ss_opName" class="form-control" placeholder="Operation Manager's name"/></div>
               <div class="form-group">
-                <label>Photo Upload (তাৎক্ষণিক)</label>
+                <label>Photo Upload (instant)</label>
                 <input type="file" id="ss_opPhotoFile" class="form-control" accept="image/*" onchange="previewSitePersonPhoto(this,'ss_opPhotoStatus','ss_opPhotoPreview','ss_opPhoto')"/>
                 <div id="ss_opPhotoStatus" style="font-size:12px;margin-top:4px;display:none"></div>
                 <div id="ss_opPhotoPreview" style="margin-top:8px;display:none"><img style="width:60px;height:60px;border-radius:50%;object-fit:cover;border:2px solid #a78bfa" id="ss_opPhotoImg"/></div>
@@ -704,18 +704,18 @@
               <div style="font-size:14px;font-weight:700;color:var(--gold);margin-bottom:12px"><i class="fas fa-users"></i> Team Members / Managers (About Page)</div>
               <div id="managersList" style="margin-bottom:12px"></div>
               <div style="background:rgba(255,255,255,0.03);padding:14px;border-radius:8px;border:1px dashed rgba(255,255,255,0.12)">
-                <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.6);margin-bottom:10px">নতুন Manager যোগ করুন</div>
-                <div class="form-group"><label>Manager Name</label><input type="text" id="newMgrName" class="form-control" placeholder="নাম"/></div>
-                <div class="form-group"><label>Role / Title</label><input type="text" id="newMgrRole" class="form-control" placeholder="যেমন: Operations Manager"/></div>
+                <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.6);margin-bottom:10px">Add a new Manager</div>
+                <div class="form-group"><label>Manager Name</label><input type="text" id="newMgrName" class="form-control" placeholder="Name"/></div>
+                <div class="form-group"><label>Role / Title</label><input type="text" id="newMgrRole" class="form-control" placeholder="e.g. Operations Manager"/></div>
                 <div class="form-group">
-                  <label>Photo Upload (তাৎক্ষণিক)</label>
+                  <label>Photo Upload (instant)</label>
                   <input type="file" id="newMgrPhotoFile" class="form-control" accept="image/*" onchange="previewManagerPhoto(this)"/>
                   <div id="newMgrPhotoStatus" style="font-size:12px;margin-top:4px;display:none"></div>
                   <div id="newMgrPhotoPreview" style="margin-top:8px;display:none"><img id="newMgrPhotoImg" style="width:70px;height:70px;border-radius:50%;object-fit:cover;border:2px solid var(--gold)"/></div>
                 </div>
-                <button class="btn btn-primary btn-sm" onclick="addManager()"><i class="fas fa-plus"></i> Manager যোগ করুন</button>
+                <button class="btn btn-primary btn-sm" onclick="addManager()"><i class="fas fa-plus"></i> Add Manager</button>
               </div>
-              <p style="font-size:11px;color:#888;margin-top:6px"><i class="fas fa-info-circle"></i> এই members About Us পেজে দেখাবে।</p>
+              <p style="font-size:11px;color:#888;margin-top:6px"><i class="fas fa-info-circle"></i> These members will appear on the About Us page.</p>
             </div>
             <div class="form-group" style="margin-top:16px"><label>About Us Description</label><textarea id="ss_aboutDesc" class="form-control" rows="4" placeholder="Write about the company..."></textarea></div>
             <div class="form-group"><label>Success Story 1</label><input type="text" id="ss_story1" class="form-control" placeholder="Story title – Short description"/></div>
@@ -3229,7 +3229,7 @@ window.toggleDiscountUserField = function() {
   const cat = document.getElementById('discountCategory').value;
   document.getElementById('specificUserField').style.display = cat === 'specificUser' ? 'block' : 'none';
 };
-const CATEGORY_LABELS = { all:'সবার জন্য', prime:'Prime Members', prime2:'Prime2 Members', prime3:'Prime3 Members', newUsers1Week:'নতুন Users (১ সপ্তাহ)', specificUser:'Specific User' };
+const CATEGORY_LABELS = { all:'Everyone', prime:'Prime Members', prime2:'Prime2 Members', prime3:'Prime3 Members', newUsers1Week:'New Users (1 week)', specificUser:'Specific User' };
 
 async function loadDiscountTagOptions() {
   try {
@@ -3251,7 +3251,7 @@ async function loadOffers() {
     if (snap.empty) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:20px">No active offers</td></tr>'; return; }
     tbody.innerHTML = snap.docs.map(d => {
       const o = d.data();
-      const catLabel = CATEGORY_LABELS[o.category||'all'] || (o.category||'সবার জন্য');
+      const catLabel = CATEGORY_LABELS[o.category||'all'] || (o.category||'Everyone');
       return `<tr>
         <td style="font-size:11px">${catLabel}</td>
         <td>${o.discountPercent?'Percentage':'Flat Amount'}</td>
@@ -3271,7 +3271,7 @@ window.addDiscount = async function() {
   const data = { active: true, category, extraDays, createdAt: serverTimestamp() };
   if (category === 'specificUser') {
     const uid = document.getElementById('discountUserId').value.trim();
-    if (!uid) { showToast('Specific User এর email বা ID দিন।', 'error'); return; }
+    if (!uid) { showToast("Enter Specific User's email or ID.", 'error'); return; }
     data.targetUserId = uid;
   }
   if (type === 'percent') data.discountPercent = parseInt(document.getElementById('discountPercent').value)||0;
@@ -3655,7 +3655,7 @@ async function loadResumeRecords() {
   try {
     const snap = await getDocs(query(collection(db, 'aiResumes')));
     const tbody = document.getElementById('resumeRecordsBody');
-    if (snap.empty) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--gray);padding:20px">এখনো কেউ AI Resume তৈরি করেনি।</td></tr>'; return; }
+    if (snap.empty) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--gray);padding:20px">No one has created an AI Resume yet.</td></tr>'; return; }
     const rows = snap.docs.sort((a,b) => (b.data().createdAt?.toDate?.()?.getTime()||0) - (a.data().createdAt?.toDate?.()?.getTime()||0));
     tbody.innerHTML = rows.map(d => {
       const r = d.data();
@@ -3782,7 +3782,7 @@ window.resolveEnquiry = async function(id) {
     if (enq?.uid) {
       await addDoc(collection(db, 'notifications'), {
         userId: enq.uid, type: 'success',
-        message: `✅ আপনার "${enq.type||'enquiry'}" enquiry টি owner দেখেছেন এবং মার্ক resolved করেছেন।`,
+        message: `✅ The owner has reviewed your "${enq.type||'enquiry'}" enquiry and marked it as resolved.`,
         createdAt: serverTimestamp(), read: false
       });
     }
@@ -3839,7 +3839,7 @@ window.previewSitePersonPhoto = async function(input, statusId, previewId, hidde
     if (imgEl) { imgEl.src = dataUrl; }
     previewEl.style.display = 'block';
     document.getElementById(hiddenId).value = dataUrl;
-    statusEl.innerHTML = '<i class="fas fa-check-circle" style="color:#22c55e"></i> <span style="color:#22c55e">Photo ready! Save করলে apply হবে।</span>';
+    statusEl.innerHTML = '<i class="fas fa-check-circle" style="color:#22c55e"></i> <span style="color:#22c55e">Photo ready! Click Save to apply.</span>';
   } catch(e) {
     statusEl.innerHTML = '<i class="fas fa-exclamation-circle" style="color:#ef4444"></i> <span style="color:#ef4444">Error reading photo.</span>';
   }
@@ -3852,7 +3852,7 @@ window.saveBasePrice = async function() {
   msg.textContent = '⏳ Saving...'; msg.className = 'alert alert-info show';
   try {
     await setDoc(doc(db, 'siteContent', 'settings'), { baseMembershipPrice: price }, { merge: true });
-    msg.textContent = `✅ Base price ₹${price} সেট করা হয়েছে। Membership page এ এই price দেখাবে।`;
+    msg.textContent = `✅ Base price ₹${price} has been set. The Membership page will display this price.`;
     msg.className = 'alert alert-success show';
     showToast(`Membership base price: ₹${price}`);
   } catch(e) {
@@ -3865,7 +3865,7 @@ let tempManagers = [];
 
 function renderManagersList() {
   const el = document.getElementById('managersList');
-  if (!tempManagers.length) { el.innerHTML = '<p style="font-size:12px;color:var(--gray)">এখনো কোনো manager যোগ করা হয়নি।</p>'; return; }
+  if (!tempManagers.length) { el.innerHTML = '<p style="font-size:12px;color:var(--gray)">No manager has been added yet.</p>'; return; }
   el.innerHTML = tempManagers.map((m, i) => `
     <div style="display:flex;align-items:center;gap:12px;padding:10px;background:rgba(255,255,255,0.03);border-radius:8px;margin-bottom:8px;border:1px solid rgba(255,255,255,0.07)">
       ${m.photo ? `<img src="${m.photo}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid var(--gold)"/>` : `<div style="width:44px;height:44px;border-radius:50%;background:rgba(212,175,55,0.15);display:flex;align-items:center;justify-content:center;font-size:18px">👤</div>`}
@@ -3903,7 +3903,7 @@ window.previewManagerPhoto = async function(input) {
 window.addManager = async function() {
   const name = document.getElementById('newMgrName').value.trim();
   const role = document.getElementById('newMgrRole').value.trim();
-  if (!name) { showToast('Manager এর নাম দিন।', 'error'); return; }
+  if (!name) { showToast('Enter the manager name.', 'error'); return; }
   const fileInput = document.getElementById('newMgrPhotoFile');
   let photo = '';
   if (fileInput.files[0]) {
@@ -3916,7 +3916,7 @@ window.addManager = async function() {
   fileInput.value = '';
   document.getElementById('newMgrPhotoPreview').style.display = 'none';
   document.getElementById('newMgrPhotoStatus').style.display = 'none';
-  showToast(`${name} manager হিসেবে যোগ হয়েছে। Save করতে নিচের "Save All" button চাপুন।`, 'info');
+  showToast(`${name} has been added as a manager. Click the "Save All" button below to save.`, 'info');
 };
 
 // SITE SETTINGS
@@ -4059,7 +4059,7 @@ window.saveSiteSettings = async function() {
     const summary = `✅ Saved! Contact = ${data.contactEmail || '(default)'} · ${data.contactPhone || '(default)'} · ${data.address ? data.address.split('\n')[0] : '(default)'}`;
     msg.innerHTML = summary + ' &nbsp; <a href="contact.html" target="_blank" style="color:var(--gold);text-decoration:underline;font-weight:700">Open Contact Page →</a> <span style="font-size:11px;color:var(--gray);margin-left:8px">(if old value still shows, hard-refresh: Ctrl+Shift+R)</span>';
     msg.className = 'alert alert-success show';
-    showToast('সফলভাবে save হয়েছে! Contact page open করে দেখুন।');
+    showToast('Saved successfully! Open the Contact page to see the changes.');
   } catch(e) {
     msg.textContent = '❌ Failed to save: ' + e.message; msg.className = 'alert alert-danger show';
   }

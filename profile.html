@@ -197,7 +197,7 @@ document.getElementById('profilePhotoFile').addEventListener('change', async fun
     statusEl.innerHTML = '<i class="fas fa-check-circle" style="color:#22c55e"></i> <span style="color:#22c55e">Photo ready!</span>';
   } catch(e) {
     compressedPhoto = '';
-    statusEl.innerHTML = '<i class="fas fa-exclamation-circle" style="color:#ef4444"></i> <span style="color:#ef4444">Photo read করা যায়নি।</span>';
+    statusEl.innerHTML = '<i class="fas fa-exclamation-circle" style="color:#ef4444"></i> <span style="color:#ef4444">Could not read photo.</span>';
   }
 });
 
