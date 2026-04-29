@@ -1,4 +1,4 @@
-const CACHE = 'hc-shell-v5';
+const CACHE = 'hc-shell-v6-2026-04-29';
 const SHELL = ['/', '/logo.png', '/css/styles.css', '/offline.html', '/manifest.webmanifest'];
 
 self.addEventListener('install', (e) => {
@@ -20,13 +20,18 @@ self.addEventListener('fetch', (e) => {
   if (url.origin !== location.origin) return;
   if (url.pathname.startsWith('/api/')) return;
 
-  if (req.mode === 'navigate' || (req.headers.get('accept') || '').includes('text/html')) {
+  const isHTML = req.mode === 'navigate' || (req.headers.get('accept') || '').includes('text/html');
+  const isCodeAsset = /\.(js|mjs|css|html)(\?|$)/i.test(url.pathname);
+
+  if (isHTML || isCodeAsset) {
     e.respondWith(
       fetch(req).then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => null);
+        if (res && res.status === 200) {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => null);
+        }
         return res;
-      }).catch(() => caches.match(req).then((r) => r || caches.match('/offline.html')))
+      }).catch(() => caches.match(req).then((r) => r || (isHTML ? caches.match('/offline.html') : undefined)))
     );
     return;
   }
