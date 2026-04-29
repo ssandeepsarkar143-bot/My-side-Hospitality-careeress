@@ -3156,7 +3156,8 @@ window.adViewResume = function(jsonStr) {
     ${r.education?`<div class="lbl">Education</div><div style="white-space:pre-wrap">${esc(r.education)}</div>`:''}
     ${r.skills?`<div class="lbl">Skills</div><div>${esc(r.skills)}</div>`:''}
     ${r.aiResume?`<div class="lbl">AI Resume</div><div style="white-space:pre-wrap;background:#fff7e0;padding:12px;border-radius:8px">${esc(r.aiResume)}</div>`:''}
-    </body></html>`;
+    <script type="module" src="/js/maintenance-overlay.js"></script>
+</body></html>`;
   w.document.write(html); w.document.close();
 };
 window.adDownloadResume = async function(docId) {

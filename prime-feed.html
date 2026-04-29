@@ -334,6 +334,7 @@ body { background: linear-gradient(135deg, #0d0d2b, #1a1a4e); }
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, collection, getDocs, addDoc, query, where, serverTimestamp, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { notifyForNewRequest } from "/js/notify-helpers.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
 const firebaseConfig = {
@@ -593,9 +594,16 @@ window.requestResumeDownload = async function(candidateId, candidateName) {
   try {
     const existing = await getDocs(query(collection(db,'requests'), where('type','==','resumeDownload'), where('requesterId','==',currentUser.uid), where('candidateId','==',candidateId)));
     if (!existing.empty) { showToast('A resume request has already been sent for this candidate.', 'info'); return; }
-    await addDoc(collection(db, 'requests'), {
+    const reqRef = await addDoc(collection(db, 'requests'), {
       type: 'resumeDownload', requesterId: currentUser.uid, requesterEmail: currentUser.email,
       candidateId, candidateName, status: 'pending', createdAt: serverTimestamp()
+    });
+    notifyForNewRequest(reqRef, {
+      requestType: 'resumeDownload',
+      requesterUid: currentUser.uid,
+      requesterEmail: currentUser.email,
+      subject: candidateName,
+      extra: { candidateId }
     });
     showToast('✅ Resume request sent! You will receive a notification once approved.');
   } catch(e) {
@@ -607,9 +615,16 @@ window.requestContact = async function(candidateId, candidateName) {
   try {
     const existing = await getDocs(query(collection(db,'requests'), where('type','==','contact'), where('requesterId','==',currentUser.uid), where('candidateId','==',candidateId)));
     if (!existing.empty) { showToast('A contact request has already been sent for this candidate.', 'info'); return; }
-    await addDoc(collection(db, 'requests'), {
+    const reqRef = await addDoc(collection(db, 'requests'), {
       type: 'contact', requesterId: currentUser.uid, requesterEmail: currentUser.email,
       candidateId, candidateName, status: 'pending', createdAt: serverTimestamp()
+    });
+    notifyForNewRequest(reqRef, {
+      requestType: 'contact',
+      requesterUid: currentUser.uid,
+      requesterEmail: currentUser.email,
+      subject: candidateName,
+      extra: { candidateId }
     });
     showToast('✅ Contact request sent! You will receive a notification once approved.');
   } catch(e) {
@@ -621,9 +636,16 @@ window.requestEmployerConnect = async function(jobId, jobTitle) {
   try {
     const existing = await getDocs(query(collection(db,'requests'), where('type','==','employerConnect'), where('requesterId','==',currentUser.uid), where('jobId','==',jobId)));
     if (!existing.empty) { showToast('An employer connect request has already been sent for this job.', 'info'); return; }
-    await addDoc(collection(db, 'requests'), {
+    const reqRef = await addDoc(collection(db, 'requests'), {
       type: 'employerConnect', requesterId: currentUser.uid, requesterEmail: currentUser.email,
       jobId, jobTitle, status: 'pending', createdAt: serverTimestamp()
+    });
+    notifyForNewRequest(reqRef, {
+      requestType: 'employerConnect',
+      requesterUid: currentUser.uid,
+      requesterEmail: currentUser.email,
+      subject: jobTitle,
+      extra: { jobId }
     });
     showToast('✅ Connect Employer request sent!');
   } catch(e) {
@@ -1003,5 +1025,6 @@ window.submitChangePassword = async function() {
 <script src="js/pwa-install.js"></script>
 <script type="module" src="js/freeze-guard.js"></script>
 <script type="module" src="js/role-reauth-guard.js?v=1"></script>
+<script type="module" src="/js/maintenance-overlay.js"></script>
 </body>
 </html>

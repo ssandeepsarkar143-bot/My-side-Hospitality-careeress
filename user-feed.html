@@ -369,6 +369,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, collection, getDocs, addDoc, query, where, orderBy, serverTimestamp, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { notifyForNewRequest } from "/js/notify-helpers.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCuAuc9qhA7D_-Lqt-69pbG81KTIiDFVpg",
@@ -661,9 +662,16 @@ window.requestEmployerConnect = async function(jobId, jobTitle) {
   try {
     const existing = await getDocs(query(collection(db,'requests'), where('type','==','employerConnect'), where('requesterId','==',currentUser.uid), where('jobId','==',jobId)));
     if (!existing.empty) { showApplyAlert('A request has already been sent for this job.'); return; }
-    await addDoc(collection(db, 'requests'), {
+    const reqRef = await addDoc(collection(db, 'requests'), {
       type: 'employerConnect', requesterId: currentUser.uid, requesterEmail: currentUser.email,
       jobId, jobTitle, status: 'pending', createdAt: serverTimestamp()
+    });
+    notifyForNewRequest(reqRef, {
+      requestType: 'employerConnect',
+      requesterUid: currentUser.uid,
+      requesterEmail: currentUser.email,
+      subject: jobTitle,
+      extra: { jobId }
     });
     showToast('✅ Employer Connect request sent! You will see the phone number once approved.');
   } catch(e) {
@@ -1067,5 +1075,6 @@ window.submitChangePassword = async function() {
 <script src="js/pwa-install.js"></script>
 <script type="module" src="js/freeze-guard.js"></script>
 <script type="module" src="js/role-reauth-guard.js?v=1"></script>
+<script type="module" src="/js/maintenance-overlay.js"></script>
 </body>
 </html>

@@ -546,6 +546,47 @@
       <!-- NOTIFICATIONS -->
       <div id="sec-notifications" class="page-section">
         <div class="section-title"><i class="fas fa-bell"></i> Notifications</div>
+
+        <!-- ============== APP MAINTENANCE / UPDATE SCHEDULER ============== -->
+        <div class="card mb-16" style="border-left:4px solid #ef4444">
+          <div class="card-title"><i class="fas fa-tools"></i> App Update / Maintenance Window</div>
+          <p style="font-size:12px;color:var(--gray);margin-bottom:12px">
+            <i class="fas fa-info-circle"></i> Schedule a planned maintenance window. During the window the public site shows a professional "we'll be back" overlay if "Block site" is enabled. Owner and Admin / Sub-Admin keep full access during maintenance.
+          </p>
+
+          <div id="maintStatusBox" style="background:rgba(212,175,55,.08);border:1px solid rgba(212,175,55,.25);border-radius:10px;padding:12px;margin-bottom:14px;font-size:13px;color:#ddd">
+            <i class="fas fa-spinner fa-spin"></i> Loading current status…
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Start (date &amp; time)</label>
+              <input type="datetime-local" id="maintStartAt" class="form-control"/>
+            </div>
+            <div class="form-group">
+              <label>End (date &amp; time)</label>
+              <input type="datetime-local" id="maintEndAt" class="form-control"/>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Message shown to users</label>
+            <textarea id="maintMessage" class="form-control" rows="2" maxlength="280" placeholder="e.g. We're upgrading the platform. Back online shortly — thank you for your patience."></textarea>
+          </div>
+          <div class="form-group">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+              <input type="checkbox" id="maintBlockSite" style="width:auto;margin:0"/>
+              <span>Block site for non-management users while window is active (full overlay)</span>
+            </label>
+            <p style="font-size:11px;color:var(--gray);margin:6px 0 0 22px">
+              When unchecked, a small banner appears at the top of every page but the site stays usable.
+            </p>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="saveMaintenanceWindow()"><i class="fas fa-calendar-check"></i> Schedule / Update Window</button>
+            <button class="btn btn-warning" onclick="endMaintenanceNow()"><i class="fas fa-power-off"></i> End / Cancel Window Now</button>
+          </div>
+        </div>
+
         <div class="card mb-16">
           <div class="card-title"><i class="fas fa-broadcast-tower"></i> Broadcast Notification</div>
           <div class="form-group"><label>Target</label>
@@ -1438,7 +1479,7 @@ function loadSectionData(name) {
     case 'activityRecords': loadActivityRecords(); break;
     case 'locationCompare': loadLocationCompare(); break;
     case 'auditLog': loadAuditLog(); break;
-    case 'notifications': loadNotifications(); break;
+    case 'notifications': loadNotifications(); loadMaintenanceCurrent(); break;
     case 'feedbackRecords': loadFeedbackRecords(); break;
     case 'resumeRecords': loadResumeRecords(); break;
     case 'enquiries': loadEnquiries(); break;
@@ -3495,6 +3536,103 @@ async function sendNotification(userId, message, type='info', broadcast=false, t
 
 // NOTIFICATIONS SECTION
 window._allNotifsCache = {}; // id -> {data, userInfo}
+// ============== APP MAINTENANCE / UPDATE WINDOW ==============
+function _toLocalInput(ts) {
+  // Convert Firestore Timestamp / Date / millis → "YYYY-MM-DDTHH:mm" for datetime-local input
+  if (!ts) return '';
+  const d = ts.toDate ? ts.toDate() : (ts instanceof Date ? ts : new Date(ts));
+  if (isNaN(d.getTime())) return '';
+  const pad = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function _fmtTs(ts) {
+  if (!ts) return 'N/A';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleString();
+}
+async function loadMaintenanceCurrent() {
+  const box = document.getElementById('maintStatusBox');
+  if (!box) return;
+  try {
+    const ref = doc(db, 'app_maintenance', 'current');
+    const snap = await getDoc(ref);
+    if (!snap.exists()) {
+      box.innerHTML = '<i class="fas fa-check-circle" style="color:#22c55e"></i> No maintenance window currently scheduled.';
+      return;
+    }
+    const m = snap.data() || {};
+    const now = Date.now();
+    const startMs = m.startAt?.toDate?.()?.getTime() || 0;
+    const endMs = m.endAt?.toDate?.()?.getTime() || 0;
+    let state = 'Scheduled (upcoming)';
+    let color = '#f59e0b';
+    if (m.active === false) { state = 'Inactive / Cancelled'; color = '#6b7280'; }
+    else if (now >= startMs && now < endMs) { state = 'ACTIVE NOW'; color = '#ef4444'; }
+    else if (now >= endMs) { state = 'Past / Ended'; color = '#6b7280'; }
+    box.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="background:${color};color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px">${state}</span>
+        ${m.blockSite ? '<span style="background:#7f1d1d;color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px">SITE BLOCKED for non-management</span>' : '<span style="background:#374151;color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px">Banner only</span>'}
+      </div>
+      <div style="font-size:12.5px;line-height:1.6">
+        <div><strong>Start:</strong> ${_fmtTs(m.startAt)}</div>
+        <div><strong>End:</strong> ${_fmtTs(m.endAt)}</div>
+        <div><strong>Message:</strong> ${(m.message||'').replace(/[<>]/g, c=>({ '<':'&lt;','>':'&gt;' }[c])) || '<i>(none)</i>'}</div>
+        <div style="font-size:11px;color:var(--gray);margin-top:4px">Last updated: ${_fmtTs(m.lastUpdated || m.scheduledAt)}</div>
+      </div>`;
+    // Pre-fill the form for easy editing
+    document.getElementById('maintStartAt').value = _toLocalInput(m.startAt);
+    document.getElementById('maintEndAt').value = _toLocalInput(m.endAt);
+    document.getElementById('maintMessage').value = m.message || '';
+    document.getElementById('maintBlockSite').checked = !!m.blockSite;
+  } catch (e) {
+    box.innerHTML = '<i class="fas fa-exclamation-circle" style="color:#ef4444"></i> Could not load maintenance status.';
+  }
+}
+window.saveMaintenanceWindow = async function () {
+  const startStr = document.getElementById('maintStartAt').value;
+  const endStr = document.getElementById('maintEndAt').value;
+  const message = document.getElementById('maintMessage').value.trim();
+  const blockSite = document.getElementById('maintBlockSite').checked;
+  if (!startStr || !endStr) { showToast('Please pick both Start and End date/time.', 'error'); return; }
+  const startAt = new Date(startStr);
+  const endAt = new Date(endStr);
+  if (isNaN(startAt) || isNaN(endAt)) { showToast('Invalid date/time.', 'error'); return; }
+  if (endAt <= startAt) { showToast('End time must be after Start time.', 'error'); return; }
+  if (!message) { showToast('Please enter a message users will see.', 'error'); return; }
+  try {
+    await setDoc(doc(db, 'app_maintenance', 'current'), {
+      active: true,
+      startAt,
+      endAt,
+      message,
+      blockSite,
+      scheduledBy: currentUser?.uid || 'owner',
+      scheduledAt: serverTimestamp(),
+      lastUpdated: serverTimestamp()
+    }, { merge: true });
+    showToast('✅ Maintenance window saved. Users will see it during the scheduled time.');
+    loadMaintenanceCurrent();
+  } catch (e) {
+    showToast('Failed to save: ' + (e.message || 'unknown error'), 'error');
+  }
+};
+window.endMaintenanceNow = async function () {
+  if (!confirm('End the maintenance window right now? Users will see the site as normal again.')) return;
+  try {
+    await setDoc(doc(db, 'app_maintenance', 'current'), {
+      active: false,
+      blockSite: false,
+      endedAt: serverTimestamp(),
+      lastUpdated: serverTimestamp()
+    }, { merge: true });
+    showToast('✅ Maintenance window ended. Site is fully open again.');
+    loadMaintenanceCurrent();
+  } catch (e) {
+    showToast('Failed: ' + (e.message || 'unknown error'), 'error');
+  }
+};
+
 async function loadNotifications() {
   try {
     const snap = await getDocs(query(collection(db, 'notifications')));
@@ -5623,5 +5761,6 @@ window.exportLocationCompare = async function() {
 <script src="js/pwa-install.js"></script>
 <script type="module" src="js/freeze-guard.js"></script>
 <script type="module" src="js/role-reauth-guard.js?v=1"></script>
+<script type="module" src="/js/maintenance-overlay.js"></script>
 </body>
 </html>
