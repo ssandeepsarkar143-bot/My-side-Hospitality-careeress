@@ -1,0 +1,76 @@
+
+Other error
+Font
+https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/webfonts/fa-solid-900.ttf
+
+Other error
+Font
+https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/webfonts/fa-solid-900.woff2
+
+Other error
+Stylesheet
+https://findhospitalitycareers.web.app/css/styles.css
+
+Other error
+Script
+https://findhospitalitycareers.web.app/js/api-config.js
+
+Other error
+Script
+https://findhospitalitycareers.web.app/js/chatbot.js
+
+Other error
+Script
+https://findhospitalitycareers.web.app/js/maintenance-overlay.js
+
+Other error
+Script
+https://findhospitalitycareers.web.app/js/pwa-install.js
+
+Other error
+Script
+https://findhospitalitycareers.web.app/js/trust-banner.js
+
+Other error
+Image
+https://findhospitalitycareers.web.app/logo.png
+
+Other error
+XHR
+https://firestore.googleapis.com/google.firestore.v1.Firestore/Listen/channel?VER=8&database=projects%2Fhospitality-careers-e662f%2Fdatabases%2F(default)&RID=41383&CVER=22&X-HTTP-Session-Id=gsessionid&zx=42f4v3nv0qmi&t=1
+
+Other error
+Font
+https://fonts.gstatic.com/s/poppins/v24/pxiByp8kv8JHgFVrLCz7Z1xlFd2JQEk.woff2
+
+Other error
+Font
+https://fonts.gstatic.com/s/poppins/v24/pxiEyp8kv8JHgFVrJJfecnFHGPc.woff2
+
+Other error
+Other
+https://hospitality-careers-e662f.firebaseapp.com/__/auth/iframe?apiKey=AIzaSyCuAuc9qhA7D_-Lqt-69pbG81KTIiDFVpg&appName=%5BDEFAULT%5D&v=10.7.1&eid=p&usegapi=1&jsh=m%3B%2F_%2Fscs%2Fabc-static%2F_%2Fjs%2Fk%3Dgapi.lb.en.HLcjcliCxoY.O%2Fd%3D1%2Frs%3DAHpOoo-EKlLcELGvY6Qdg_kTBmN3Ra8MLw%2Fm%3D__features__
+
+Other error
+Image
+https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=1600&q=80
+
+Other error
+Image
+https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=1600&q=80
+
+Other error
+Image
+https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1600&q=80
+
+Other error
+Image
+https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?w=1600&q=80
+
+Other error
+Image
+https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=1600&q=80
+
+Other error
+Image
+https://www.google.com/images/cleardot.gif?zx=g7o4ssil2m3

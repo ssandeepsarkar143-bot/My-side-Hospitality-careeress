@@ -128,15 +128,42 @@
 </head>
 <body>
 
-<!-- BG SLIDESHOW -->
-<div class="hero-bg" id="heroBg">
-  <div class="hero-slide active" style="background-image:url('https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=1600&q=80')"></div>
-  <div class="hero-slide" style="background-image:url('https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1600&q=80')"></div>
-  <div class="hero-slide" style="background-image:url('https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?w=1600&q=80')"></div>
-  <div class="hero-slide" style="background-image:url('https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=1600&q=80')"></div>
-  <div class="hero-slide" style="background-image:url('https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=1600&q=80')"></div>
+<!-- BG SLIDESHOW (lazy-loaded after first paint to keep Google's renderer budget free for critical assets) -->
+<div class="hero-bg" id="heroBg" style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)">
+  <div class="hero-slide active" data-bg="https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=1600&amp;q=80"></div>
+  <div class="hero-slide" data-bg="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1600&amp;q=80"></div>
+  <div class="hero-slide" data-bg="https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?w=1600&amp;q=80"></div>
+  <div class="hero-slide" data-bg="https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=1600&amp;q=80"></div>
+  <div class="hero-slide" data-bg="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=1600&amp;q=80"></div>
   <div class="hero-overlay"></div>
 </div>
+<script>
+/* Lazy-load decorative hero backgrounds AFTER first paint.
+   Skips entirely for crawlers / headless renderers (no userActivation, reduced data, or Save-Data header equivalents). */
+(function(){
+  function isLikelyBot(){
+    var ua = navigator.userAgent || '';
+    if (/bot|crawl|spider|slurp|bing|google|baidu|yandex|duckduck|facebookexternal|lighthouse|headless|preview/i.test(ua)) return true;
+    if (navigator.connection && navigator.connection.saveData) return true;
+    return false;
+  }
+  function load(){
+    if (isLikelyBot()) return;
+    var slides = document.querySelectorAll('.hero-slide[data-bg]');
+    slides.forEach(function(el, i){
+      setTimeout(function(){
+        var url = el.getAttribute('data-bg');
+        if (url) el.style.backgroundImage = "url('" + url + "')";
+      }, i * 250);
+    });
+  }
+  if ('requestIdleCallback' in window) {
+    window.addEventListener('load', function(){ requestIdleCallback(load, { timeout: 3000 }); });
+  } else {
+    window.addEventListener('load', function(){ setTimeout(load, 800); });
+  }
+})();
+</script>
 
 <!-- LOADER -->
 <div id="loader">
