@@ -28,7 +28,7 @@
 }
 
 body {
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   background: var(--dark);
   color: var(--white);
   overflow-x: hidden;
@@ -240,7 +240,7 @@ body {
   border-radius: 12px;
   color: var(--white);
   font-size: 14px;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   transition: var(--transition);
   outline: none;
 }
@@ -264,7 +264,7 @@ body {
   border: none;
   cursor: pointer;
   transition: var(--transition);
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   text-decoration: none;
   letter-spacing: 0.5px;
 }
@@ -529,7 +529,7 @@ body {
   color: #fff;
   font-size: 12px;
   outline: none;
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 .dashboard-content {
   flex: 1;
@@ -678,7 +678,7 @@ tbody td { padding: 12px 16px; color: rgba(255,255,255,0.85); vertical-align: mi
   font-weight: 600;
   cursor: pointer;
   transition: var(--transition);
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   color: rgba(255,255,255,0.5);
   background: transparent;
 }
