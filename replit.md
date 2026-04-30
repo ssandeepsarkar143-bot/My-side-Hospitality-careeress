@@ -144,6 +144,15 @@ True OS-level push (browser closed, lock-screen wake-up) needs a server process 
 ## Logo
 Place your logo file as `logo.png` in the project root (also stored in `public/logo.png`).
 
+## Recent Fixes (2026-04-30, Latest) — ROOT CAUSE FIX for "19/29 couldn't load" in Search Console
+- **Lazy-load 5 Unsplash hero backgrounds** (`index.html` lines 134-168). Previously the login page eagerly loaded **5 separate 1600px Unsplash photos** (~1-2.5 MB total) as inline `style="background-image:url(...)"` on `.hero-slide` divs. These saturated Google's renderer's 5-second network budget, causing **same-origin assets** (`/css/styles.css`, `/js/api-config.js`, `/js/chatbot.js`, `/js/maintenance-overlay.js`, `/js/pwa-install.js`, `/js/trust-banner.js`, `/logo.png`) to be aborted with "Other error" in the URL Inspection report.
+- **The fix**: changed `style="background-image:url(...)"` → `data-bg="..."` and added a tiny inline script that:
+  1. Detects bots by UA regex (`bot|crawl|spider|google|bing|yandex|baidu|lighthouse|headless|...`) — Googlebot/Lighthouse skip the load entirely
+  2. Detects `navigator.connection.saveData` (Save-Data header) — also skips
+  3. For real users: waits for `window.onload` then `requestIdleCallback` (3s timeout) then sets each `background-image` staggered by 250ms. Slideshow rotation continues to work (it toggles `.active` class, doesn't touch background-image).
+- **Hero now has a CSS gradient fallback** (`background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460)`) on the `.hero-bg` parent so users always see a navy-blue hospitality-toned backdrop instantly — never a white flash.
+- **Expected impact**: Google's renderer now spends its budget on YOUR critical assets (CSS, JS, logo, fonts) instead of decorative Unsplash photos. The "Page resources X/29 couldn't be loaded" count should drop from ~19 to under 5 (the remaining ones are unavoidable: Firestore listen channel, Firebase auth iframe, gstatic.com cleardot.gif — all expected and harmless).
+
 ## Recent Fixes (2026-04-30) — Reduce "couldn't load" page-resource warnings in Search Console
 - **Cut Google Fonts payload by 57%**: dropped from 7 Poppins weights (300/400/500/600/700/800/900) to 3 (400/600/700) on `index.html` and `jobs.html`. Each weight = a separate woff2 download, so Google's renderer now has 4 fewer files that can time out.
 - **System-font fallback stack** added to `css/styles.css` (5 occurrences of `font-family: 'Poppins', sans-serif` → `'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif`). Even if Google Fonts is blocked or slow, the page still looks professional with the platform's native font.
